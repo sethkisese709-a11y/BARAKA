@@ -817,23 +817,29 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 // Supabase REST helper
 async function sb(table, method='GET', body=null, params='') {
   const url = `${SUPA_URL}/rest/v1/${table}${params}`;
-  const opts = {
-    method,
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': method==='POST' ? 'return=representation' : method==='PATCH'||method==='PUT' ? 'return=representation' : '',
-    }
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
   };
+  if(method==='POST') headers['Prefer'] = 'return=representation';
+  if(method==='PATCH'||method==='PUT') headers['Prefer'] = 'return=representation';
+  const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
   try {
     const r = await fetch(url, opts);
-    if (!r.ok) { const e = await r.text(); console.error('Supabase error:', e); return null; }
+    if (!r.ok) {
+      const e = await r.text();
+      console.error('Supabase error on', table, method, e);
+      return method==='GET' ? [] : null;
+    }
     const ct = r.headers.get('content-type')||'';
     if (ct.includes('json')) return await r.json();
-    return null;
-  } catch(e) { console.error('Supabase fetch error:', e); return null; }
+    return method==='GET' ? [] : null;
+  } catch(e) {
+    console.error('Supabase fetch error:', e);
+    return method==='GET' ? [] : null;
+  }
 }
 
 // Real-time subscription helper
@@ -912,7 +918,7 @@ function logA(cat, desc) {
 
 // ── Data load from Supabase ───────────────────────────────────────────────────
 async function loadCompanyData(coId) {
-  showLoading('Loading ' + coId + ' data...');
+  showLoading('Loading data...');
   try {
     const [sales, expenses, inventory, bundles, customers, suppliers, tasks, users, activity, pins] = await Promise.all([
       sb('sales', 'GET', null, `?company_id=eq.${coId}&order=created_at.desc`),
@@ -1029,8 +1035,10 @@ async function deleteRecord(table, id) {
   await sb(table,'DELETE',null,`?id=eq.${id}`);
 }
 
-// Legacy saveD — no longer writes to localStorage, kept for compatibility
-function saveD() {}
+// saveD — writes to localStorage as cache and syncs to Supabase
+function saveD() {
+  try { localStorage.setItem('baraka_cache_'+currentCo.id, JSON.stringify(D)); } catch(e) {}
+}
 
 // ── Real-time subscriptions ───────────────────────────────────────────────────
 function startRealtime() {
@@ -1104,11 +1112,26 @@ function addCompany() {
 }
 async function selectCo(id) {
   currentCo=companies.find(c=>c.id===id); if(!currentCo) return;
-  await loadCompanyData(id);
+  // First load from localStorage instantly so UI never blocks
+  const cached = localStorage.getItem('baraka_cache_'+id);
+  if(cached) {
+    try { D = JSON.parse(cached); } catch(e) { D = defD(id); }
+  } else {
+    D = defD(id);
+  }
+  if(!D.tasks) D.tasks=[];
+  if(!D.pins) D.pins=[];
+  if(!D.bundles) D.bundles=[];
+  D.users.forEach(u=>{if(!u.password)u.password='';if(u.phone===undefined)u.phone='';});
+  // Show login immediately
   document.getElementById('co-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
   document.getElementById('l-co-name').textContent=currentCo.name;
   showPickStep();
+  // Then sync with Supabase in background
+  loadCompanyData(id).then(()=>{
+    localStorage.setItem('baraka_cache_'+id, JSON.stringify(D));
+  }).catch(e=>console.log('Supabase sync failed, using local data'));
 }
 function backToCo() {
   realtimeSockets.forEach(ws=>{try{ws.close();}catch(e){}});
