@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: http://ogp.me/ns#">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
@@ -9,7 +9,47 @@
 <meta name="apple-mobile-web-app-title" content="Baraka">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#3C3489">
-<title>Baraka Enterprise — Business Hub</title>
+<title>Baraka Furniture — Office & Home Furniture Nairobi | Baraka Enterprise</title>
+<meta name="description" content="Baraka Furniture — Premium office and home furniture in Nairobi, Kenya. Custom office desks, chairs, wardrobes, shoe racks and more. Call us today.">
+<meta name="keywords" content="furniture Nairobi, office furniture Kenya, home furniture Nairobi, office chairs Kenya, office desks Nairobi, Baraka furniture, custom furniture Nairobi">
+<meta name="author" content="Baraka Enterprise">
+<meta name="robots" content="index, follow">
+<meta name="geo.region" content="KE-30">
+<meta name="geo.placename" content="Nairobi, Kenya">
+<link rel="canonical" href="https://barakaenterprise.co.ke">
+
+<!-- Open Graph (WhatsApp, Facebook previews) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://barakaenterprise.co.ke">
+<meta property="og:title" content="Baraka Furniture — Office & Home Furniture Nairobi">
+<meta property="og:description" content="Premium office and home furniture in Nairobi. Custom desks, chairs, wardrobes and more. Quality craftsmanship at great prices.">
+<meta property="og:locale" content="en_KE">
+
+<!-- Twitter/X card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Baraka Furniture Nairobi">
+<meta name="twitter:description" content="Premium office and home furniture in Nairobi, Kenya.">
+
+<!-- Schema.org structured data for Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FurnitureStore",
+  "name": "Baraka Furniture",
+  "alternateName": "Baraka Enterprise",
+  "url": "https://barakaenterprise.co.ke",
+  "description": "Premium office and home furniture store in Nairobi, Kenya. Specializing in custom office desks, chairs, wardrobes, shoe racks and home interior designs.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Nairobi",
+    "addressCountry": "KE"
+  },
+  "areaServed": "Nairobi, Kenya",
+  "priceRange": "KES",
+  "telephone": "",
+  "sameAs": []
+}
+</script>
 <!-- PWA Manifest (inline) -->
 <script>
 (function(){
@@ -918,6 +958,11 @@ function selectCo(id){
   D=saved||defD();
   ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; });
   D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
+  // Sync users from Supabase in background so passwords are always current
+  syncUsersFromSupabase(id).then(()=>{
+    const ul=document.getElementById('usel-list');
+    if(ul && document.getElementById('step-pick').style.display!=='none') showPickStep();
+  }).catch(()=>{});
   if(!saved&&id==='baraka'){ D.sales=seedData(); saveD(); }
   document.getElementById('co-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
@@ -1023,6 +1068,8 @@ function saveNewPw(){
   logA('security','Password updated for '+u.name);
   saveD(); renderPwMgmt();
   document.getElementById('setpw-modal').classList.remove('open');
+  // Push to Supabase so all devices get the new password
+  pushUserToSupabase(u).catch(()=>{});
   alert('Password for '+u.name+' updated successfully.');
 }
 
@@ -1034,6 +1081,7 @@ function editPhone(uid){
   u.phone=ph.trim();
   logA('security','WhatsApp number saved for '+u.name);
   saveD();
+  pushUserToSupabase(u).catch(()=>{});
   renderPwMgmt();
   if(u.phone) alert('Number saved for '+u.name+'! They will receive WhatsApp notifications when tasks are assigned to them.');
 }
@@ -1043,9 +1091,11 @@ function addMember(){
   const pw=document.getElementById('nm-pw').value;
   if(!name){ alert('Enter a name.'); return; }
   if(!pw||pw.length<4){ alert('Password must be at least 4 characters.'); return; }
-  D.users.push({id:Date.now(),name,role,password:pw});
+  const nu={id:Date.now(),name,role,password:pw,phone:''};
+  D.users.push(nu);
   logA('team','Added: '+name+' ('+role+')');
   saveD(); renderTeam();
+  pushUserToSupabase(nu).catch(()=>{});
   document.getElementById('nm-name').value=''; document.getElementById('nm-pw').value=''; document.getElementById('nm-str').style.width='0';
 }
 
@@ -1980,6 +2030,107 @@ function editPhone(uid){
   logA('security','WhatsApp number saved for '+u.name);
   saveD();renderPwMgmt();
   if(u.phone) alert('Saved! '+u.name+' will receive WhatsApp task notifications.');
+}
+
+
+// ── Supabase Background Sync ───────────────────────────────────────────────
+const SUPA_URL='https://xtncwwblkblcqospzxdh.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k';
+
+async function sbGet(table, params) {
+  try {
+    const r = await fetch(SUPA_URL+'/rest/v1/'+table+'?'+params, {
+      headers: {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    if(!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+async function sbPost(table, body) {
+  try {
+    await fetch(SUPA_URL+'/rest/v1/'+table, {
+      method:'POST',
+      headers: {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify(body)
+    });
+  } catch(e) {}
+}
+
+async function sbPatch(table, params, body) {
+  try {
+    await fetch(SUPA_URL+'/rest/v1/'+table+'?'+params, {
+      method:'PATCH',
+      headers: {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify(body)
+    });
+  } catch(e) {}
+}
+
+async function sbDelete(table, params) {
+  try {
+    await fetch(SUPA_URL+'/rest/v1/'+table+'?'+params, {
+      method:'DELETE',
+      headers: {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+  } catch(e) {}
+}
+
+// Sync users from Supabase — called on every company select
+// This ensures password changes on any device are reflected everywhere
+async function syncUsersFromSupabase(coId) {
+  const rows = await sbGet('users', 'company_id=eq.'+coId+'&order=id.asc');
+  if(!rows || !rows.length) {
+    // No users in Supabase yet — push local users up
+    for(const u of D.users) {
+      await sbPost('users', {id:u.id, company_id:coId, name:u.name, role:u.role, password:u.password||'', phone:u.phone||''});
+    }
+    return;
+  }
+  // Merge: Supabase is source of truth for passwords and phones
+  rows.forEach(row => {
+    const local = D.users.find(u=>u.id===row.id);
+    if(local) {
+      local.password = row.password || local.password;
+      local.phone = row.phone || local.phone;
+      local.role = row.role || local.role;
+    } else {
+      D.users.push({id:row.id, name:row.name, role:row.role, password:row.password||'', phone:row.phone||''});
+    }
+  });
+  // Save merged users to localStorage
+  saveD();
+}
+
+// Push a single user update to Supabase
+async function pushUserToSupabase(user) {
+  const row = {id:user.id, company_id:currentCo.id, name:user.name, role:user.role, password:user.password||'', phone:user.phone||''};
+  // Try patch first, then insert
+  await sbPatch('users', 'id=eq.'+user.id+'&company_id=eq.'+currentCo.id, {password:user.password||'', phone:user.phone||''});
+  // Also post in case it doesn't exist
+  await sbPost('users', row).catch(()=>{});
+}
+
+// Push full D to Supabase in background (sales, expenses, tasks)
+async function pushDataToSupabase() {
+  if(!currentCo || !D) return;
+  const coId = currentCo.id;
+  // Push recent sales (last 5)
+  for(const s of (D.sales||[]).slice(0,5)) {
+    const row = {id:s.id,company_id:coId,date:s.date,items:s.items,amount:s.amount,cost:s.cost,pnl:s.pnl,paid_amount:s.paidAmount,payment_status:s.paymentStatus,cust_name:s.custName||'Walk-in',channel:s.channel,payment:s.payment,ref:s.ref,notes:s.notes||'',by_user:s.by};
+    await sbPost('sales', row).catch(()=>{});
+  }
+  // Push recent expenses (last 5)  
+  for(const e of (D.expenses||[]).slice(0,5)) {
+    const row = {id:e.id,company_id:coId,date:e.date,amount:e.amount,cat:e.cat,vendor:e.vendor||'',ref:e.ref||'',paymethod:e.paymethod||'',notes:e.notes||'',by_user:e.by};
+    await sbPost('expenses', row).catch(()=>{});
+  }
+  // Push recent tasks (last 5)
+  for(const t of (D.tasks||[]).slice(0,5)) {
+    const row = {id:t.id,company_id:coId,title:t.title,assignee:t.assignee,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt};
+    await sbPatch('tasks','id=eq.'+t.id+'&company_id=eq.'+coId,{status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null});
+    await sbPost('tasks', row).catch(()=>{});
+  }
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
