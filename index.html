@@ -958,11 +958,6 @@ function selectCo(id){
   D=saved||defD();
   ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; });
   D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
-  // Sync users from Supabase in background so passwords are always current
-  syncUsersFromSupabase(id).then(()=>{
-    const ul=document.getElementById('usel-list');
-    if(ul && document.getElementById('step-pick').style.display!=='none') showPickStep();
-  }).catch(()=>{});
   if(!saved&&id==='baraka'){ D.sales=seedData(); saveD(); }
   document.getElementById('co-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
@@ -1098,7 +1093,7 @@ function openSetPw(uid){
   document.getElementById('setpw-modal').classList.add('open');
 }
 
-async async function saveNewPw(){
+async function saveNewPw(){
   const np=document.getElementById('setpw-new').value;
   const cp=document.getElementById('setpw-confirm').value;
   const err=document.getElementById('setpw-error');
@@ -1112,8 +1107,11 @@ async async function saveNewPw(){
   document.getElementById('setpw-modal').classList.remove('open');
   // Save to Supabase
   const ok = await upsertUserSupa(u);
-  if(ok) alert('Password for '+u.name+' updated on ALL devices ✓');
-  else alert('Password saved locally. Could not sync — check your internet connection.');
+  if(ok) {
+    alert('✅ Password for '+u.name+' updated on ALL devices!\n\nAnyone logged in on other devices will get the new password next time they open the login screen.');
+  } else {
+    alert('⚠️ Password saved on this device but could not sync to other devices.\n\nCheck your internet connection and try again.');
+  }
 }
 
 async function editPhone(uid){
@@ -1127,7 +1125,7 @@ async function editPhone(uid){
   if(ok && u.phone) alert('Number saved for '+u.name+' on all devices ✓');
   else if(u.phone) alert('Number saved locally. Could not sync — check internet.');
 }
-async async function addMember(){
+async function addMember(){
   const name=document.getElementById('nm-name').value.trim();
   const role=document.getElementById('nm-role').value;
   const pw=document.getElementById('nm-pw').value;
@@ -2067,15 +2065,7 @@ function sendWhatsApp(){
   window.open(url,'_blank');
   document.getElementById('wa-modal').classList.remove('open');
 }
-function editPhone(uid){
-  const u=D.users.find(x=>x.id===uid);if(!u)return;
-  const ph=prompt('WhatsApp number for '+u.name+' (e.g. 0712345678)',u.phone||'');
-  if(ph===null)return;
-  u.phone=ph.trim();
-  logA('security','WhatsApp number saved for '+u.name);
-  saveD();renderPwMgmt();
-  if(u.phone) alert('Saved! '+u.name+' will receive WhatsApp task notifications.');
-}
+
 
 
 // ── Supabase Background Sync ───────────────────────────────────────────────
@@ -2181,26 +2171,41 @@ async function pushDataToSupabase() {
 
 // ── Supabase user sync ────────────────────────────────────────────────────────
 async function upsertUserSupa(u) {
+  const headers = {
+    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k',
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k',
+    'Content-Type': 'application/json'
+  };
+  const body = JSON.stringify({
+    id: u.id,
+    company_id: currentCo.id,
+    name: u.name,
+    role: u.role,
+    password: u.password || '',
+    phone: u.phone || ''
+  });
   try {
-    const res = await fetch('https://xtncwwblkblcqospzxdh.supabase.co/rest/v1/users', {
-      method: 'POST',
-      headers: {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k',
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({
-        id: u.id,
-        company_id: currentCo.id,
-        name: u.name,
-        role: u.role,
-        password: u.password || '',
-        phone: u.phone || ''
-      })
+    // Step 1: Try PATCH (update if exists)
+    const patch = await fetch('https://xtncwwblkblcqospzxdh.supabase.co/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id, {
+      method: 'PATCH',
+      headers: {...headers, 'Prefer': 'return=representation'},
+      body
     });
-    return res.ok;
-  } catch(e) { return false; }
+    if(patch.ok) {
+      const rows = await patch.json();
+      if(rows && rows.length > 0) return true; // updated successfully
+    }
+    // Step 2: Row doesn't exist — INSERT it
+    const post = await fetch('https://xtncwwblkblcqospzxdh.supabase.co/rest/v1/users', {
+      method: 'POST',
+      headers: {...headers, 'Prefer': 'return=minimal'},
+      body
+    });
+    return post.ok;
+  } catch(e) {
+    console.error('upsertUserSupa error:', e);
+    return false;
+  }
 }
 
 async function fetchUsersSupa(coId) {
