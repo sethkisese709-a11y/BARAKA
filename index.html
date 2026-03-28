@@ -256,7 +256,23 @@ input,textarea,select{-webkit-user-select:text;user-select:text}
   <div class="co-card">
     <div class="co-logo">Baraka Enterprise</div>
     <div class="co-tagline">Office &amp; Home Furniture Group</div>
-    <div class="co-grid" id="co-grid"></div>
+    <div class="co-grid" id="co-grid">
+      <button class="co-btn parent" onclick="selectCo('baraka')">
+        <div class="co-dot" style="background:#3C3489"></div>
+        <div class="co-name">Baraka Enterprise</div>
+        <div class="co-desc">Parent — Office &amp; Home Furniture</div>
+      </button>
+      <button class="co-btn" onclick="selectCo('tk')">
+        <div class="co-dot" style="background:#185FA5"></div>
+        <div class="co-name">TK Furnitures</div>
+        <div class="co-desc">Subsidiary</div>
+      </button>
+      <button class="co-btn" onclick="selectCo('lux')">
+        <div class="co-dot" style="background:#0F6E56"></div>
+        <div class="co-name">Luxecraft Furnitures</div>
+        <div class="co-desc">Subsidiary</div>
+      </button>
+    </div>
     <div class="section-divider">
       <div class="section-label">Add subsidiary</div>
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:end">
@@ -1058,6 +1074,11 @@ function handleRealtimeEvent(table, event, payload) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   companies = DEF_COS.map(c=>({...c}));
+  // Show companies immediately — don't wait for anything
+  const grid = document.getElementById('co-grid');
+  if(grid && !grid.querySelector('button')) {
+    grid.innerHTML=companies.map(co=>`<button class="co-btn${co.parent?' parent':''}" onclick="selectCo('${co.id}')"><div class="co-dot" style="background:${co.color}"></div><div class="co-name">${co.name}</div><div class="co-desc">${co.desc}</div></button>`).join('');
+  }
   renderCoScreen();
   // iOS banner
   if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone&&!localStorage.getItem('ios_ok')) {
@@ -1070,7 +1091,9 @@ function renderCoScreen() {
   document.getElementById('co-screen').style.display='block';
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-app').style.display='none';
-  document.getElementById('co-grid').innerHTML=companies.map(co=>`<button class="co-btn${co.parent?' parent':''}" onclick="selectCo('${co.id}')"><div class="co-dot" style="background:${co.color}"></div><div class="co-name">${co.name}</div><div class="co-desc">${co.desc}</div></button>`).join('');
+  // Only re-render grid if companies have been customised (more than default 3)
+  const grid = document.getElementById('co-grid');
+  if(grid) grid.innerHTML=companies.map(co=>`<button class="co-btn${co.parent?' parent':''}" onclick="selectCo('${co.id}')"><div class="co-dot" style="background:${co.color}"></div><div class="co-name">${co.name}</div><div class="co-desc">${co.desc}</div></button>`).join('');
 }
 function addCompany() {
   const n=document.getElementById('new-co-name').value.trim(); if(!n) return;
