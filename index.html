@@ -996,11 +996,33 @@ function pickUser(uid){
 
 function backToPickUser(){ showPickStep(); }
 
-function tryLogin(){
+async function tryLogin(){
   const entered=document.getElementById('pw-input').value;
-  if(!loginTargetUser.password){ document.getElementById('pw-error').textContent='No password set. Ask your owner or manager to set one.'; return; }
-  if(entered===loginTargetUser.password){ doLogin(loginTargetUser); }
-  else { document.getElementById('pw-error').textContent='Incorrect password. Please try again.'; document.getElementById('pw-input').value=''; document.getElementById('pw-input').focus(); }
+  const errEl=document.getElementById('pw-error');
+  const btn=document.querySelector('#step-pw .btn');
+  if(btn){btn.textContent='Checking...';btn.disabled=true;}
+  // Always check Supabase first for latest password
+  try{
+    const r=await fetch('https://xtncwwblkblcqospzxdh.supabase.co/rest/v1/users?company_id=eq.'+currentCo.id+'&id=eq.'+loginTargetUser.id,{
+      headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k'}
+    });
+    if(r.ok){
+      const rows=await r.json();
+      if(rows&&rows.length){
+        // Update local user with latest password from Supabase
+        loginTargetUser.password=rows[0].password||loginTargetUser.password;
+        loginTargetUser.phone=rows[0].phone||loginTargetUser.phone;
+        // Also update in D.users
+        const du=D.users.find(u=>u.id===loginTargetUser.id);
+        if(du){du.password=loginTargetUser.password;du.phone=loginTargetUser.phone;}
+        saveD();
+      }
+    }
+  }catch(e){}
+  if(btn){btn.textContent='Log in';btn.disabled=false;}
+  if(!loginTargetUser.password){errEl.textContent='No password set. Ask your owner or manager.';return;}
+  if(entered===loginTargetUser.password){doLogin(loginTargetUser);}
+  else{errEl.textContent='Incorrect password. Please try again.';document.getElementById('pw-input').value='';document.getElementById('pw-input').focus();}
 }
 
 function doLogin(user){
@@ -1068,9 +1090,22 @@ function saveNewPw(){
   logA('security','Password updated for '+u.name);
   saveD(); renderPwMgmt();
   document.getElementById('setpw-modal').classList.remove('open');
-  // Push to Supabase so all devices get the new password
-  pushUserToSupabase(u).catch(()=>{});
-  alert('Password for '+u.name+' updated successfully.');
+  // Push to Supabase immediately with upsert
+  fetch('https://xtncwwblkblcqospzxdh.supabase.co/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,{
+    method:'PATCH',
+    headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k','Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({password:u.password,phone:u.phone||''})
+  }).then(r=>{
+    if(!r.ok){
+      // Row may not exist yet — insert it
+      return fetch('https://xtncwwblkblcqospzxdh.supabase.co/rest/v1/users',{
+        method:'POST',
+        headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bmN3d2Jsa2JsY3Fvc3B6eGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTY1ODIsImV4cCI6MjA5MDIzMjU4Mn0.zw0LsqR1YTAmIzWiwAmDafWOnrBCshYi3S9VhGMjb5k','Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify({id:u.id,company_id:currentCo.id,name:u.name,role:u.role,password:u.password,phone:u.phone||''})
+      });
+    }
+  }).catch(()=>{});
+  alert('Password for '+u.name+' updated. All devices will use the new password.');
 }
 
 function editPhone(uid){
