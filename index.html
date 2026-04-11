@@ -887,31 +887,48 @@ function doLogin(user){
   const rb=document.getElementById('top-role'); rb.textContent=currentUser.role; rb.className='badge '+rcC(currentUser.role);
   dashMonth=tM();
   buildNav(); setDates();
-  // Fetch ALL data from Supabase in background — never blocks login
+  // Sync with Supabase in background — NEVER blocks login, NEVER loses data
   fetchAllFromSupa(currentCo.id).then(d=>{
     if(!d) return;
-    if(d.users&&d.users.length){
-      const ids=new Set(d.users.map(r=>r.id));
+    // Helper: merge local into Supabase — push any local records not in Supabase
+    function syncBoth(supaRows, localRows, mapFn, pushFn) {
+      if(supaRows&&supaRows.length) {
+        const supaIds=new Set(supaRows.map(r=>r.id));
+        const localOnly=localRows.filter(r=>!supaIds.has(r.id));
+        // Push local-only records to Supabase so they're not lost
+        localOnly.forEach(r=>pushFn(r));
+        // Merge: Supabase data + local-only records
+        return [...supaRows.map(mapFn), ...localOnly];
+      } else {
+        // Supabase empty — push everything local up
+        localRows.forEach(r=>pushFn(r));
+        return localRows;
+      }
+    }
+    D.sales    = syncBoth(d.sales,     D.sales||[],     mapSale,  pushSale);
+    D.expenses = syncBoth(d.expenses,  D.expenses||[],  mapExp,   pushExp);
+    D.inventory= syncBoth(d.inventory, D.inventory||[], r=>r,     pushItem);
+    D.customers= syncBoth(d.customers, D.customers||[], r=>r,     pushCust);
+    D.suppliers= syncBoth(d.suppliers, D.suppliers||[], r=>r,     pushSup);
+    D.tasks    = syncBoth(d.tasks,     D.tasks||[],     mapTask,  pushTask);
+    // Users — always trust Supabase for passwords, push new local users up
+    if(d.users&&d.users.length) {
+      const supaIds=new Set(d.users.map(r=>r.id));
+      const localOnly=(D.users||[]).filter(u=>!supaIds.has(u.id));
+      localOnly.forEach(u=>pushUser(u));
       D.users=d.users.map(r=>mapUser(r));
-    } else { D.users.forEach(u=>pushUser(u)); }
-    if(d.sales&&d.sales.length) D.sales=mergeData(d.sales,D.sales,mapSale);
-    else D.sales.forEach(s=>pushSale(s));
-    if(d.expenses&&d.expenses.length) D.expenses=mergeData(d.expenses,D.expenses,mapExp);
-    else D.expenses.forEach(e=>pushExp(e));
-    if(d.inventory&&d.inventory.length) D.inventory=mergeData(d.inventory,D.inventory,r=>r);
-    else D.inventory.forEach(i=>pushItem(i));
-    if(d.customers&&d.customers.length) D.customers=mergeData(d.customers,D.customers,r=>r);
-    else D.customers.forEach(cu=>pushCust(cu));
-    if(d.suppliers&&d.suppliers.length) D.suppliers=mergeData(d.suppliers,D.suppliers,r=>r);
-    else D.suppliers.forEach(s=>pushSup(s));
-    if(d.tasks&&d.tasks.length) D.tasks=mergeData(d.tasks,D.tasks,mapTask);
-    else D.tasks.forEach(t=>pushTask(t));
+    } else { (D.users||[]).forEach(u=>pushUser(u)); }
     saveD();
-    // Refresh current page
+    // Mark this device as synced
+    localStorage.setItem('baraka_synced_'+currentCo.id,'1');
+    // Refresh current page with latest data
     try{
       const pg=document.querySelector('.page.on')?.id||'';
       if(pg.includes('dashboard'))renderDash();
       else if(pg.includes('tasks')){renderTasksMetrics();renderTasks();}
+      else if(pg.includes('sales'))renderSales();
+      else if(pg.includes('expenses'))renderExpenses();
+      else if(pg.includes('inventory'))renderInv();
     }catch(e){}
   }).catch(()=>{});
   if(currentUser.role==='delivery'){ goPage('tasks'); }
@@ -1528,15 +1545,28 @@ const TASK_STATUS={
 
 function initTasksPage(){
   if(!D.tasks) D.tasks=[];
-  const isOwner=currentUser.role==='owner';
+  const role=currentUser.role;
+  const isOwner=role==='owner';
+  const isViewer=role==='manager'||role==='staff'; // can view all, cannot edit
+  const isDelivery=role==='delivery';
   // Refresh tasks silently from Supabase every time tasks page opens
   sbFetch('tasks','company_id=eq.'+currentCo.id+'&order=created_at.desc&limit=200').then(rows=>{
     if(rows&&rows.length){D.tasks=mergeData(rows,D.tasks,mapTask);saveD();renderTasksMetrics();renderTasks();checkUnreadTasks();}
   }).catch(()=>{});
 
-  // Show/hide create card
+  // Show/hide create card — only owner can assign tasks
   document.getElementById('task-create-card').style.display=isOwner?'block':'none';
-  document.getElementById('my-tasks-banner').style.display=isOwner?'none':'block';
+  const banner=document.getElementById('my-tasks-banner');
+  if(banner){
+    if(isViewer){
+      banner.innerHTML='<div style="background:var(--bg2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--text2);border:1px solid var(--border)">👁 Viewing all tasks — read only</div>';
+      banner.style.display='block';
+    } else if(isDelivery){
+      banner.style.display='block';
+    } else {
+      banner.style.display='none';
+    }
+  }
 
   if(isOwner){
     // Owner: populate assignee dropdown
@@ -1569,8 +1599,22 @@ function initTasksPage(){
         <option value="meeting">Meeting</option>
         <option value="other">Other</option>
       </select>`;
+  } else if(isViewer) {
+    // Manager/Staff: see ALL tasks, read-only, no create/edit/delete
+    document.getElementById('tasks-list-title').textContent='All tasks';
+    document.getElementById('task-filters').innerHTML=`
+      <select id="tf-assignee" onchange="renderTasks()" style="font-size:11px;padding:4px 7px;border-radius:var(--radius);border:0.5px solid var(--border2)">
+        <option value="all">All members</option>
+        ${D.users.map(u=>`<option value="${u.name}">${u.name}</option>`).join('')}
+      </select>
+      <select id="tf-status" onchange="renderTasks()" style="font-size:11px;padding:4px 7px;border-radius:var(--radius);border:0.5px solid var(--border2)">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="in-progress">In progress</option>
+        <option value="done">Done</option>
+      </select>`;
   } else {
-    // Staff/Manager: heading shows their name, filter by status only
+    // Delivery: only their own tasks
     const myTasks=D.tasks.filter(t=>t.assignee===currentUser.name);
     const myPending=myTasks.filter(t=>t.status==='pending'||t.status==='in-progress').length;
     document.getElementById('my-tasks-heading').textContent=
@@ -1582,6 +1626,7 @@ function initTasksPage(){
         <option value="all">All</option>
         <option value="done">Completed</option>
       </select>`;
+    checkUnreadTasks();
   }
   renderTasksMetrics();
   renderTasks();
@@ -1687,8 +1732,9 @@ function renderTasks(){
   const isOwner=currentUser.role==='owner';
 
   // Filter logic differs by role
+  const isViewer2=currentUser.role==='manager'||currentUser.role==='staff';
   let filtered;
-  if(isOwner){
+  if(isOwner||isViewer2){
     const byAssignee=(document.getElementById('tf-assignee')||{}).value||'all';
     const byStatus=(document.getElementById('tf-status')||{}).value||'all';
     const byType=(document.getElementById('tf-type')||{}).value||'all';
@@ -1727,7 +1773,8 @@ function renderTasks(){
     const isUrgent=t.priority==='urgent';
     const isDone=t.status==='done'||t.status==='cancelled';
     const isAssignee=t.assignee===currentUser.name;
-    const canMarkDone=isAssignee&&!isDone;
+    const isReadOnly=currentUser.role==='manager'||currentUser.role==='staff';
+    const canMarkDone=isAssignee&&!isDone&&!isReadOnly;
     const timeStr=t.timeStart?(fmt12(t.timeStart)+(t.timeEnd?' – '+fmt12(t.timeEnd):'')):'';
 
     return`<div class="task-card ${isUrgent&&!isDone?'urgent':''} ${isDone?'done-card':''}">
