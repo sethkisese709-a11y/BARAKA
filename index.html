@@ -675,6 +675,112 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+
+<!-- ═══════════════════════════════════════════════════
+     ACCOUNTS PAGE — Staff 1 (Accountant) hub
+═══════════════════════════════════════════════════ -->
+<div id="pg-accounts" class="page">
+
+  <!-- Metrics row -->
+  <div class="metrics" id="acc-metrics"></div>
+
+  <!-- Delivery tasks awaiting conversion -->
+  <div class="card">
+    <div class="ct">Deliveries awaiting conversion to sale</div>
+    <div id="acc-deliveries"></div>
+  </div>
+
+  <!-- Payment follow-up -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:6px">
+      <div class="ct" style="margin-bottom:0">Outstanding payments</div>
+      <select id="acc-fup-filter" onchange="renderAccounts()" style="font-size:11px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <option value="all">All outstanding</option>
+        <option value="overdue">Overdue only</option>
+        <option value="pending">Pending only</option>
+        <option value="partial">Partial only</option>
+      </select>
+    </div>
+    <div id="acc-followup"></div>
+  </div>
+
+  <!-- Monthly close summary -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:6px">
+      <div class="ct" style="margin-bottom:0">Monthly summary</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="acc-month" onchange="renderAccounts()" style="font-size:11px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2)"></select>
+        <button class="btn bsm" onclick="shareMonthSummary()" style="background:var(--black);color:#fff;border-color:var(--black)">📤 Share</button>
+      </div>
+    </div>
+    <div id="acc-monthly"></div>
+  </div>
+
+  <!-- Supplier payments due -->
+  <div class="card">
+    <div class="ct">Supplier balances</div>
+    <div id="acc-suppliers"></div>
+  </div>
+
+  <!-- Quick expense entry -->
+  <div class="card">
+    <div class="ct">Quick expense</div>
+    <div class="fg">
+      <div class="fl"><label>Category</label>
+        <select id="qe-cat">
+          <option>Raw materials / wood</option><option>Labour / wages</option>
+          <option>Transport / delivery</option><option>Tools &amp; equipment</option>
+          <option>Rent / utilities</option><option>Marketing</option><option>Other</option>
+        </select>
+      </div>
+      <div class="fl"><label>Amount (KES)</label><input type="number" id="qe-amt" placeholder="0"></div>
+      <div class="fl"><label>Paid to</label><input type="text" id="qe-vendor" placeholder="e.g. Timber supplier"></div>
+      <div class="fl"><label>Ref / M-Pesa code</label><input type="text" id="qe-ref"></div>
+      <div class="fl"><label>Method</label>
+        <select id="qe-method"><option>M-Pesa</option><option>Cash</option><option>Bank transfer</option><option>Paybill</option></select>
+      </div>
+      <div class="fl"><label>Date</label><input type="date" id="qe-date"></div>
+    </div>
+    <div class="br">
+      <button class="btn" onclick="saveQuickExpense()" style="background:var(--black);color:#fff;border-color:var(--black);padding:9px 18px">Save expense</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- CONVERT TASK TO SALE MODAL -->
+<div class="modal-bg" id="m-convert" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:460px">
+    <button class="mc-close" onclick="document.getElementById('m-convert').classList.remove('open')">✕</button>
+    <div class="ct">Convert delivery to sale</div>
+    <div id="conv-task-info" style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;margin-bottom:1rem;font-size:12px;border:1px solid var(--border)"></div>
+    <div class="fg">
+      <div class="fl ff"><label>Customer name</label><input type="text" id="conv-cust" placeholder="e.g. Jane Wanjiku"></div>
+      <div class="fl"><label>Sale amount (KES)</label><input type="number" id="conv-amt"></div>
+      <div class="fl"><label>Cost price (KES)</label><input type="number" id="conv-cost" placeholder="0"></div>
+      <div class="fl"><label>Payment status</label>
+        <select id="conv-ps" onchange="togConvPart()">
+          <option value="paid">Fully paid</option>
+          <option value="pending">Pending</option>
+          <option value="partial">Partially paid</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+      <div class="fl" id="conv-pa-row" style="display:none"><label>Amount paid (KES)</label><input type="number" id="conv-pa"></div>
+      <div class="fl"><label>Payment method</label>
+        <select id="conv-pay"><option>M-Pesa</option><option>Cash</option><option>Bank transfer</option><option>Paybill</option></select>
+      </div>
+      <div class="fl"><label>M-Pesa / Ref code</label><input type="text" id="conv-ref"></div>
+      <div class="fl"><label>Channel</label>
+        <select id="conv-ch"><option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Website</option><option>Phone call</option><option>Walk-in</option></select>
+      </div>
+    </div>
+    <div class="br">
+      <button class="btn" onclick="confirmConvert()" style="background:var(--black);color:#fff;border-color:var(--black);padding:10px 20px;width:100%">✓ Create sale record</button>
+    </div>
+  </div>
+</div>
+
 <!-- EVIDENCE MODAL -->
 <div class="modal-bg" id="ev-modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal"><button class="mc-close" onclick="document.getElementById('ev-modal').classList.remove('open')">✕</button><div id="ev-mc"></div></div>
@@ -1014,15 +1120,17 @@ function removeMember(uid){
 // ── Nav & Pages ───────────────────────────────────────────────────────────────
 function buildNav(){
   const isDelivery=currentUser.role==='delivery';
+  const isAccountant=currentUser.role==='staff'; // Staff 1 is accountant
   const p=isDelivery
-    ?[{id:'tasks',l:'📋 My Tasks'}]
+    ?[{id:'tasks',l:'My Tasks'}]
     :[{id:'dashboard',l:'Dashboard'},{id:'quick',l:'Quick record'},{id:'sales',l:'Sales'},{id:'expenses',l:'Expenses'},{id:'inventory',l:'Inventory'},{id:'customers',l:'Customers'},{id:'suppliers',l:'Suppliers'},{id:'tasks',l:'Tasks'}];
   if(!isDelivery&&can('pl')) p.push({id:'pl',l:'P&L'});
   if(!isDelivery&&can('team')) p.push({id:'team',l:'Team'});
+  if(!isDelivery&&(isAccountant||currentUser.role==='owner'||currentUser.role==='manager')) p.push({id:'accounts',l:'📊 Accounts'});
   if(!isDelivery) p.push({id:'ai',l:'AI'});
   document.getElementById('main-nav').innerHTML=p.map(x=>`<button class="nb" id="nb-${x.id}" onclick="goPage('${x.id}')">${x.l}</button>`).join('');
 }
-function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI}[pg]||(() =>{}))(); }
+function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts}[pg]||(() =>{}))(); }
 function setDates(){ ['s-date','e-date'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.value=today(); }); }
 function allMonths(){ const ms=new Set([...D.sales.map(r=>r.date.substring(0,7)),...D.expenses.map(r=>r.date.substring(0,7))]); return[...ms].sort().reverse(); }
 function popMonths(){ const o='<option value="all">All months</option>'+allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`).join(''); ['sf-mo','ef-mo','pl-mo'].forEach(id=>{ const el=document.getElementById(id); if(el){ const v=el.value; el.innerHTML=o; el.value=v||'all'; }}); }
@@ -1527,6 +1635,7 @@ function seedData(){ return [{id:1,date:'2025-06-13',items:[{pid:'',name:'1.2m D
 
 // ── TASKS ─────────────────────────────────────────────────────────────────────
 let selectedTaskType='dispatch';
+let _taskStatusFilter='all'; // tracks which status card is active
 
 const TASK_TYPE_META={
   'dispatch':   {icon:'🚚', label:'Dispatch',    showClient:true},
@@ -1661,6 +1770,25 @@ function setTaskType(type, btn){
   if(titleEl) titleEl.placeholder=placeholders[type]||'Describe the task...';
 }
 
+
+function setTaskStatusFilter(status){
+  _taskStatusFilter=status;
+  // Update the tf-status dropdown if it exists
+  const sel=document.getElementById('tf-status');
+  if(sel){
+    const map={'all':'all','pending':'pending','in-progress':'in-progress','done':'done','cancelled':'cancelled'};
+    sel.value=map[status]||'all';
+  }
+  // Highlight active metric card
+  document.querySelectorAll('#tasks-metrics .mc').forEach((el,i)=>{
+    const statuses=['pending','in-progress','done','all'];
+    el.style.borderBottom=statuses[i]===status?'3px solid var(--black)':'none';
+    el.style.background=statuses[i]===status?'var(--bg3)':'';
+  });
+  renderTasksMetrics();
+  renderTasks();
+}
+
 function createTask(){
   if(!D.tasks) D.tasks=[];
   const assignee=document.getElementById('task-assignee').value;
@@ -1721,10 +1849,25 @@ function renderTasksMetrics(){
   const done=mine.filter(t=>t.status==='done').length;
   const urgent=mine.filter(t=>t.priority==='urgent'&&t.status!=='done'&&t.status!=='cancelled').length;
   document.getElementById('tasks-metrics').innerHTML=`
-    <div class="mc"><div class="mc-l">${isOwner?'Pending':'Your pending'}</div><div class="mc-v a">${pending}</div></div>
-    <div class="mc"><div class="mc-l">In progress</div><div class="mc-v b">${inprog}</div></div>
-    <div class="mc"><div class="mc-l">Completed</div><div class="mc-v g">${done}</div></div>
-    <div class="mc"><div class="mc-l">Urgent</div><div class="mc-v r">${urgent}</div></div>`;
+    <div class="mc" style="cursor:pointer" onclick="setTaskStatusFilter('pending')">
+      <div class="mc-l">${isOwner?'Pending':'Your pending'}</div>
+      <div class="mc-v a">${pending}</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="setTaskStatusFilter('in-progress')">
+      <div class="mc-l">In progress</div>
+      <div class="mc-v b">${inprog}</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="setTaskStatusFilter('done')">
+      <div class="mc-l">Completed</div>
+      <div class="mc-v g">${done}</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="setTaskStatusFilter('all')">
+      <div class="mc-l">Urgent</div>
+      <div class="mc-v r">${urgent}</div>
+    </div>`;
+  // Active filter indicator
+  const af=document.getElementById('task-active-filter');
+  if(af) af.textContent=_taskStatusFilter==='all'?'All tasks':_taskStatusFilter==='pending'?'Pending tasks':_taskStatusFilter==='in-progress'?'In progress':_taskStatusFilter==='done'?'Completed':'Cancelled';
 }
 
 function renderTasks(){
@@ -1736,7 +1879,7 @@ function renderTasks(){
   let filtered;
   if(isOwner||isViewer2){
     const byAssignee=(document.getElementById('tf-assignee')||{}).value||'all';
-    const byStatus=(document.getElementById('tf-status')||{}).value||'all';
+    const byStatus=_taskStatusFilter!=='all'?_taskStatusFilter:(document.getElementById('tf-status')||{}).value||'all';
     const byType=(document.getElementById('tf-type')||{}).value||'all';
     filtered=tasks;
     if(byAssignee!=='all') filtered=filtered.filter(t=>t.assignee===byAssignee);
@@ -2020,6 +2163,290 @@ function sendWhatsApp(){if(!_waTask)return;const url=_waTask._phone?'https://wa.
 
 // Phone edit
 async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;const ph=prompt('WhatsApp number for '+u.name+' (e.g. 0712345678)',u.phone||'');if(ph===null)return;u.phone=ph.trim();logA('security','WhatsApp number updated for '+u.name);saveD();renderPwMgmt();const ok=await pushUser(u);if(ok&&u.phone)alert('Saved! '+u.name+' will receive WhatsApp notifications.');}
+
+
+// ════════════════════════════════════════════════════════
+// ACCOUNTS PAGE — Accountant (Staff 1) hub
+// ════════════════════════════════════════════════════════
+let convTaskId = null;
+
+function initAccounts(){
+  // Show/hide edit-only sections based on role
+  const isAcct=currentUser.role==='staff';
+  const qeCard=document.querySelector('#pg-accounts .card:last-child');
+  if(qeCard) qeCard.style.display=isAcct?'block':'none';
+  // Set quick expense date
+  const qd=document.getElementById('qe-date'); if(qd&&!qd.value) qd.value=today();
+  // Populate month selector
+  const ms=document.getElementById('acc-month');
+  if(ms){
+    const months=['<option value="all">All time</option>',...allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`)].join('');
+    const cur=ms.value;ms.innerHTML=months;ms.value=cur||tM();
+  }
+  renderAccounts();
+}
+
+function renderAccounts(){
+  const mo=(document.getElementById('acc-month')||{}).value||tM();
+  const fupFilter=(document.getElementById('acc-fup-filter')||{}).value||'all';
+
+  // ── Metrics ──────────────────────────────────────────
+  const mS=mo==='all'?D.sales:D.sales.filter(s=>s.date&&s.date.startsWith(mo));
+  const mE=mo==='all'?D.expenses:D.expenses.filter(e=>e.date&&e.date.startsWith(mo));
+  const rev=mS.reduce((t,s)=>t+(s.amount||0),0);
+  const exp=mE.reduce((t,e)=>t+(e.amount||0),0);
+  const pnl=mS.reduce((t,s)=>t+(s.pnl||0),0);
+  const outstanding=D.sales.filter(s=>s.paymentStatus!=='paid').reduce((t,s)=>t+(s.amount-(s.paidAmount||0)),0);
+  const delivPending=(D.tasks||[]).filter(t=>t.type==='dispatch'&&t.status==='done'&&!t.convertedToSale).length;
+  document.getElementById('acc-metrics').innerHTML=`
+    <div class="mc"><div class="mc-l">Revenue${mo!=='all'?' ('+fmtM(mo)+')':''}</div><div class="mc-v g">${fmt(rev)}</div></div>
+    <div class="mc"><div class="mc-l">Expenses</div><div class="mc-v r">${fmt(exp)}</div></div>
+    <div class="mc"><div class="mc-l">Gross PNL</div><div class="mc-v b">${fmt(pnl)}</div></div>
+    <div class="mc"><div class="mc-l">Outstanding</div><div class="mc-v a">${fmt(outstanding)}</div></div>
+    <div class="mc"><div class="mc-l">Pending deliveries</div><div class="mc-v ${delivPending?'r':'g'}">${delivPending}</div></div>`;
+
+  // ── Deliveries awaiting conversion ───────────────────
+  const toConvert=(D.tasks||[]).filter(t=>
+    (t.type==='dispatch'||t.type==='collection')&&
+    t.status==='done'&&!t.convertedToSale
+  );
+  const dEl=document.getElementById('acc-deliveries');
+  if(dEl){
+    if(!toConvert.length){
+      dEl.innerHTML='<div class="empty">No pending deliveries to convert.</div>';
+    } else {
+      dEl.innerHTML=toConvert.map(t=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:7px">
+          <div>
+            <div style="font-size:12px;font-weight:600">${t.typeIcon||'🚚'} ${t.title}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px">
+              ${t.date} · Assigned to ${t.assignee}
+              ${t.clientName?'· '+t.clientName:''}
+              ${t.amountOnDelivery?'<span style="color:var(--green);font-weight:600;margin-left:4px">'+fmt(t.amountOnDelivery)+'</span>':''}
+            </div>
+            ${t.completionNote?`<div style="font-size:11px;color:var(--text2);font-style:italic;margin-top:2px">Note: ${t.completionNote}</div>`:''}
+            ${t.amountCollected?`<div style="font-size:11px;color:var(--green);font-weight:600">Collected: ${fmt(t.amountCollected)}</div>`:''}
+          </div>
+          ${currentUser.role==='staff'?`<button class="btn bsm" onclick="openConvertModal(${t.id})" style="background:var(--black);color:#fff;border-color:var(--black)">+ Create sale</button>`:'<span class="badge bw">Pending conversion</span>'}
+        </div>`).join('');
+    }
+  }
+
+  // ── Payment follow-up ────────────────────────────────
+  let unpaid=D.sales.filter(s=>s.paymentStatus!=='paid');
+  if(fupFilter!=='all') unpaid=unpaid.filter(s=>s.paymentStatus===fupFilter);
+  unpaid.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const fuEl=document.getElementById('acc-followup');
+  if(fuEl){
+    if(!unpaid.length){
+      fuEl.innerHTML='<div class="empty">All payments collected ✓</div>';
+    } else {
+      fuEl.innerHTML=`
+        <div style="display:flex;justify-content:flex-end;margin-bottom:.6rem">
+          <span style="font-size:11px;font-weight:700;color:var(--red)">Total outstanding: ${fmt(unpaid.reduce((t,s)=>t+(s.amount-(s.paidAmount||0)),0))}</span>
+        </div>`+
+        unpaid.map(s=>{
+          const bal=(s.amount||0)-(s.paidAmount||0);
+          const days=Math.floor((new Date()-new Date(s.date+'T00:00'))/(1000*60*60*24));
+          return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:7px">
+            <div>
+              <div style="font-size:12px;font-weight:600">${s.custName||'Walk-in'} <span class="badge ${psC(s.paymentStatus)}">${psL(s.paymentStatus)}</span></div>
+              <div style="font-size:11px;color:var(--text2)">${s.date} · ${(s.items||[]).map(i=>i.name).join(', ').substring(0,40)} · ${days}d ago</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span style="font-size:12px;font-weight:700;color:var(--red)">${fmt(bal)}</span>
+              ${currentUser.role==='staff'?`<button class="btn bsm" onclick="openPU(${s.id})">Update</button>`:''}
+              <button class="btn bsm" onclick="followUpWA(${s.id})" style="background:#25D366;color:#fff;border-color:#25D366">📲 Follow up</button>
+            </div>
+          </div>`;
+        }).join('');
+    }
+  }
+
+  // ── Monthly summary ───────────────────────────────────
+  renderMonthlySummary(mo);
+
+  // ── Supplier balances ─────────────────────────────────
+  const supEl=document.getElementById('acc-suppliers');
+  if(supEl){
+    if(!D.suppliers||!D.suppliers.length){
+      supEl.innerHTML='<div class="empty">No suppliers added yet.</div>';
+    } else {
+      supEl.innerHTML='<div class="tbl-wrap"><table><thead><tr><th>Supplier</th><th>Category</th><th>Total paid</th><th>Last payment</th></tr></thead><tbody>'+
+        D.suppliers.map(s=>{
+          const paid=(D.expenses||[]).filter(e=>e.supId==s.id).reduce((t,e)=>t+(e.amount||0),0);
+          const last=(D.expenses||[]).filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—';
+          return`<tr><td style="font-weight:500">${s.name}</td><td>${s.cat||'—'}</td><td style="color:var(--amber);font-weight:600">${paid?fmt(paid):'—'}</td><td>${last}</td></tr>`;
+        }).join('')+
+      '</tbody></table></div>';
+    }
+  }
+}
+
+function renderMonthlySummary(mo){
+  const el=document.getElementById('acc-monthly'); if(!el) return;
+  const mS=mo==='all'?D.sales:D.sales.filter(s=>s.date&&s.date.startsWith(mo));
+  const mE=mo==='all'?D.expenses:D.expenses.filter(e=>e.date&&e.date.startsWith(mo));
+  const rev=mS.reduce((t,s)=>t+(s.amount||0),0);
+  const cost=mS.reduce((t,s)=>t+(s.cost||0),0);
+  const gpnl=mS.reduce((t,s)=>t+(s.pnl||0),0);
+  const exp=mE.reduce((t,e)=>t+(e.amount||0),0);
+  const net=gpnl-exp;
+  const paid=mS.filter(s=>s.paymentStatus==='paid').reduce((t,s)=>t+(s.amount||0),0);
+  const unpaid=mS.filter(s=>s.paymentStatus!=='paid').reduce((t,s)=>t+(s.amount-(s.paidAmount||0)),0);
+  const label=mo==='all'?'All time':fmtM(mo);
+  // Expenses by category
+  const ec={};mE.forEach(e=>{ec[e.cat]=(ec[e.cat]||0)+e.amount;});
+  el.innerHTML=`
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px 14px;margin-bottom:.85rem;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">${label}</div>
+      <div class="plr"><span>Gross revenue</span><span style="color:var(--green);font-weight:700">${fmt(rev)}</span></div>
+      <div class="plr"><span>Less: cost of goods</span><span style="color:var(--amber)">(${fmt(cost)})</span></div>
+      <div class="plr"><span>Gross PNL</span><span style="color:var(--blue);font-weight:700">${fmt(gpnl)}</span></div>
+      <div class="plr"><span>Less: other expenses</span><span style="color:var(--red)">(${fmt(exp)})</span></div>
+      <div class="plr" style="border-top:2px solid var(--border);padding-top:6px;margin-top:4px">
+        <span style="font-weight:800">Net profit / (loss)</span>
+        <span style="font-weight:800;color:${net>=0?'var(--blue)':'var(--red)'}">${fmt(net)}</span>
+      </div>
+      <div class="plr" style="margin-top:6px"><span style="color:var(--text2)">Cash collected</span><span style="color:var(--green)">${fmt(paid)}</span></div>
+      <div class="plr"><span style="color:var(--text2)">Still outstanding</span><span style="color:var(--red)">${fmt(unpaid)}</span></div>
+      ${Object.keys(ec).length?`<div style="margin-top:8px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:4px">Expenses breakdown</div>`+
+        Object.entries(ec).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="plr" style="font-size:11px"><span>${k}</span><span style="color:var(--red)">${fmt(v)}</span></div>`).join(''):''}
+    </div>`;
+}
+
+function shareMonthSummary(){
+  const mo=(document.getElementById('acc-month')||{}).value||tM();
+  const mS=mo==='all'?D.sales:D.sales.filter(s=>s.date&&s.date.startsWith(mo));
+  const mE=mo==='all'?D.expenses:D.expenses.filter(e=>e.date&&e.date.startsWith(mo));
+  const rev=mS.reduce((t,s)=>t+(s.amount||0),0);
+  const gpnl=mS.reduce((t,s)=>t+(s.pnl||0),0);
+  const exp=mE.reduce((t,e)=>t+(e.amount||0),0);
+  const net=gpnl-exp;
+  const unpaid=D.sales.filter(s=>s.paymentStatus!=='paid').reduce((t,s)=>t+(s.amount-(s.paidAmount||0)),0);
+  const label=mo==='all'?'All time':fmtM(mo);
+  const msg=`*${currentCo.name} — ${label} Summary*
+
+`+
+    `Revenue: ${fmt(rev)}
+`+
+    `Gross PNL: ${fmt(gpnl)}
+`+
+    `Expenses: ${fmt(exp)}
+`+
+    `*Net profit: ${fmt(net)}*
+`+
+    `Outstanding: ${fmt(unpaid)}
+
+`+
+    `Prepared by ${currentUser.name} · ${today()}`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function followUpWA(saleId){
+  const s=D.sales.find(x=>x.id===saleId); if(!s) return;
+  const bal=(s.amount||0)-(s.paidAmount||0);
+  const cust=D.customers.find(c=>c.id==s.custId);
+  const phone=cust&&cust.phone?cust.phone.replace(/[^0-9+]/g,''):'';
+  const msg=`Dear ${s.custName||'Customer'},
+
+This is a gentle reminder that you have an outstanding balance of *${fmt(bal)}* for your recent purchase from *${currentCo.name}*.
+
+Items: ${(s.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}
+Date: ${s.date}
+
+Kindly arrange payment at your earliest convenience.
+
+Thank you for your business!`;
+  const url=phone?`https://wa.me/${phone.replace(/^0/,'254')}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+}
+
+function openConvertModal(taskId){
+  convTaskId=taskId;
+  const t=D.tasks.find(x=>x.id===taskId); if(!t) return;
+  document.getElementById('conv-task-info').innerHTML=`
+    <div style="font-weight:600;margin-bottom:4px">${t.typeIcon||'🚚'} ${t.title}</div>
+    <div style="color:var(--text2);font-size:11px">${t.date} · ${t.assignee}</div>
+    ${t.clientName?`<div style="font-size:11px;margin-top:3px">Client: <strong>${t.clientName}</strong>${t.clientPhone?' · '+t.clientPhone:''}</div>`:''}
+    ${t.location?`<div style="font-size:11px;color:var(--text2)">📍 ${t.location}</div>`:''}
+    ${t.completionNote?`<div style="font-size:11px;font-style:italic;color:var(--text2);margin-top:3px">Note: ${t.completionNote}</div>`:''}`;
+  // Pre-fill from task
+  document.getElementById('conv-cust').value=t.clientName||'';
+  document.getElementById('conv-amt').value=t.amountOnDelivery||t.amountCollected||'';
+  document.getElementById('conv-cost').value='';
+  document.getElementById('conv-ref').value='';
+  document.getElementById('conv-ps').value=t.amountCollected>0?'paid':'pending';
+  togConvPart();
+  document.getElementById('m-convert').classList.add('open');
+}
+
+function togConvPart(){
+  const v=document.getElementById('conv-ps').value;
+  document.getElementById('conv-pa-row').style.display=v==='partial'?'flex':'none';
+}
+
+function confirmConvert(){
+  const t=D.tasks.find(x=>x.id===convTaskId); if(!t) return;
+  const amt=parseFloat(document.getElementById('conv-amt').value)||0;
+  const cost=parseFloat(document.getElementById('conv-cost').value)||0;
+  const ps=document.getElementById('conv-ps').value;
+  const pa=ps==='paid'?amt:ps==='partial'?(parseFloat(document.getElementById('conv-pa').value)||0):0;
+  if(!amt){alert('Enter the sale amount.');return;}
+  const custName=document.getElementById('conv-cust').value||t.clientName||'Walk-in';
+  const sale={
+    id:Date.now(),
+    date:t.date||today(),
+    items:[{pid:'',name:t.items||t.title,qty:1,price:amt,cost,type:'item'}],
+    amount:amt,cost,pnl:amt-cost,
+    paidAmount:pa,paymentStatus:ps,
+    custName,custId:'',
+    channel:'Walk-in',
+    payment:document.getElementById('conv-pay').value,
+    ref:document.getElementById('conv-ref').value||'',
+    notes:`From delivery task: ${t.title}`,
+    by:currentUser.name,evidence:null
+  };
+  D.sales.unshift(sale);
+  // Mark task as converted
+  t.convertedToSale=true;
+  t.saleId=sale.id;
+  logA('sale','Delivery converted: '+custName+' '+fmt(amt));
+  saveD();
+  pushSale(sale);
+  updateTask(t);
+  document.getElementById('m-convert').classList.remove('open');
+  renderAccounts();
+  alert('✅ Sale record created for '+custName+'!');
+}
+
+function saveQuickExpense(){
+  const amt=parseFloat(document.getElementById('qe-amt').value);
+  if(!amt||amt<=0){alert('Enter a valid amount.');return;}
+  const exp={
+    id:Date.now(),
+    date:document.getElementById('qe-date').value||today(),
+    amount:amt,
+    cat:document.getElementById('qe-cat').value,
+    vendor:document.getElementById('qe-vendor').value||'',
+    ref:document.getElementById('qe-ref').value||'',
+    paymethod:document.getElementById('qe-method').value,
+    notes:'',by:currentUser.name,supId:'',supName:'',evidence:null
+  };
+  D.expenses.unshift(exp);
+  logA('expense','Quick: '+exp.cat+' '+fmt(amt));
+  saveD();
+  pushExp(exp);
+  popMonths();
+  // Clear form
+  document.getElementById('qe-amt').value='';
+  document.getElementById('qe-vendor').value='';
+  document.getElementById('qe-ref').value='';
+  // Flash feedback
+  const btn=document.querySelector('#pg-accounts .btn[onclick="saveQuickExpense()"]');
+  if(btn){const o=btn.innerHTML;btn.innerHTML='✓ Saved!';setTimeout(()=>btn.innerHTML=o,1500);}
+  renderAccounts();
+}
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
