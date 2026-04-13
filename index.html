@@ -424,6 +424,14 @@ tr:hover td{background:var(--bg2)}
         <select id="sf-ch" onchange="renderSales()"><option value="all">All channels</option><option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Website</option><option>Phone call</option><option>Walk-in</option></select>
         <select id="sf-pay" onchange="renderSales()"><option value="all">All payments</option><option>M-Pesa</option><option>Paybill</option><option>Cash</option><option>Bank transfer</option><option>Credit</option></select>
       </div>
+      <div id="s-m" class="metrics" style="margin-bottom:.85rem"></div>
+      <div id="s-drilldown" style="display:none;margin-bottom:.85rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="ct" style="margin-bottom:0" id="s-dd-title">Detail</div>
+          <button onclick="document.getElementById('s-drilldown').style.display='none';document.querySelectorAll('#s-m .mc').forEach(el=>el.style.outline='')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit">✕ Close</button>
+        </div>
+        <div id="s-dd-content"></div>
+      </div>
       <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Items</th><th>Sale</th><th>Cost</th><th>PNL</th><th>Paid</th><th>Balance</th><th>Status</th><th>Customer</th><th>Channel</th><th>Method</th><th>Ref</th><th>By</th><th></th></tr></thead><tbody id="s-tbody"></tbody></table></div>
     </div>
   </div>
@@ -485,7 +493,15 @@ tr:hover td{background:var(--bg2)}
         <select id="ef-mo" onchange="renderExpenses()"></select>
         <select id="ef-cat" onchange="renderExpenses()"><option value="all">All categories</option><option>Raw materials / wood</option><option>Labour / wages</option><option>Transport / delivery</option><option>Tools &amp; equipment</option><option>Rent / utilities</option><option>Marketing</option><option>Other</option></select>
       </div>
-      <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Paid to</th><th>Method</th><th>Ref</th><th>Ev</th><th>By</th><th></th></tr></thead><tbody id="e-tbody"></tbody></table></div>
+      <div id="exp-m" class="metrics" style="margin-bottom:.85rem"></div>
+      <div id="exp-drilldown" style="display:none;margin-bottom:.85rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="ct" style="margin-bottom:0" id="exp-dd-title">Detail</div>
+          <button onclick="document.getElementById('exp-drilldown').style.display='none';document.querySelectorAll('#exp-m .mc').forEach(e=>e.style.outline='')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit">✕ Close</button>
+        </div>
+        <div id="exp-dd-content"></div>
+      </div>
+  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Paid to</th><th>Method</th><th>Ref</th><th>Ev</th><th>By</th><th></th></tr></thead><tbody id="e-tbody"></tbody></table></div>
     </div>
   </div>
 
@@ -506,7 +522,14 @@ tr:hover td{background:var(--bg2)}
         <div class="br"><button class="btn" onclick="addItem()">Save item</button></div>
       </div>
       <div class="card">
-        <div class="metrics" id="inv-m"></div>
+        <div class="metrics" id="inv-m" style="margin-bottom:.5rem"></div>
+      <div id="inv-drilldown" style="display:none;margin-bottom:.85rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="ct" style="margin-bottom:0" id="inv-dd-title">Detail</div>
+          <button onclick="document.getElementById('inv-drilldown').style.display='none';document.querySelectorAll('#inv-m .mc').forEach(el=>el.style.outline='')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit">✕ Close</button>
+        </div>
+        <div id="inv-dd-content"></div>
+      </div>
         <div class="ct">Stock list</div>
         <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Cost</th><th>Sell price</th><th>Margin</th><th>Status</th><th>Pin</th><th></th></tr></thead><tbody id="i-tbody"></tbody></table></div>
       </div>
@@ -531,13 +554,30 @@ tr:hover td{background:var(--bg2)}
     <div class="tabs"><button class="tab active" onclick="custT('single',this)">Add single</button><button class="tab" onclick="custT('bulk',this)">Bulk import</button><button class="tab" onclick="custT('list',this)">Customer list</button></div>
     <div id="c-single"><div class="card"><div class="fg"><div class="fl"><label>Full name</label><input type="text" id="c-name"></div><div class="fl"><label>Phone</label><input type="text" id="c-phone"></div><div class="fl"><label>Channel</label><select id="c-ch"><option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Website</option><option>Phone call</option><option>Walk-in</option></select></div><div class="fl"><label>Location</label><input type="text" id="c-loc"></div><div class="fl"><label>Type</label><select id="c-type"><option>Individual</option><option>Business</option><option>Interior designer</option><option>Contractor</option></select></div><div class="fl ff"><label>Notes</label><textarea id="c-notes"></textarea></div></div><div class="br"><button class="btn" onclick="addCust()">Save customer</button></div></div></div>
     <div id="c-bulk" style="display:none"><div class="card"><p style="font-size:11px;color:var(--text2);margin-bottom:.5rem">One per line: <code>Name, Phone, Channel, Location</code></p><textarea id="bulk-in" style="min-height:100px" placeholder="Jane Wanjiku, 0712345678, WhatsApp, Nairobi"></textarea><div class="br"><button class="btn" onclick="bulkImport()">Import</button><span id="bulk-res" style="font-size:12px;color:var(--green)"></span></div></div></div>
-    <div id="c-list" style="display:none"><div class="card"><div class="frow"><input type="text" id="c-search" placeholder="Search..." oninput="renderCust()" style="width:140px"><select id="c-chf" onchange="renderCust()"><option value="all">All channels</option><option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Website</option><option>Phone call</option><option>Walk-in</option></select></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Channel</th><th>Location</th><th>Type</th><th>Total spent</th><th>Outstanding</th><th>Last purchase</th><th></th></tr></thead><tbody id="c-tbody"></tbody></table></div></div></div>
+    <div id="c-list" style="display:none"><div class="card"><div class="frow"><input type="text" id="c-search" placeholder="Search..." oninput="renderCust()" style="width:140px"><select id="c-chf" onchange="renderCust()"><option value="all">All channels</option><option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Website</option><option>Phone call</option><option>Walk-in</option></select></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Channel</th><th>Location</th><th>Type</th><th>Total spent</th><th>Outstanding</th><th>Last purchase</th><th></th></tr></thead><tbody id="c-tbody"></tbody></table></div>
+      <div id="cust-m" class="metrics" style="margin-top:.85rem"></div>
+      <div id="cust-drilldown" style="display:none;margin-top:.5rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="ct" style="margin-bottom:0" id="cust-dd-title">Detail</div>
+          <button onclick="document.getElementById('cust-drilldown').style.display='none';document.querySelectorAll('#cust-m .mc').forEach(e=>e.style.outline='')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit">✕ Close</button>
+        </div>
+        <div id="cust-dd-content"></div>
+      </div>
+    </div></div>
   </div>
 
   <!-- SUPPLIERS -->
   <div id="pg-suppliers" class="page">
     <div class="card"><div class="ct">Add supplier</div><div class="fg"><div class="fl"><label>Name</label><input type="text" id="sup-name"></div><div class="fl"><label>Contact</label><input type="text" id="sup-contact"></div><div class="fl"><label>Phone</label><input type="text" id="sup-phone"></div><div class="fl"><label>Category</label><select id="sup-cat"><option>Timber / wood</option><option>Hardware &amp; tools</option><option>Fabric &amp; upholstery</option><option>Metal &amp; fittings</option><option>Varnish &amp; finishes</option><option>Other</option></select></div><div class="fl"><label>Terms</label><select id="sup-terms"><option>Cash on delivery</option><option>7-day credit</option><option>30-day credit</option><option>Prepayment</option></select></div><div class="fl ff"><label>Notes</label><textarea id="sup-notes"></textarea></div></div><div class="br"><button class="btn" onclick="addSup()">Save supplier</button></div></div>
-    <div class="card"><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Supplier</th><th>Contact</th><th>Phone</th><th>Category</th><th>Terms</th><th>Total paid</th><th>Last order</th><th></th></tr></thead><tbody id="sup-tbody"></tbody></table></div></div>
+    <div class="card"><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Supplier</th><th>Contact</th><th>Phone</th><th>Category</th><th>Terms</th><th>Total paid</th><th>Last order</th><th></th></tr></thead><tbody id="sup-tbody"></tbody></table></div>
+      <div id="sup-m" class="metrics" style="margin-top:.85rem"></div>
+      <div id="sup-drilldown" style="display:none;margin-top:.5rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="ct" style="margin-bottom:0" id="sup-dd-title">Detail</div>
+          <button onclick="document.getElementById('sup-drilldown').style.display='none';document.querySelectorAll('#sup-m .mc').forEach(e=>e.style.outline='')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit">✕ Close</button>
+        </div>
+        <div id="sup-dd-content"></div>
+      </div></div>
   </div>
 
   <!-- TEAM & PASSWORD MANAGEMENT -->
@@ -1747,7 +1787,8 @@ function addSale(){
   pushSale(sale);
   alert('Sale saved!');
 }
-function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay); document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
+function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay); document.renderSalesMetrics(rows);
+  getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
 function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); }
 
@@ -1845,7 +1886,8 @@ function addExpense(){
   const total=rows.reduce((s,r)=>s+r.amount,0);
   const badge=document.getElementById('exp-total-badge');
   if(badge) badge.textContent=rows.length?fmt(total)+' total':'';
-  document.getElementById('e-tbody').innerHTML=rows.length?rows.map(r=>{
+  document.renderExpensesMetrics(rows);
+  getElementById('e-tbody').innerHTML=rows.length?rows.map(r=>{
     const catObj=EXP_CATS.find(c=>c.cat===r.cat)||{icon:'📦'};
     return`<tr>
       <td>${r.date}</td>
@@ -1864,7 +1906,7 @@ function addExpense(){
 // ── Inventory ──────────────────────────────────────────────────────────────────
 function invT(t,btn){ document.getElementById('inv-i').style.display=t==='items'?'block':'none'; document.getElementById('inv-b').style.display=t==='bundles'?'block':'none'; document.querySelectorAll('#pg-inventory .tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(t==='bundles') renderBundles(); }
 function addItem(){ const name=document.getElementById('i-name').value.trim(); if(!name){ alert('Enter name.'); return; } const ex=D.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase()); if(ex){ ex.qty=parseInt(document.getElementById('i-qty').value)||ex.qty; ex.cat=document.getElementById('i-cat').value; ex.cost=parseFloat(document.getElementById('i-cost').value)||ex.cost||0; ex.sell=parseFloat(document.getElementById('i-sell').value)||ex.sell||0; ex.low=parseInt(document.getElementById('i-low').value)||ex.low||2; } else D.inventory.push({id:Date.now(),name,cat:document.getElementById('i-cat').value,qty:parseInt(document.getElementById('i-qty').value)||0,cost:parseFloat(document.getElementById('i-cost').value)||0,sell:parseFloat(document.getElementById('i-sell').value)||0,low:parseInt(document.getElementById('i-low').value)||2}); logA('inventory','Stock: '+name); saveD(); renderInv(); popAll(); const si=D.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase());if(si)pushItem(si); document.getElementById('i-name').value=''; document.getElementById('i-qty').value=1; document.getElementById('i-cost').value=''; document.getElementById('i-sell').value=''; }
-function renderInv(){ const tv=D.inventory.reduce((s,i)=>s+i.qty*(i.cost||0),0); const lc=D.inventory.filter(i=>i.qty<=i.low).length; document.getElementById('inv-m').innerHTML=`<div class="mc"><div class="mc-l">SKUs</div><div class="mc-v b">${D.inventory.length}</div></div><div class="mc"><div class="mc-l">Bundles</div><div class="mc-v p">${D.bundles.length}</div></div><div class="mc"><div class="mc-l">Stock value</div><div class="mc-v b">${fmt(tv)}</div></div><div class="mc"><div class="mc-l">Low stock</div><div class="mc-v ${lc?'r':'g'}">${lc}</div></div>`; document.getElementById('i-tbody').innerHTML=D.inventory.length?D.inventory.map(i=>{ const mg=i.sell&&i.cost?Math.round((i.sell-i.cost)/i.sell*100):0; const low=i.qty<=i.low; const pinned=D.pins.includes('i_'+i.id); return`<tr><td style="font-weight:500">${i.name}</td><td>${i.cat}</td><td style="color:${low?'var(--red)':'var(--green)'};font-weight:600">${i.qty}${low?' ⚠':''}</td><td>${fmt(i.cost)}</td><td>${fmt(i.sell)}</td><td>${mg?mg+'%':'—'}</td><td><span class="badge ${low?'be':'bi'}">${low?'Low':'OK'}</span></td><td><span class="badge ${pinned?'bg':'bw'}" style="cursor:pointer" onclick="togglePin('i_${i.id}')">${pinned?'★':'☆'}</span></td><td>${can('del')?`<button class="del" onclick="delR('inventory',${i.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No items yet.</td></tr>'; }
+function renderInv(){ const tv=D.inventory.reduce((s,i)=>s+i.qty*(i.cost||0),0); const lc=D.inventory.filter(i=>i.qty<=i.low).length; document.getElementById('inv-m').innerHTML=`<div class="mc" style="cursor:pointer" onclick="showInvDrill('sales',this)"><div class="mc-l">SKUs</div><div class="mc-v b">${D.inventory.length}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div></div><div class="mc"><div class="mc-l">Bundles</div><div class="mc-v p">${D.bundles.length}</div></div><div class="mc" style="cursor:pointer" onclick="showInvDrill('value',this)"><div class="mc-l">Stock value</div><div class="mc-v b">${fmt(tv)}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div></div><div class="mc" style="cursor:pointer" onclick="showInvDrill('low',this)"><div class="mc-l">Low stock</div><div class="mc-v ${lc?'r':'g'}">${lc}</div></div>`; document.getElementById('i-tbody').innerHTML=D.inventory.length?D.inventory.map(i=>{ const mg=i.sell&&i.cost?Math.round((i.sell-i.cost)/i.sell*100):0; const low=i.qty<=i.low; const pinned=D.pins.includes('i_'+i.id); return`<tr><td style="font-weight:500">${i.name}</td><td>${i.cat}</td><td style="color:${low?'var(--red)':'var(--green)'};font-weight:600">${i.qty}${low?' ⚠':''}</td><td>${fmt(i.cost)}</td><td>${fmt(i.sell)}</td><td>${mg?mg+'%':'—'}</td><td><span class="badge ${low?'be':'bi'}">${low?'Low':'OK'}</span></td><td><span class="badge ${pinned?'bg':'bw'}" style="cursor:pointer" onclick="togglePin('i_${i.id}')">${pinned?'★':'☆'}</span></td><td>${can('del')?`<button class="del" onclick="delR('inventory',${i.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No items yet.</td></tr>'; }
 function addBRow(){ const opts=D.inventory.map(i=>`<option value="${i.id}" data-price="${i.sell}" data-cost="${i.cost||0}">${i.name} (${fmt(i.sell)})</option>`).join(''); document.getElementById('b-items').innerHTML+=`<div class="sitem-row"><select onchange="calcBun()">${opts}</select><input type="number" value="1" min="1" style="width:48px" oninput="calcBun()"><button class="del" onclick="this.parentElement.remove();calcBun()">✕</button></div>`; calcBun(); }
 function calcBun(){ let t=0; document.querySelectorAll('#b-items .sitem-row').forEach(r=>{ const sel=r.querySelector('select'); const qty=parseInt(r.querySelector('input').value)||1; t+=(parseFloat(sel.options[sel.selectedIndex].getAttribute('data-price'))||0)*qty; }); document.getElementById('b-calc').textContent=t?'Auto price: '+fmt(t):''; }
 function saveBundle(){ const name=document.getElementById('b-name').value.trim(); if(!name){ alert('Enter bundle name.'); return; } const rows=document.querySelectorAll('#b-items .sitem-row'); if(!rows.length){ alert('Add items.'); return; } const items=[]; let total=0,cost=0; rows.forEach(r=>{ const sel=r.querySelector('select'); const qty=parseInt(r.querySelector('input').value)||1; const price=parseFloat(sel.options[sel.selectedIndex].getAttribute('data-price'))||0; const c=parseFloat(sel.options[sel.selectedIndex].getAttribute('data-cost'))||0; items.push({itemId:sel.value,name:sel.options[sel.selectedIndex].text.split(' (')[0],qty,price}); total+=price*qty; cost+=c*qty; }); const op=parseFloat(document.getElementById('b-price').value); D.bundles.push({id:Date.now(),name,items,price:op||total,cost}); logA('bundle','Bundle: '+name); saveD(); renderBundles(); popAll(); document.getElementById('b-name').value=''; document.getElementById('b-price').value=''; document.getElementById('b-items').innerHTML=''; document.getElementById('b-calc').textContent=''; }
@@ -2716,6 +2758,423 @@ function saveQuickExpense(){
   const btn=document.querySelector('#pg-accounts .btn[onclick="saveQuickExpense()"]');
   if(btn){const o=btn.innerHTML;btn.innerHTML='✓ Saved!';setTimeout(()=>btn.innerHTML=o,1500);}
   renderAccounts();
+}
+
+
+// ════════════════════════════════════════════════════════
+// PAGE METRIC CARDS + DRILL-DOWNS
+// ════════════════════════════════════════════════════════
+
+// ── SALES page metrics ────────────────────────────────────────────────────────
+function renderSalesMetrics(rows){
+  const el=document.getElementById('s-m'); if(!el) return;
+  const rev=rows.reduce((s,r)=>s+r.amount,0);
+  const pnl=rows.reduce((s,r)=>s+(r.pnl||0),0);
+  const unpaid=rows.filter(r=>r.paymentStatus!=='paid');
+  const outstanding=unpaid.reduce((s,r)=>s+(r.amount-(r.paidAmount||0)),0);
+  const margin=rev?Math.round(pnl/rev*100):0;
+  el.innerHTML=`
+    <div class="mc" style="cursor:pointer" onclick="showSalesDrill('revenue',this)">
+      <div class="mc-l">Revenue</div><div class="mc-v g">${fmt(rev)}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showSalesDrill('pnl',this)">
+      <div class="mc-l">Gross PNL</div><div class="mc-v b">${fmt(pnl)}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${margin}% margin ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showSalesDrill('transactions',this)">
+      <div class="mc-l">Transactions</div><div class="mc-v p">${rows.length}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showSalesDrill('outstanding',this)">
+      <div class="mc-l">Outstanding</div><div class="mc-v ${outstanding>0?'r':'g'}">${fmt(outstanding)}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${unpaid.length} unpaid ›</div>
+    </div>`;
+}
+
+function showSalesDrill(type, cardEl){
+  const dd=document.getElementById('s-drilldown');
+  const title=document.getElementById('s-dd-title');
+  const content=document.getElementById('s-dd-content');
+  document.querySelectorAll('#s-m .mc').forEach(e=>e.style.outline='');
+  if(cardEl) cardEl.style.outline='2px solid var(--black)';
+  dd.style.display='block';
+  dd.scrollIntoView({behavior:'smooth',block:'nearest'});
+  const mo=(document.getElementById('sf-mo')||{}).value||'all';
+  let rows=D.sales;
+  if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo));
+
+  if(type==='revenue'){
+    title.textContent='Revenue breakdown';
+    const byItem={};rows.forEach(s=>(s.items||[]).forEach(it=>{byItem[it.name]=(byItem[it.name]||0)+it.price*(it.qty||1);}));
+    const byCh={};rows.forEach(s=>{byCh[s.channel||'Unknown']=(byCh[s.channel||'Unknown']||0)+s.amount;});
+    const byStaff={};rows.forEach(s=>{byStaff[s.by||'Unknown']=(byStaff[s.by||'Unknown']||0)+s.amount;});
+    const total=rows.reduce((s,r)=>s+r.amount,0);
+    content.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By product</div>
+        ${Object.entries(byItem).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>
+          `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px">
+            <span>${k.substring(0,28)}</span><span style="font-weight:700;color:var(--green)">${fmt(v)}</span>
+          </div>`).join('')}
+        <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;font-weight:800;border-top:2px solid var(--border)"><span>Total</span><span style="color:var(--green)">${fmt(total)}</span></div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By channel</div>
+        ${Object.entries(byCh).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+          `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px">
+            <span class="badge ${chC(k)}">${k}</span><span style="font-weight:700;color:var(--green)">${fmt(v)}</span>
+          </div>`).join('')}
+        <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-top:12px;margin-bottom:8px">By staff</div>
+        ${Object.entries(byStaff).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+          `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px">
+            <span>${k}</span><span style="font-weight:700;color:var(--blue)">${fmt(v)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  } else if(type==='pnl'){
+    title.textContent='PNL breakdown';
+    const sorted=[...rows].sort((a,b)=>(b.pnl||0)-(a.pnl||0));
+    content.innerHTML=`
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Date</th><th>Items</th><th>Revenue</th><th>Cost</th><th>PNL</th><th>Margin</th></tr></thead>
+        <tbody>${sorted.map(s=>{
+          const mg=s.amount?Math.round((s.pnl||0)/s.amount*100):0;
+          return`<tr>
+            <td>${s.date}</td>
+            <td style="font-size:11px">${(s.items||[]).map(i=>i.name).join(', ').substring(0,35)}</td>
+            <td style="color:var(--green);font-weight:600">${fmt(s.amount)}</td>
+            <td style="color:var(--amber)">${fmt(s.cost||0)}</td>
+            <td style="font-weight:700;color:${(s.pnl||0)>=0?'var(--blue)':'var(--red)'}">${fmt(s.pnl||0)}</td>
+            <td style="color:${mg>=0?'var(--green)':'var(--red)'}">${mg}%</td>
+          </tr>`;}).join('')}
+        </tbody>
+      </table></div>`;
+  } else if(type==='transactions'){
+    title.textContent='All transactions';
+    const sorted=[...rows].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    content.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Date</th><th>Items</th><th>Customer</th><th>Amount</th><th>PNL</th><th>Method</th><th>Status</th></tr></thead>
+      <tbody>${sorted.map(s=>`<tr>
+        <td>${s.date}</td>
+        <td style="font-size:11px;max-width:120px">${(s.items||[]).map(i=>i.name+(i.qty>1?'×'+i.qty:'')).join(', ').substring(0,35)}</td>
+        <td>${s.custName||'Walk-in'}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(s.amount)}</td>
+        <td style="font-weight:700;color:${(s.pnl||0)>=0?'var(--blue)':'var(--red)'}">${fmt(s.pnl||0)}</td>
+        <td>${s.payment||'—'}</td>
+        <td><span class="badge ${psC(s.paymentStatus)}">${psL(s.paymentStatus)}</span></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  } else if(type==='outstanding'){
+    title.textContent='Outstanding payments';
+    const unpaid=D.sales.filter(s=>s.paymentStatus!=='paid').sort((a,b)=>new Date(a.date)-new Date(b.date));
+    content.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${unpaid.map(s=>{
+        const bal=s.amount-(s.paidAmount||0);
+        const days=Math.floor((new Date()-new Date(s.date+'T00:00'))/(1000*60*60*24));
+        return`<tr style="${days>30?'background:var(--red-bg)':''}">
+          <td>${s.date}<div style="font-size:10px;color:var(--text2)">${days}d</div></td>
+          <td style="font-weight:600">${s.custName||'Walk-in'}</td>
+          <td style="font-size:11px">${(s.items||[]).map(i=>i.name).join(', ').substring(0,30)}</td>
+          <td style="font-weight:800;color:var(--red)">${fmt(bal)}</td>
+          <td><span class="badge ${psC(s.paymentStatus)}">${psL(s.paymentStatus)}</span></td>
+          <td><button class="btn bsm" onclick="openPU(${s.id})">Update</button>
+          <button class="btn bsm" onclick="followUpWA(${s.id})" style="background:#25D366;color:#fff;border-color:#25D366;margin-left:3px">📲</button></td>
+        </tr>`;}).join('')}
+      </tbody>
+    </table></div>`;
+  }
+}
+
+// ── EXPENSES page metrics ─────────────────────────────────────────────────────
+function renderExpensesMetrics(rows){
+  const el=document.getElementById('exp-m'); if(!el) return;
+  const total=rows.reduce((s,e)=>s+e.amount,0);
+  const byCat={};rows.forEach(e=>{byCat[e.cat]=(byCat[e.cat]||0)+e.amount;});
+  const topCat=Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const thisM=rows.filter(e=>e.date&&e.date.startsWith(tM()));
+  const mTotal=thisM.reduce((s,e)=>s+e.amount,0);
+  el.innerHTML=`
+    <div class="mc" style="cursor:pointer" onclick="showExpDrill('total',this)">
+      <div class="mc-l">Total expenses</div><div class="mc-v r">${fmt(total)}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showExpDrill('categories',this)">
+      <div class="mc-l">Categories</div><div class="mc-v a">${Object.keys(byCat).length}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">top: ${topCat[0].substring(0,12)} ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showExpDrill('this-month',this)">
+      <div class="mc-l">This month</div><div class="mc-v r">${fmt(mTotal)}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${thisM.length} records ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showExpDrill('by-staff',this)">
+      <div class="mc-l">Records</div><div class="mc-v p">${rows.length}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>`;
+}
+
+function showExpDrill(type, cardEl){
+  const dd=document.getElementById('exp-drilldown');
+  const title=document.getElementById('exp-dd-title');
+  const content=document.getElementById('exp-dd-content');
+  document.querySelectorAll('#exp-m .mc').forEach(e=>e.style.outline='');
+  if(cardEl) cardEl.style.outline='2px solid var(--black)';
+  dd.style.display='block';
+  dd.scrollIntoView({behavior:'smooth',block:'nearest'});
+  const mo=(document.getElementById('ef-mo')||{}).value||'all';
+  let rows=D.expenses;
+  if(mo!=='all') rows=rows.filter(r=>r.date&&r.date.startsWith(mo));
+
+  if(type==='total'||type==='categories'){
+    title.textContent=type==='total'?'Expenses breakdown':'Expenses by category';
+    const byCat={};rows.forEach(e=>{byCat[e.cat]=(byCat[e.cat]||0)+e.amount;});
+    const total=rows.reduce((s,e)=>s+e.amount,0);
+    content.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By category</div>
+        ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+          const pct=total?Math.round(v/total*100):0;
+          return`<div style="padding:5px 0;border-bottom:.5px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span>${k}</span><span style="font-weight:700;color:var(--red)">${fmt(v)} <span style="color:var(--text3);font-weight:400">${pct}%</span></span>
+            </div>
+            <div style="height:3px;background:var(--bg3);border-radius:2px">
+              <div style="height:3px;background:var(--black);border-radius:2px;width:${pct}%"></div>
+            </div>
+          </div>`;}).join('')}
+        <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;font-weight:800;border-top:2px solid var(--border)"><span>Total</span><span style="color:var(--red)">${fmt(total)}</span></div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By vendor / supplier</div>
+        ${(()=>{const bv={};rows.forEach(e=>{const k=e.vendor||e.cat;bv[k]=(bv[k]||0)+e.amount;});return Object.entries(bv).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px"><span>${k.substring(0,25)}</span><span style="font-weight:700;color:var(--amber)">${fmt(v)}</span></div>`).join('');})()}
+      </div>
+    </div>`;
+  } else if(type==='this-month'){
+    title.textContent='This month expenses';
+    const thisM=D.expenses.filter(e=>e.date&&e.date.startsWith(tM())).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    content.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Date</th><th>Category</th><th>Paid to</th><th>Method</th><th>Amount</th><th>By</th></tr></thead>
+      <tbody>${thisM.map(e=>`<tr>
+        <td>${e.date}</td><td><span class="badge bp">${e.cat}</span></td>
+        <td>${e.vendor||'—'}</td><td>${e.paymethod||e.payment||'—'}</td>
+        <td style="font-weight:700;color:var(--red)">${fmt(e.amount)}</td><td>${e.by||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  } else if(type==='by-staff'){
+    title.textContent='Expenses by staff';
+    const byS={};rows.forEach(e=>{byS[e.by||'Unknown']=(byS[e.by||'Unknown']||0)+e.amount;});
+    content.innerHTML=Object.entries(byS).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:.5px solid var(--border);font-size:12px">
+        <span style="font-weight:500">${k}</span>
+        <span style="font-weight:700;color:var(--red)">${fmt(v)}</span>
+      </div>`).join('');
+  }
+}
+
+// ── INVENTORY page metrics ────────────────────────────────────────────────────
+function showInvDrill(type, cardEl){
+  const dd=document.getElementById('inv-drilldown');
+  const title=document.getElementById('inv-dd-title');
+  const content=document.getElementById('inv-dd-content');
+  document.querySelectorAll('#inv-m .mc').forEach(e=>e.style.outline='');
+  if(cardEl) cardEl.style.outline='2px solid var(--black)';
+  dd.style.display='block';
+  dd.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  if(type==='value'){
+    title.textContent='Stock value breakdown';
+    const sorted=[...D.inventory].sort((a,b)=>(b.qty*(b.cost||0))-(a.qty*(a.cost||0)));
+    const total=D.inventory.reduce((s,i)=>s+i.qty*(i.cost||0),0);
+    content.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Item</th><th>Category</th><th>Qty</th><th>Cost price</th><th>Sell price</th><th>Stock value</th><th>Margin</th></tr></thead>
+      <tbody>${sorted.map(i=>{
+        const val=i.qty*(i.cost||0);
+        const mg=i.sell&&i.cost?Math.round((i.sell-i.cost)/i.sell*100):0;
+        return`<tr>
+          <td style="font-weight:500">${i.name}</td><td>${i.cat||'—'}</td>
+          <td style="font-weight:600;color:${i.qty<=i.low?'var(--red)':'var(--text)'}">${i.qty}${i.qty<=i.low?' ⚠':''}</td>
+          <td>${fmt(i.cost||0)}</td><td style="color:var(--green)">${fmt(i.sell||0)}</td>
+          <td style="font-weight:700;color:var(--blue)">${fmt(val)}</td>
+          <td style="color:${mg>=0?'var(--green)':'var(--red)'}">${mg}%</td>
+        </tr>`;}).join('')}
+        <tr style="font-weight:800;border-top:2px solid var(--border)"><td colspan="5">Total stock value</td><td style="color:var(--blue)">${fmt(total)}</td><td></td></tr>
+      </tbody>
+    </table></div>`;
+  } else if(type==='low'){
+    title.textContent='Low stock items';
+    const low=D.inventory.filter(i=>i.qty<=i.low);
+    content.innerHTML=low.length?`<div class="tbl-wrap"><table>
+      <thead><tr><th>Item</th><th>Category</th><th>Current qty</th><th>Min level</th><th>Sell price</th></tr></thead>
+      <tbody>${low.map(i=>`<tr style="background:var(--red-bg)">
+        <td style="font-weight:600">${i.name}</td><td>${i.cat||'—'}</td>
+        <td style="color:var(--red);font-weight:800">${i.qty}</td>
+        <td>${i.low}</td><td>${fmt(i.sell||0)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:'<div class="empty">All items are sufficiently stocked ✓</div>';
+  } else if(type==='sales'){
+    title.textContent='Best selling items';
+    const counts={};
+    D.sales.forEach(s=>(s.items||[]).forEach(it=>{counts[it.name]=(counts[it.name]||0)+(it.qty||1);}));
+    content.innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([k,v],i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--border);font-size:12px">
+        <span><span style="color:var(--text3);margin-right:8px;font-size:11px">#${i+1}</span>${k}</span>
+        <span style="font-weight:700;color:var(--blue)">${v} sold</span>
+      </div>`).join('')||'<div class="empty">No sales yet.</div>';
+  }
+}
+
+// ── CUSTOMERS page metrics ────────────────────────────────────────────────────
+function renderCustomersMetrics(){
+  const el=document.getElementById('cust-m'); if(!el) return;
+  const total=D.customers.length;
+  const withSpend=D.customers.filter(c=>D.sales.some(s=>s.custId==c.id));
+  const totalSpend=D.customers.reduce((s,c)=>s+D.sales.filter(x=>x.custId==c.id).reduce((t,r)=>t+r.amount,0),0);
+  const byCh={};D.customers.forEach(c=>{byCh[c.channel||'Unknown']=(byCh[c.channel||'Unknown']||0)+1;});
+  const topCh=Object.entries(byCh).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  el.innerHTML=`
+    <div class="mc" style="cursor:pointer" onclick="showCustDrill('overview',this)">
+      <div class="mc-l">Total customers</div><div class="mc-v b">${total}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showCustDrill('spend',this)">
+      <div class="mc-l">Total revenue</div><div class="mc-v g">${fmt(totalSpend)}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${withSpend.length} buying ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showCustDrill('channels',this)">
+      <div class="mc-l">Channels</div><div class="mc-v p">${Object.keys(byCh).length}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">top: ${topCh[0]} ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showCustDrill('top',this)">
+      <div class="mc-l">Avg spend</div><div class="mc-v a">${withSpend.length?fmt(Math.round(totalSpend/withSpend.length)):'—'}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">per customer ›</div>
+    </div>`;
+}
+
+function showCustDrill(type, cardEl){
+  const dd=document.getElementById('cust-drilldown');
+  const title=document.getElementById('cust-dd-title');
+  const content=document.getElementById('cust-dd-content');
+  document.querySelectorAll('#cust-m .mc').forEach(e=>e.style.outline='');
+  if(cardEl) cardEl.style.outline='2px solid var(--black)';
+  dd.style.display='block';
+  dd.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  if(type==='overview'||type==='channels'){
+    title.textContent=type==='channels'?'Customers by channel':'Customer overview';
+    const byCh={};D.customers.forEach(c=>{byCh[c.channel||'Unknown']=(byCh[c.channel||'Unknown']||0)+1;});
+    const byType={};D.customers.forEach(c=>{byType[c.type||'Individual']=(byType[c.type||'Individual']||0)+1;});
+    content.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By channel</div>
+        ${Object.entries(byCh).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px">
+            <span class="badge ${chC(k)}">${k}</span>
+            <span style="font-weight:700">${v} <span style="color:var(--text3);font-weight:400">(${Math.round(v/D.customers.length*100)}%)</span></span>
+          </div>`).join('')}
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By type</div>
+        ${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px">
+            <span>${k}</span><span style="font-weight:700">${v}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  } else if(type==='spend'||type==='top'){
+    title.textContent='Top customers by spend';
+    const withSpend=D.customers.map(c=>{
+      const spend=D.sales.filter(s=>s.custId==c.id).reduce((t,r)=>t+r.amount,0);
+      const out=D.sales.filter(s=>s.custId==c.id&&s.paymentStatus!=='paid').reduce((t,r)=>t+(r.amount-(r.paidAmount||0)),0);
+      const count=D.sales.filter(s=>s.custId==c.id).length;
+      return{...c,spend,out,count};
+    }).filter(c=>c.spend>0).sort((a,b)=>b.spend-a.spend);
+    content.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Customer</th><th>Channel</th><th>Orders</th><th>Total spent</th><th>Outstanding</th><th>Location</th></tr></thead>
+      <tbody>${withSpend.map((c,i)=>`<tr>
+        <td style="font-weight:600">#${i+1} ${c.name}</td>
+        <td><span class="badge ${chC(c.channel||'')}">${c.channel||'—'}</span></td>
+        <td style="text-align:center">${c.count}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(c.spend)}</td>
+        <td style="color:${c.out>0?'var(--red)':'var(--text2)'};font-weight:${c.out>0?700:400}">${c.out>0?fmt(c.out):'—'}</td>
+        <td style="font-size:11px;color:var(--text2)">${c.loc||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+}
+
+// ── SUPPLIERS page metrics ────────────────────────────────────────────────────
+function renderSuppliersMetrics(){
+  const el=document.getElementById('sup-m'); if(!el) return;
+  const total=D.suppliers.length;
+  const totalPaid=D.expenses.reduce((s,e)=>e.supId?s+e.amount:s,0);
+  const active=D.suppliers.filter(s=>D.expenses.some(e=>e.supId==s.id)).length;
+  const byCat={};D.suppliers.forEach(s=>{byCat[s.cat||'Other']=(byCat[s.cat||'Other']||0)+1;});
+  el.innerHTML=`
+    <div class="mc" style="cursor:pointer" onclick="showSupDrill('overview',this)">
+      <div class="mc-l">Suppliers</div><div class="mc-v b">${total}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${active} active ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showSupDrill('spend',this)">
+      <div class="mc-l">Total paid out</div><div class="mc-v r">${fmt(totalPaid)}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showSupDrill('categories',this)">
+      <div class="mc-l">Categories</div><div class="mc-v a">${Object.keys(byCat).length}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>
+    <div class="mc" style="cursor:pointer" onclick="showSupDrill('history',this)">
+      <div class="mc-l">Payments</div><div class="mc-v p">${D.expenses.filter(e=>e.supId).length}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div>
+    </div>`;
+}
+
+function showSupDrill(type, cardEl){
+  const dd=document.getElementById('sup-drilldown');
+  const title=document.getElementById('sup-dd-title');
+  const content=document.getElementById('sup-dd-content');
+  document.querySelectorAll('#sup-m .mc').forEach(e=>e.style.outline='');
+  if(cardEl) cardEl.style.outline='2px solid var(--black)';
+  dd.style.display='block';
+  dd.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  if(type==='overview'||type==='categories'){
+    title.textContent='Supplier overview';
+    const rows=D.suppliers.map(s=>{
+      const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0);
+      const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—';
+      const count=D.expenses.filter(e=>e.supId==s.id).length;
+      return{...s,paid,last,count};
+    }).sort((a,b)=>b.paid-a.paid);
+    content.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Supplier</th><th>Category</th><th>Payments</th><th>Total paid</th><th>Last payment</th><th>Contact</th></tr></thead>
+      <tbody>${rows.map(s=>`<tr>
+        <td style="font-weight:600">${s.name}</td>
+        <td><span class="badge bw">${s.cat||'—'}</span></td>
+        <td style="text-align:center">${s.count}</td>
+        <td style="font-weight:700;color:var(--amber)">${s.paid?fmt(s.paid):'—'}</td>
+        <td>${s.last}</td>
+        <td style="font-size:11px;color:var(--text2)">${s.phone||s.contact||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  } else if(type==='spend'||type==='history'){
+    title.textContent='Payment history by supplier';
+    const payments=D.expenses.filter(e=>e.supId).map(e=>{
+      const sup=D.suppliers.find(s=>s.id==e.supId);
+      return{...e,supName:sup?sup.name:e.supName||'Unknown'};
+    }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    content.innerHTML=`<div class="tbl-wrap"><table>
+      <thead><tr><th>Date</th><th>Supplier</th><th>Category</th><th>Method</th><th>Amount</th><th>By</th></tr></thead>
+      <tbody>${payments.map(e=>`<tr>
+        <td>${e.date}</td>
+        <td style="font-weight:600">${e.supName}</td>
+        <td><span class="badge bp">${e.cat||'—'}</span></td>
+        <td>${e.paymethod||'—'}</td>
+        <td style="font-weight:700;color:var(--amber)">${fmt(e.amount)}</td>
+        <td>${e.by||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
