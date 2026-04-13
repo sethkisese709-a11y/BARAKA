@@ -1198,10 +1198,11 @@ function buildNav(){
   if(!isDelivery&&can('pl')) p.push({id:'pl',l:'P&L'});
   if(!isDelivery&&can('team')) p.push({id:'team',l:'Team'});
   if(!isDelivery&&(isAccountant||currentUser.role==='owner'||currentUser.role==='manager')) p.push({id:'accounts',l:'📊 Accounts'});
+  if(!isDelivery) p.push({id:'calendar',l:'Calendar'});
   if(!isDelivery) p.push({id:'ai',l:'AI'});
   document.getElementById('main-nav').innerHTML=p.map(x=>`<button class="nb" id="nb-${x.id}" onclick="goPage('${x.id}')">${x.l}</button>`).join('');
 }
-function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts}[pg]||(() =>{}))(); }
+function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar}[pg]||(() =>{}))(); }
 function setDates(){ ['s-date','e-date'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.value=today(); }); }
 function allMonths(){ const ms=new Set([...D.sales.map(r=>r.date.substring(0,7)),...D.expenses.map(r=>r.date.substring(0,7))]); return[...ms].sort().reverse(); }
 function popMonths(){ const o='<option value="all">All months</option>'+allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`).join(''); ['sf-mo','ef-mo','pl-mo'].forEach(id=>{ const el=document.getElementById(id); if(el){ const v=el.value; el.innerHTML=o; el.value=v||'all'; }}); }
@@ -3219,6 +3220,254 @@ function showSupDrill(type, cardEl){
   }
 }
 
+
+// ════════════════════════════════════════════════════════
+// CALENDAR — Daily business performance view
+// ════════════════════════════════════════════════════════
+let _calYear=new Date().getFullYear();
+let _calMonth=new Date().getMonth(); // 0-indexed
+let _calSelectedDay=null;
+
+function initCalendar(){
+  _calYear=new Date().getFullYear();
+  _calMonth=new Date().getMonth();
+  renderCalendar();
+}
+
+function calNav(dir){
+  _calMonth+=dir;
+  if(_calMonth>11){_calMonth=0;_calYear++;}
+  if(_calMonth<0){_calMonth=11;_calYear--;}
+  _calSelectedDay=null;
+  document.getElementById('cal-detail').style.display='none';
+  renderCalendar();
+}
+
+function calNavToday(){
+  _calYear=new Date().getFullYear();
+  _calMonth=new Date().getMonth();
+  _calSelectedDay=null;
+  document.getElementById('cal-detail').style.display='none';
+  renderCalendar();
+}
+
+function renderCalendar(){
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const label=document.getElementById('cal-month-label');
+  if(label) label.textContent=monthNames[_calMonth]+' '+_calYear;
+
+  const monthStr=_calYear+'-'+(String(_calMonth+1).padStart(2,'0'));
+
+  // Build day data map
+  const dayMap={};
+  // Sales
+  (D.sales||[]).forEach(s=>{
+    if(!s.date||!s.date.startsWith(monthStr)) return;
+    const d=s.date;
+    if(!dayMap[d]) dayMap[d]={sales:[],expenses:[],tasks:[],revenue:0,exp:0,pnl:0};
+    dayMap[d].sales.push(s);
+    dayMap[d].revenue+=(s.amount||0);
+    dayMap[d].pnl+=(s.pnl||0);
+  });
+  // Expenses
+  (D.expenses||[]).forEach(e=>{
+    if(!e.date||!e.date.startsWith(monthStr)) return;
+    const d=e.date;
+    if(!dayMap[d]) dayMap[d]={sales:[],expenses:[],tasks:[],revenue:0,exp:0,pnl:0};
+    dayMap[d].expenses.push(e);
+    dayMap[d].exp+=(e.amount||0);
+  });
+  // Tasks
+  (D.tasks||[]).forEach(t=>{
+    if(!t.date||!t.date.startsWith(monthStr)) return;
+    const d=t.date;
+    if(!dayMap[d]) dayMap[d]={sales:[],expenses:[],tasks:[],revenue:0,exp:0,pnl:0};
+    dayMap[d].tasks.push(t);
+  });
+
+  // Monthly metrics
+  const mRevenue=Object.values(dayMap).reduce((s,d)=>s+d.revenue,0);
+  const mExp=Object.values(dayMap).reduce((s,d)=>s+d.exp,0);
+  const mPnl=Object.values(dayMap).reduce((s,d)=>s+d.pnl,0);
+  const mNet=mPnl-mExp;
+  const activeDays=Object.values(dayMap).filter(d=>d.revenue>0).length;
+  const salesDays=Object.values(dayMap).filter(d=>d.sales.length>0).length;
+  const maxRev=Math.max(...Object.values(dayMap).map(d=>d.revenue),1);
+  const bestDay=Object.entries(dayMap).sort((a,b)=>b[1].revenue-a[1].revenue)[0];
+
+  document.getElementById('cal-metrics').innerHTML=`
+    <div class="mc">
+      <div class="mc-l">Revenue</div>
+      <div class="mc-v g">${fmt(mRevenue)}</div>
+    </div>
+    <div class="mc">
+      <div class="mc-l">Net profit</div>
+      <div class="mc-v ${mNet>=0?'b':'r'}">${fmt(mNet)}</div>
+    </div>
+    <div class="mc">
+      <div class="mc-l">Sales days</div>
+      <div class="mc-v p">${salesDays}</div>
+    </div>
+    <div class="mc">
+      <div class="mc-l">Best day</div>
+      <div class="mc-v g" style="font-size:13px">${bestDay?bestDay[0].substring(8)+' ('+fmt(bestDay[1].revenue)+')':'—'}</div>
+    </div>`;
+
+  // Calendar grid
+  const firstDay=new Date(_calYear,_calMonth,1).getDay(); // 0=Sun
+  const daysInMonth=new Date(_calYear,_calMonth+1,0).getDate();
+  const todayStr=today();
+  let cells='';
+
+  // Empty cells before first day
+  for(let i=0;i<firstDay;i++){
+    cells+=`<div style="min-height:72px;border-radius:4px;background:transparent"></div>`;
+  }
+
+  for(let day=1;day<=daysInMonth;day++){
+    const dateStr=monthStr+'-'+String(day).padStart(2,'0');
+    const d=dayMap[dateStr];
+    const isToday=dateStr===todayStr;
+    const isSelected=dateStr===_calSelectedDay;
+    const hasRevenue=d&&d.revenue>0;
+    const hasExpOnly=d&&!hasRevenue&&d.exp>0;
+    const hasTaskOnly=d&&!hasRevenue&&!d.exp&&d.tasks.length>0;
+    const intensity=hasRevenue?Math.min(1,d.revenue/maxRev):0;
+
+    // Background color based on activity
+    let bg='var(--bg2)';
+    let border='1px solid var(--border)';
+    if(hasRevenue){
+      // Scale from light green to dark green
+      const g=Math.round(200-intensity*130);
+      const r=Math.round(230-intensity*200);
+      bg=`rgb(${r},${g},${Math.round(r*0.6)})`;
+      border=`1px solid rgb(${r-20},${g-20},${Math.round(r*0.5)})`;
+    } else if(hasExpOnly){
+      bg='var(--red-bg)';border='1px solid #f0c0c0';
+    } else if(hasTaskOnly){
+      bg='var(--amber-bg)';border='1px solid #f0d8a0';
+    }
+    if(isSelected) border='2px solid var(--black)';
+
+    const dots=[];
+    if(d&&d.sales.length) dots.push(`<span style="width:5px;height:5px;border-radius:50%;background:#1a5c2a;display:inline-block"></span>`);
+    if(d&&d.expenses.length) dots.push(`<span style="width:5px;height:5px;border-radius:50%;background:var(--red);display:inline-block"></span>`);
+    if(d&&d.tasks.length) dots.push(`<span style="width:5px;height:5px;border-radius:50%;background:var(--amber);display:inline-block"></span>`);
+
+    cells+=`<div onclick="calSelectDay('${dateStr}')" style="
+      min-height:72px;border-radius:4px;
+      background:${bg};border:${border};
+      cursor:pointer;padding:6px 7px;
+      transition:all .1s;
+      ${isToday?'box-shadow:inset 0 0 0 2px var(--black)':''}
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:12px;font-weight:${isToday?'800':'600'};color:${hasRevenue?'#fff':'var(--text)'}">${day}</span>
+        ${isToday?`<span style="font-size:8px;background:var(--black);color:#fff;padding:1px 4px;border-radius:2px;font-weight:800">TODAY</span>`:''}
+      </div>
+      ${hasRevenue?`<div style="font-size:10px;font-weight:800;color:#fff;margin-bottom:2px">${fmt(d.revenue)}</div>`:''}
+      ${d&&d.pnl?`<div style="font-size:9px;color:${hasRevenue?'rgba(255,255,255,0.8)':'var(--text2)'}">PNL ${fmt(d.pnl)}</div>`:''}
+      ${d&&d.tasks.length?`<div style="font-size:9px;color:${hasRevenue?'rgba(255,255,255,0.7)':'var(--amber)'}">${d.tasks.length} task${d.tasks.length>1?'s':''}</div>`:''}
+      <div style="display:flex;gap:3px;margin-top:4px">${dots.join('')}</div>
+    </div>`;
+  }
+
+  const grid=document.getElementById('cal-grid');
+  if(grid) grid.innerHTML=cells;
+
+  // Update sub label
+  const sub=document.getElementById('cal-sub-label');
+  if(sub) sub.textContent=`${salesDays} selling day${salesDays!==1?'s':''} · ${activeDays} active day${activeDays!==1?'s':''}`;
+}
+
+function calSelectDay(dateStr){
+  _calSelectedDay=dateStr;
+  renderCalendar(); // re-render to show selection
+
+  const detail=document.getElementById('cal-detail');
+  const title=document.getElementById('cal-detail-title');
+  const content=document.getElementById('cal-detail-content');
+
+  const d=new Date(dateStr+'T00:00');
+  const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const monNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  title.textContent=dayNames[d.getDay()]+', '+d.getDate()+' '+monNames[d.getMonth()]+' '+d.getFullYear();
+
+  const sales=(D.sales||[]).filter(s=>s.date===dateStr);
+  const expenses=(D.expenses||[]).filter(e=>e.date===dateStr);
+  const tasks=(D.tasks||[]).filter(t=>t.date===dateStr);
+  const rev=sales.reduce((s,r)=>s+(r.amount||0),0);
+  const pnl=sales.reduce((s,r)=>s+(r.pnl||0),0);
+  const exp=expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const net=pnl-exp;
+
+  if(!sales.length&&!expenses.length&&!tasks.length){
+    content.innerHTML='<div class="empty" style="padding:1.5rem">No activity recorded on this day.</div>';
+    detail.style.display='block';
+    detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+
+  content.innerHTML=`
+    <!-- Day summary metrics -->
+    <div class="metrics" style="margin-bottom:1rem">
+      <div class="mc"><div class="mc-l">Revenue</div><div class="mc-v g">${fmt(rev)}</div></div>
+      <div class="mc"><div class="mc-l">PNL</div><div class="mc-v ${pnl>=0?'b':'r'}">${fmt(pnl)}</div></div>
+      <div class="mc"><div class="mc-l">Expenses</div><div class="mc-v r">${fmt(exp)}</div></div>
+      <div class="mc"><div class="mc-l">Net</div><div class="mc-v ${net>=0?'b':'r'}">${fmt(net)}</div></div>
+    </div>
+
+    <!-- Sales -->
+    ${sales.length?`
+    <div style="margin-bottom:1rem">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Sales (${sales.length})</div>
+      ${sales.map(s=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border);flex-wrap:wrap;gap:5px">
+          <div>
+            <div style="font-size:12px;font-weight:600">${(s.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ').substring(0,45)||'Sale'}</div>
+            <div style="font-size:11px;color:var(--text2)">${s.custName||'Walk-in'} · ${s.channel||'—'} · ${s.payment||'—'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:800;color:var(--green)">${fmt(s.amount)}</div>
+            <div style="font-size:11px;color:${(s.pnl||0)>=0?'var(--blue)':'var(--red)'}">PNL ${fmt(s.pnl||0)}</div>
+            <span class="badge ${psC(s.paymentStatus)}">${psL(s.paymentStatus)}</span>
+          </div>
+        </div>`).join('')}
+    </div>`:''}
+
+    <!-- Expenses -->
+    ${expenses.length?`
+    <div style="margin-bottom:1rem">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Expenses (${expenses.length})</div>
+      ${expenses.map(e=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border)">
+          <div>
+            <div style="font-size:12px;font-weight:600">${e.vendor||e.cat}</div>
+            <div style="font-size:11px;color:var(--text2)">${e.cat} · ${e.paymethod||'—'}</div>
+          </div>
+          <span style="font-weight:800;color:var(--red)">${fmt(e.amount)}</span>
+        </div>`).join('')}
+    </div>`:''}
+
+    <!-- Tasks -->
+    ${tasks.length?`
+    <div>
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Tasks (${tasks.length})</div>
+      ${tasks.map(t=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border);flex-wrap:wrap;gap:5px">
+          <div>
+            <div style="font-size:12px;font-weight:600">${t.typeIcon||'📋'} ${t.title}</div>
+            <div style="font-size:11px;color:var(--text2)">${t.assignee}${t.clientName?' · '+t.clientName:''}</div>
+          </div>
+          <span class="task-status-badge t${t.status.replace('-','')}">${t.status}</span>
+        </div>`).join('')}
+    </div>`:''}`;
+
+  detail.style.display='block';
+  detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',function(){applyDark();init();});
@@ -3272,6 +3521,66 @@ window.addEventListener('resize',setVH);
       <button class="btn bsm" onclick="document.getElementById('wa-modal').classList.remove('open')">Later</button>
     </div>
   </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     CALENDAR PAGE
+═══════════════════════════════════════ -->
+<div id="pg-calendar" class="page">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.02em" id="cal-month-label">April 2026</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px" id="cal-sub-label">Click any day to see details</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn bsm" onclick="calNav(-1)">← Prev</button>
+      <button class="btn bsm" onclick="calNavToday()">Today</button>
+      <button class="btn bsm" onclick="calNav(1)">Next →</button>
+    </div>
+  </div>
+
+  <!-- Monthly summary metrics -->
+  <div class="metrics" id="cal-metrics" style="margin-bottom:1rem"></div>
+
+  <!-- Performance legend -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:.85rem;font-size:11px;color:var(--text2);align-items:center">
+    <span style="font-weight:700;letter-spacing:.06em;text-transform:uppercase">Key:</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:2px;background:#1a5c2a;display:inline-block"></span>Strong sales</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:2px;background:#c6e8c6;display:inline-block"></span>Good sales</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:2px;background:#fae8e8;display:inline-block"></span>Expenses only</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:2px;background:var(--amber-bg);display:inline-block"></span>Tasks only</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:2px;border:1px solid var(--border);background:var(--bg2);display:inline-block"></span>No activity</span>
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="card" style="padding:.85rem">
+    <!-- Day headers -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+      <div style="text-align:center;font-size:9px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;padding:4px 0">Sun</div>
+      <div style="text-align:center;font-size:9px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;padding:4px 0">Mon</div>
+      <div style="text-align:center;font-size:9px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;padding:4px 0">Tue</div>
+      <div style="text-align:center;font-size:9px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;padding:4px 0">Wed</div>
+      <div style="text-align:center;font-size:9px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;padding:4px 0">Thu</div>
+      <div style="text-align:center;font-size:9px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;padding:4px 0">Fri</div>
+      <div style="text-align:center;font-size:9px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;padding:4px 0">Sat</div>
+    </div>
+    <!-- Day cells -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px" id="cal-grid"></div>
+  </div>
+
+  <!-- Day detail panel -->
+  <div id="cal-detail" style="display:none;margin-top:.85rem">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+        <div class="ct" style="margin-bottom:0" id="cal-detail-title">Day details</div>
+        <button onclick="document.getElementById('cal-detail').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit">✕ Close</button>
+      </div>
+      <div id="cal-detail-content"></div>
+    </div>
+  </div>
+
 </div>
 </body>
 </html>
