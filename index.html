@@ -754,6 +754,13 @@ tr:hover td{background:var(--bg2)}
     <div id="acc-deliveries"></div>
   </div>
 
+  <!-- Delivery costs to convert to expenses -->
+  <div class="card">
+    <div class="ct">Delivery costs — pending expense</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:.85rem">Costs reported by riders that haven't been recorded as expenses yet.</div>
+    <div id="acc-delivery-costs"></div>
+  </div>
+
   <!-- Payment follow-up -->
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:6px">
@@ -2325,6 +2332,11 @@ function openDoneModal(taskId){
   // Show collect field only if there's an amount on delivery
   document.getElementById('done-payment-row').style.display=task.amountOnDelivery>0?'flex':'none';
   if(task.amountOnDelivery>0) document.getElementById('done-amount').placeholder='e.g. '+task.amountOnDelivery.toLocaleString();
+  // Show delivery cost fields for dispatch/collection tasks
+  const isDelivTask=task.type==='dispatch'||task.type==='collection'||task.type==='follow-up';
+  document.getElementById('done-delivery-cost-row').style.display=isDelivTask?'flex':'none';
+  document.getElementById('done-delivery-method-row').style.display=isDelivTask?'flex':'none';
+  document.getElementById('done-delivery-cost').value='';
   document.getElementById('done-modal').classList.add('open');
 }
 function confirmDone(){
@@ -2335,6 +2347,8 @@ function confirmDone(){
   task.completedAt=new Date().toISOString();
   task.completionNote=document.getElementById('done-note').value.trim();
   task.amountCollected=parseFloat(document.getElementById('done-amount').value)||0;
+  task.deliveryCost=parseFloat(document.getElementById('done-delivery-cost').value)||0;
+  task.deliveryMethod=document.getElementById('done-delivery-method').value||'Cash';
   task.statusHistory=task.statusHistory||[];
   task.statusHistory.push({status:'done',by:currentUser.name,at:new Date().toISOString(),note:task.completionNote});
   logA('task','Completed: '+task.title+(task.completionNote?' — '+task.completionNote:''));
@@ -2730,6 +2744,34 @@ function confirmConvert(){
   document.getElementById('m-convert').classList.remove('open');
   renderAccounts();
   alert('✅ Sale record created for '+custName+'!');
+}
+
+
+function addDeliveryCostAsExpense(taskId){
+  const t=D.tasks.find(x=>x.id===taskId); if(!t) return;
+  if(!confirm(`Add delivery cost of ${fmt(t.deliveryCost)} for "${t.title}" as an expense?`)) return;
+  const exp={
+    id:Date.now(),
+    date:t.completedAt?t.completedAt.substring(0,10):t.date||today(),
+    amount:t.deliveryCost,
+    cat:'Transport / delivery',
+    vendor:t.assignee+' — delivery',
+    ref:'',
+    paymethod:t.deliveryMethod||'Cash',
+    notes:`Delivery cost for task: ${t.title}`,
+    by:currentUser.name,
+    supId:'',supName:'',evidence:null
+  };
+  D.expenses.unshift(exp);
+  t.deliveryCostExpensed=true;
+  t.deliveryCostExpenseId=exp.id;
+  logA('expense','Delivery cost: '+t.assignee+' '+fmt(t.deliveryCost));
+  saveD();
+  pushExp(exp);
+  updateTask(t);
+  popMonths();
+  renderAccounts();
+  alert('✅ Expense of '+fmt(t.deliveryCost)+' added for '+t.assignee+'\'s delivery cost!');
 }
 
 function saveQuickExpense(){
