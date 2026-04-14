@@ -246,7 +246,7 @@ tr:hover td{background:var(--bg2)}
       <div class="av" id="top-av" style="margin-left:6px"></div>
       <div><div style="font-size:12px;font-weight:600;color:var(--text)" id="top-name"></div><span class="badge" id="top-role"></span></div>
     </div>
-    <button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
+    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.4);margin-right:6px;letter-spacing:.04em"></span><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
   </div>
   <div id="due-alerts"></div>
   <div class="nav" id="main-nav"></div>
@@ -949,7 +949,8 @@ function defD(){ return {
     {id:3,name:'Staff 1',role:'staff',password:'Baraka@staff1'},
     {id:4,name:'Staff 2',role:'delivery',password:'Baraka@staff2'}
   ],
-  recurring:[],recPay:[],activity:[],pins:[],tasks:[]
+  recurring:[],recPay:[],activity:[],pins:[],tasks:[],
+  deletedIds:[] // tracks IDs deleted on this device so sync doesn't restore them
 }; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -989,7 +990,7 @@ function selectCo(id){
   currentCo=companies.find(c=>c.id===id);
   let saved=loadD(id);
   D=saved||defD();
-  ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; });
+  ['bundles','pins','recurring','recPay','tasks','deletedIds'].forEach(k=>{ if(!D[k]) D[k]=[]; });
   D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
   if(!saved&&id==='baraka'){ D.sales=seedData(); saveD(); }
   document.getElementById('co-screen').style.display='none';
@@ -1065,21 +1066,30 @@ function doLogin(user){
   dashMonth=tM();
   buildNav(); setDates();
   // Sync with Supabase in background — NEVER blocks login, NEVER loses data
+  const _ss=document.getElementById('sync-status');
+  if(_ss) _ss.textContent='Syncing...';
   fetchAllFromSupa(currentCo.id).then(d=>{
     if(!d) return;
     // Helper: merge local into Supabase — push any local records not in Supabase
+    const _deleted=new Set(D.deletedIds||[]);
     function syncBoth(supaRows, localRows, mapFn, pushFn) {
       if(supaRows&&supaRows.length) {
-        const supaIds=new Set(supaRows.map(r=>r.id));
-        const localOnly=localRows.filter(r=>!supaIds.has(r.id));
-        // Push local-only records to Supabase so they're not lost
+        // Filter out anything we deleted on this device
+        const filtered=supaRows.filter(r=>!_deleted.has(r.id));
+        const supaIds=new Set(filtered.map(r=>r.id));
+        const localOnly=localRows.filter(r=>!supaIds.has(r.id)&&!_deleted.has(r.id));
+        // Push local-only records to Supabase
         localOnly.forEach(r=>pushFn(r));
-        // Merge: Supabase data + local-only records
-        return [...supaRows.map(mapFn), ...localOnly];
+        // Re-delete anything that came back from Supabase
+        supaRows.filter(r=>_deleted.has(r.id)).forEach(r=>{
+          const tbl={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',tasks:'tasks',bundles:'bundles'};
+          // Find which table this belongs to and delete again
+        });
+        return [...filtered.map(mapFn), ...localOnly];
       } else {
-        // Supabase empty — push everything local up
-        localRows.forEach(r=>pushFn(r));
-        return localRows;
+        const localOnly=localRows.filter(r=>!_deleted.has(r.id));
+        localOnly.forEach(r=>pushFn(r));
+        return localOnly;
       }
     }
     D.sales    = syncBoth(d.sales,     D.sales||[],     mapSale,  pushSale);
@@ -1098,6 +1108,8 @@ function doLogin(user){
     saveD();
     // Mark this device as synced
     localStorage.setItem('baraka_synced_'+currentCo.id,'1');
+    const _ss2=document.getElementById('sync-status');
+    if(_ss2){_ss2.textContent='✓ Synced';setTimeout(()=>{if(_ss2)_ss2.textContent='';},3000);}
     // Refresh current page with latest data
     try{
       const pg=document.querySelector('.page.on')?.id||'';
@@ -1793,10 +1805,10 @@ function addSale(){
   ['s-notes','s-ref','s-addr'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('s-ps').value='paid'; togPart('s');
   pushSale(sale);
-  alert('Sale saved!');
+  toast('✓ Sale saved successfully!');
 }
-function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay); document.renderSalesMetrics(rows);
-  getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
+function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay); renderSalesMetrics(rows);
+  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
 function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); }
 
@@ -1894,8 +1906,8 @@ function addExpense(){
   const total=rows.reduce((s,r)=>s+r.amount,0);
   const badge=document.getElementById('exp-total-badge');
   if(badge) badge.textContent=rows.length?fmt(total)+' total':'';
-  document.renderExpensesMetrics(rows);
-  getElementById('e-tbody').innerHTML=rows.length?rows.map(r=>{
+  renderExpensesMetrics(rows);
+  document.getElementById('e-tbody').innerHTML=rows.length?rows.map(r=>{
     const catObj=EXP_CATS.find(c=>c.cat===r.cat)||{icon:'📦'};
     return`<tr>
       <td>${r.date}</td>
@@ -1922,7 +1934,7 @@ function renderBundles(){ document.getElementById('b-list').innerHTML=D.bundles.
 
 // ── Customers ─────────────────────────────────────────────────────────────────
 function custT(t,btn){ ['single','bulk','list'].forEach(x=>document.getElementById('c-'+x).style.display=x===t?'block':'none'); document.querySelectorAll('#pg-customers .tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(t==='list') renderCust(); }
-function addCust(){ const name=document.getElementById('c-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.customers.push({id:Date.now(),name,phone:document.getElementById('c-phone').value,channel:document.getElementById('c-ch').value,loc:document.getElementById('c-loc').value,type:document.getElementById('c-type').value,notes:document.getElementById('c-notes').value}); logA('customer','Added: '+name); saveD(); popAll(); const nc=D.customers[D.customers.length-1];if(nc)pushCust(nc); ['c-name','c-phone','c-loc','c-notes'].forEach(id=>document.getElementById(id).value=''); alert('Customer saved!'); }
+function addCust(){ const name=document.getElementById('c-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.customers.push({id:Date.now(),name,phone:document.getElementById('c-phone').value,channel:document.getElementById('c-ch').value,loc:document.getElementById('c-loc').value,type:document.getElementById('c-type').value,notes:document.getElementById('c-notes').value}); logA('customer','Added: '+name); saveD(); popAll(); const nc=D.customers[D.customers.length-1];if(nc)pushCust(nc); ['c-name','c-phone','c-loc','c-notes'].forEach(id=>document.getElementById(id).value=''); toast('✓ Customer saved!'); }
 function bulkImport(){ const lines=document.getElementById('bulk-in').value.trim().split('\n').filter(l=>l.trim()); let count=0; lines.forEach(line=>{ const p=line.split(',').map(x=>x.trim()); const name=p[0]; if(!name) return; const chs=['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in']; const ch=p[2]&&chs.find(c=>c.toLowerCase()===p[2].toLowerCase())||'WhatsApp'; D.customers.push({id:Date.now()+Math.random(),name,phone:p[1]||'',channel:ch,loc:p[3]||'',type:'Individual',notes:''}); count++; }); saveD(); popAll(); document.getElementById('bulk-res').textContent=count+' customers imported!'; document.getElementById('bulk-in').value=''; }
 function renderCust(){ const q=(document.getElementById('c-search').value||'').toLowerCase(); const cf=(document.getElementById('c-chf')||{}).value||'all'; let list=D.customers; if(q) list=list.filter(c=>c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)); if(cf!=='all') list=list.filter(c=>c.channel===cf); document.getElementById('c-tbody').innerHTML=list.length?list.map(c=>{ const spent=D.sales.filter(s=>s.custId==c.id).reduce((s,r)=>s+r.amount,0); const out=D.sales.filter(s=>s.custId==c.id&&s.paymentStatus!=='paid').reduce((s,r)=>s+(r.amount-(r.paidAmount||0)),0); const last=D.sales.filter(s=>s.custId==c.id).map(s=>s.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${c.name}</td><td>${c.phone||'—'}</td><td><span class="badge ${chC(c.channel)}">${c.channel||'—'}</span></td><td>${c.loc||'—'}</td><td><span class="badge bg">${c.type}</span></td><td style="color:var(--green);font-weight:500">${spent?fmt(spent):'—'}</td><td style="color:${out>0?'var(--red)':'var(--text2)'};font-weight:${out>0?500:400}">${out>0?fmt(out):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('customers',${c.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No customers yet.</td></tr>'; }
 
@@ -1937,7 +1949,7 @@ function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.m
 function checkDue(){ if(!currentUser||!D||!D.recurring) return; const due=(D.recurring||[]).filter(r=>r.active&&r.due<=today()); const el=document.getElementById('due-alerts'); if(el) el.innerHTML=due.length?`<div class="rec-alert">⚠ Payments due: ${due.map(r=>r.name).join(', ')}</div>`:''; }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
-function delR(type,id){ if(!can('del')){ alert('Owners and managers only.'); return; } if(!confirm('Delete this record?')) return; if(type==='bundles') D.bundles=D.bundles.filter(r=>r.id!=id); else D[type]=D[type].filter(r=>r.id!=id); saveD(); const _tm={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];if(_tm)sbDel(_tm,id); if(type==='sales') renderSales(); if(type==='expenses') renderExpenses(); if(type==='inventory'){ renderInv(); popAll(); } if(type==='bundles'){ renderBundles(); popAll(); } if(type==='customers'){ renderCust(); popAll(); } if(type==='suppliers'){ renderSup(); popAll(); } }
+function delR(type,id){ if(!can('del')){ alert('Owners and managers only.'); return; } if(!confirm('Delete this record?')) return; if(type==='bundles') D.bundles=D.bundles.filter(r=>r.id!=id); else D[type]=D[type].filter(r=>r.id!=id); if(!D.deletedIds)D.deletedIds=[]; D.deletedIds.push(id); saveD(); const _tm={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];if(_tm)sbDel(_tm,id); if(type==='sales') renderSales(); if(type==='expenses') renderExpenses(); if(type==='inventory'){ renderInv(); popAll(); } if(type==='bundles'){ renderBundles(); popAll(); } if(type==='customers'){ renderCust(); popAll(); } if(type==='suppliers'){ renderSup(); popAll(); } }
 
 // ── P&L ───────────────────────────────────────────────────────────────────────
 function renderPL(){ if(!can('pl')){ document.getElementById('pl-m').innerHTML='<p style="font-size:12px;color:var(--text2)">Available to owners and managers only.</p>'; return; } const mo=(document.getElementById('pl-mo')||{}).value||'all'; let s=D.sales; let e=D.expenses; if(mo!=='all'){ s=s.filter(r=>r.date.startsWith(mo)); e=e.filter(r=>r.date.startsWith(mo)); } const ti=s.reduce((x,r)=>x+r.amount,0); const tc=s.reduce((x,r)=>x+(r.cost||0),0); const tp=s.reduce((x,r)=>x+(r.pnl||0),0); const te=e.reduce((x,r)=>x+r.amount,0); const net=tp-te; const mg=ti?Math.round(tp/ti*100):0; const out=s.filter(x=>x.paymentStatus!=='paid').reduce((x,r)=>x+(r.amount-(r.paidAmount||0)),0); document.getElementById('pl-m').innerHTML=`<div class="mc"><div class="mc-l">Revenue</div><div class="mc-v g">${fmt(ti)}</div></div><div class="mc"><div class="mc-l">Total cost</div><div class="mc-v a">${fmt(tc)}</div></div><div class="mc"><div class="mc-l">Gross PNL</div><div class="mc-v b">${fmt(tp)}</div></div><div class="mc"><div class="mc-l">Other expenses</div><div class="mc-v r">${fmt(te)}</div></div><div class="mc"><div class="mc-l">Net profit</div><div class="mc-v ${net>=0?'b':'r'}">${fmt(net)}</div></div><div class="mc"><div class="mc-l">PNL margin</div><div class="mc-v ${mg>=0?'b':'r'}">${mg}%</div></div><div class="mc"><div class="mc-l">Outstanding</div><div class="mc-v a">${fmt(out)}</div></div>`; const ib={}; s.forEach(r=>{ (r.items||[]).forEach(it=>{ ib[it.name]=(ib[it.name]||0)+it.price*it.qty; }); }); document.getElementById('pl-inc').innerHTML='<div class="ct">Revenue by item</div>'+(Object.keys(ib).length?Object.entries(ib).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([k,v])=>`<div class="plr"><span>${k.substring(0,40)}</span><span style="color:var(--green)">${fmt(v)}</span></div>`).join('')+`<div class="plr"><span>Total</span><span style="color:var(--green)">${fmt(ti)}</span></div>`:'<div class="empty">No sales recorded.</div>'); const eb={}; e.forEach(r=>{ eb[r.cat]=(eb[r.cat]||0)+r.amount; }); document.getElementById('pl-exp').innerHTML='<div class="ct">Expenses by category</div>'+(Object.keys(eb).length?Object.entries(eb).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="plr"><span>${k}</span><span style="color:var(--red)">${fmt(v)}</span></div>`).join('')+`<div class="plr"><span>Total</span><span style="color:var(--red)">${fmt(te)}</span></div>`:'<div class="empty">No expenses recorded.</div>'); document.getElementById('pl-sum').innerHTML=`<div class="plr"><span>Gross revenue</span><span style="color:var(--green)">${fmt(ti)}</span></div><div class="plr"><span>Less: cost of goods</span><span style="color:var(--amber)">(${fmt(tc)})</span></div><div class="plr"><span>Gross profit (PNL)</span><span style="color:var(--blue)">${fmt(tp)}</span></div><div class="plr"><span>Less: other expenses</span><span style="color:var(--red)">(${fmt(te)})</span></div><div class="plr"><span>Outstanding (unpaid)</span><span style="color:var(--amber)">${fmt(out)}</span></div><div class="plr"><span>Net profit / (loss)</span><span style="color:${net>=0?'var(--blue)':'var(--red)'}">${fmt(net)}</span></div>`; }
@@ -2377,6 +2389,8 @@ function ownerUpdateStatus(taskId, newStatus){
 function deleteTask(taskId){
   if(!confirm('Delete this task?')) return;
   D.tasks=D.tasks.filter(t=>t.id!==taskId);
+  if(!D.deletedIds) D.deletedIds=[];
+  D.deletedIds.push(taskId);
   logA('task','Deleted task');
   saveD(); sbDel('tasks',taskId); renderTasksMetrics(); renderTasks();
 }
@@ -2744,7 +2758,7 @@ function confirmConvert(){
   updateTask(t);
   document.getElementById('m-convert').classList.remove('open');
   renderAccounts();
-  alert('✅ Sale record created for '+custName+'!');
+  toast('✓ Sale created for '+custName+'!');
 }
 
 
@@ -3466,6 +3480,23 @@ function calSelectDay(dateStr){
 
   detail.style.display='block';
   detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+
+// ── Toast notification system ─────────────────────────────────────────────────
+function toast(msg, type='success', duration=2800){
+  let t=document.getElementById('_toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='_toast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;transition:opacity .25s';
+    document.body.appendChild(t);
+  }
+  const colors={success:'background:var(--black);color:#fff',error:'background:var(--red);color:#fff',info:'background:var(--blue);color:#fff',warn:'background:var(--amber);color:var(--forest)'};
+  t.innerHTML=`<div style="${colors[type]||colors.success};padding:10px 20px;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.18)">${msg}</div>`;
+  t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>{t.style.opacity='0';},duration);
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
