@@ -1069,36 +1069,47 @@ function doLogin(user){
   // Sync with Supabase in background — NEVER blocks login, NEVER loses data
   const _ss=document.getElementById('sync-status');
   if(_ss) _ss.textContent='Syncing...';
+  // Push any locally-deleted IDs to Supabase before fetching (handles offline deletions)
+  if(D.deletedIds&&D.deletedIds.length){
+    const tbls=['sales','expenses','inventory','customers','suppliers','tasks','bundles'];
+    D.deletedIds.forEach(rid=>tbls.forEach(tbl=>{
+      fetch(SUPA_URL+'/rest/v1/deleted_records',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({record_id:String(rid),table_name:tbl,company_id:currentCo.id,deleted_at:new Date().toISOString()})}).catch(()=>{});
+    }));
+  }
+  // Fetch deleted records from Supabase FIRST so we never restore deleted data
+  fetchDeletedIds(currentCo.id).then(globalDeleted=>{
   fetchAllFromSupa(currentCo.id).then(d=>{
     if(!d) return;
     // Helper: merge local into Supabase — push any local records not in Supabase
-    const _deleted=new Set(D.deletedIds||[]);
-    function syncBoth(supaRows, localRows, mapFn, pushFn) {
+    // Combine local deletedIds + global Supabase deletedIds for maximum coverage
+    const _localDel=new Set((D.deletedIds||[]).map(String));
+    function _isDeleted(id,table){
+      const sid=String(id);
+      if(_localDel.has(sid)) return true;
+      if(globalDeleted[table]&&globalDeleted[table].has(sid)) return true;
+      return false;
+    }
+    function syncBoth(supaRows, localRows, mapFn, pushFn, table) {
       if(supaRows&&supaRows.length) {
-        // Filter out anything we deleted on this device
-        const filtered=supaRows.filter(r=>!_deleted.has(r.id));
-        const supaIds=new Set(filtered.map(r=>r.id));
-        const localOnly=localRows.filter(r=>!supaIds.has(r.id)&&!_deleted.has(r.id));
-        // Push local-only records to Supabase
+        // Filter out anything deleted (locally or globally)
+        const filtered=supaRows.filter(r=>!_isDeleted(r.id,table));
+        const supaIds=new Set(filtered.map(r=>String(r.id)));
+        const localOnly=localRows.filter(r=>!supaIds.has(String(r.id))&&!_isDeleted(r.id,table));
+        // Push local-only records up (but not deleted ones)
         localOnly.forEach(r=>pushFn(r));
-        // Re-delete anything that came back from Supabase
-        supaRows.filter(r=>_deleted.has(r.id)).forEach(r=>{
-          const tbl={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',tasks:'tasks',bundles:'bundles'};
-          // Find which table this belongs to and delete again
-        });
         return [...filtered.map(mapFn), ...localOnly];
       } else {
-        const localOnly=localRows.filter(r=>!_deleted.has(r.id));
+        const localOnly=localRows.filter(r=>!_isDeleted(r.id,table));
         localOnly.forEach(r=>pushFn(r));
         return localOnly;
       }
     }
-    D.sales    = syncBoth(d.sales,     D.sales||[],     mapSale,  pushSale);
-    D.expenses = syncBoth(d.expenses,  D.expenses||[],  mapExp,   pushExp);
-    D.inventory= syncBoth(d.inventory, D.inventory||[], r=>r,     pushItem);
-    D.customers= syncBoth(d.customers, D.customers||[], r=>r,     pushCust);
-    D.suppliers= syncBoth(d.suppliers, D.suppliers||[], r=>r,     pushSup);
-    D.tasks    = syncBoth(d.tasks,     D.tasks||[],     mapTask,  pushTask);
+    D.sales    = syncBoth(d.sales,     D.sales||[],     mapSale,  pushSale,  'sales');
+    D.expenses = syncBoth(d.expenses,  D.expenses||[],  mapExp,   pushExp,   'expenses');
+    D.inventory= syncBoth(d.inventory, D.inventory||[], r=>r,     pushItem,  'inventory');
+    D.customers= syncBoth(d.customers, D.customers||[], r=>r,     pushCust,  'customers');
+    D.suppliers= syncBoth(d.suppliers, D.suppliers||[], r=>r,     pushSup,   'suppliers');
+    D.tasks    = syncBoth(d.tasks,     D.tasks||[],     mapTask,  pushTask,  'tasks');
     // Users — always trust Supabase for passwords, push new local users up
     if(d.users&&d.users.length) {
       const supaIds=new Set(d.users.map(r=>r.id));
@@ -1108,6 +1119,8 @@ function doLogin(user){
     } else { (D.users||[]).forEach(u=>pushUser(u)); }
     saveD();
     // Mark this device as synced
+    // Merge globalDeleted into local deletedIds to keep them in sync
+    Object.values(globalDeleted).forEach(ids=>{ids.forEach(id=>{if(!_localDel.has(id)){D.deletedIds=D.deletedIds||[];D.deletedIds.push(Number(id)||id);}});});
     localStorage.setItem('baraka_synced_'+currentCo.id,'1');
     const _ss2=document.getElementById('sync-status');
     if(_ss2){_ss2.textContent='✓ Synced';setTimeout(()=>{if(_ss2)_ss2.textContent='';},3000);}
@@ -1121,6 +1134,7 @@ function doLogin(user){
       else if(pg.includes('inventory'))renderInv();
     }catch(e){}
   }).catch(()=>{});
+  }).catch(()=>{}); // end fetchDeletedIds
   if(currentUser.role==='delivery'){ goPage('tasks'); }
   else { popAll(); goPage('dashboard'); checkDue(); }
 }
@@ -1950,7 +1964,7 @@ function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.m
 function checkDue(){ if(!currentUser||!D||!D.recurring) return; const due=(D.recurring||[]).filter(r=>r.active&&r.due<=today()); const el=document.getElementById('due-alerts'); if(el) el.innerHTML=due.length?`<div class="rec-alert">⚠ Payments due: ${due.map(r=>r.name).join(', ')}</div>`:''; }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
-function delR(type,id){ if(!can('del')){ alert('Owners and managers only.'); return; } if(!confirm('Delete this record?')) return; if(type==='bundles') D.bundles=D.bundles.filter(r=>r.id!=id); else D[type]=D[type].filter(r=>r.id!=id); if(!D.deletedIds)D.deletedIds=[]; D.deletedIds.push(id); saveD(); const _tm={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];if(_tm)sbDel(_tm,id); if(type==='sales') renderSales(); if(type==='expenses') renderExpenses(); if(type==='inventory'){ renderInv(); popAll(); } if(type==='bundles'){ renderBundles(); popAll(); } if(type==='customers'){ renderCust(); popAll(); } if(type==='suppliers'){ renderSup(); popAll(); } }
+function delR(type,id){ if(!can('del')){ alert('Owners and managers only.'); return; } if(!confirm('Delete this record?')) return; if(type==='bundles') D.bundles=D.bundles.filter(r=>r.id!=id); else D[type]=D[type].filter(r=>r.id!=id); if(!D.deletedIds)D.deletedIds=[]; if(!D.deletedIds.includes(id))D.deletedIds.push(id); saveD(); toast('Record deleted'); const _tm={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];if(_tm)sbDel(_tm,id); if(type==='sales') renderSales(); if(type==='expenses') renderExpenses(); if(type==='inventory'){ renderInv(); popAll(); } if(type==='bundles'){ renderBundles(); popAll(); } if(type==='customers'){ renderCust(); popAll(); } if(type==='suppliers'){ renderSup(); popAll(); } }
 
 // ── P&L ───────────────────────────────────────────────────────────────────────
 function renderPL(){ if(!can('pl')){ document.getElementById('pl-m').innerHTML='<p style="font-size:12px;color:var(--text2)">Available to owners and managers only.</p>'; return; } const mo=(document.getElementById('pl-mo')||{}).value||'all'; let s=D.sales; let e=D.expenses; if(mo!=='all'){ s=s.filter(r=>r.date.startsWith(mo)); e=e.filter(r=>r.date.startsWith(mo)); } const ti=s.reduce((x,r)=>x+r.amount,0); const tc=s.reduce((x,r)=>x+(r.cost||0),0); const tp=s.reduce((x,r)=>x+(r.pnl||0),0); const te=e.reduce((x,r)=>x+r.amount,0); const net=tp-te; const mg=ti?Math.round(tp/ti*100):0; const out=s.filter(x=>x.paymentStatus!=='paid').reduce((x,r)=>x+(r.amount-(r.paidAmount||0)),0); document.getElementById('pl-m').innerHTML=`<div class="mc"><div class="mc-l">Revenue</div><div class="mc-v g">${fmt(ti)}</div></div><div class="mc"><div class="mc-l">Total cost</div><div class="mc-v a">${fmt(tc)}</div></div><div class="mc"><div class="mc-l">Gross PNL</div><div class="mc-v b">${fmt(tp)}</div></div><div class="mc"><div class="mc-l">Other expenses</div><div class="mc-v r">${fmt(te)}</div></div><div class="mc"><div class="mc-l">Net profit</div><div class="mc-v ${net>=0?'b':'r'}">${fmt(net)}</div></div><div class="mc"><div class="mc-l">PNL margin</div><div class="mc-v ${mg>=0?'b':'r'}">${mg}%</div></div><div class="mc"><div class="mc-l">Outstanding</div><div class="mc-v a">${fmt(out)}</div></div>`; const ib={}; s.forEach(r=>{ (r.items||[]).forEach(it=>{ ib[it.name]=(ib[it.name]||0)+it.price*it.qty; }); }); document.getElementById('pl-inc').innerHTML='<div class="ct">Revenue by item</div>'+(Object.keys(ib).length?Object.entries(ib).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([k,v])=>`<div class="plr"><span>${k.substring(0,40)}</span><span style="color:var(--green)">${fmt(v)}</span></div>`).join('')+`<div class="plr"><span>Total</span><span style="color:var(--green)">${fmt(ti)}</span></div>`:'<div class="empty">No sales recorded.</div>'); const eb={}; e.forEach(r=>{ eb[r.cat]=(eb[r.cat]||0)+r.amount; }); document.getElementById('pl-exp').innerHTML='<div class="ct">Expenses by category</div>'+(Object.keys(eb).length?Object.entries(eb).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="plr"><span>${k}</span><span style="color:var(--red)">${fmt(v)}</span></div>`).join('')+`<div class="plr"><span>Total</span><span style="color:var(--red)">${fmt(te)}</span></div>`:'<div class="empty">No expenses recorded.</div>'); document.getElementById('pl-sum').innerHTML=`<div class="plr"><span>Gross revenue</span><span style="color:var(--green)">${fmt(ti)}</span></div><div class="plr"><span>Less: cost of goods</span><span style="color:var(--amber)">(${fmt(tc)})</span></div><div class="plr"><span>Gross profit (PNL)</span><span style="color:var(--blue)">${fmt(tp)}</span></div><div class="plr"><span>Less: other expenses</span><span style="color:var(--red)">(${fmt(te)})</span></div><div class="plr"><span>Outstanding (unpaid)</span><span style="color:var(--amber)">${fmt(out)}</span></div><div class="plr"><span>Net profit / (loss)</span><span style="color:${net>=0?'var(--blue)':'var(--red)'}">${fmt(net)}</span></div>`; }
@@ -2428,9 +2442,11 @@ function deleteTask(taskId){
   if(!confirm('Delete this task?')) return;
   D.tasks=D.tasks.filter(t=>t.id!==taskId);
   if(!D.deletedIds) D.deletedIds=[];
-  D.deletedIds.push(taskId);
-  logA('task','Deleted task');
-  saveD(); sbDel('tasks',taskId); renderTasksMetrics(); renderTasks();
+  if(!D.deletedIds.includes(taskId)) D.deletedIds.push(taskId);
+  saveD();
+  sbDel('tasks',taskId); // deletes from Supabase + writes to deleted_records
+  renderTasksMetrics(); renderTasks();
+  toast('Task deleted');
 }
 
 
@@ -2462,10 +2478,34 @@ async function sbFetch(table,params){
 // Generic delete
 async function sbDel(table,id){
   try{
+    // Delete from source table
     await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id+'&company_id=eq.'+currentCo.id,{
       method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
     });
+    // Also record in deleted_records so ALL devices know this was deleted
+    await fetch(SUPA_URL+'/rest/v1/deleted_records',{
+      method:'POST',
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({record_id:String(id),table_name:table,company_id:currentCo.id,deleted_at:new Date().toISOString()})
+    });
   }catch(e){}
+}
+
+// Fetch all deleted record IDs for this company from Supabase
+async function fetchDeletedIds(coId){
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/deleted_records?company_id=eq.'+coId+'&select=record_id,table_name',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    if(!r.ok) return {};
+    const rows=await r.json();
+    const map={};
+    rows.forEach(row=>{
+      if(!map[row.table_name]) map[row.table_name]=new Set();
+      map[row.table_name].add(String(row.record_id));
+    });
+    return map;
+  }catch(e){return {};}
 }
 
 // Map DB rows to app format
