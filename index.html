@@ -632,9 +632,10 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
       <div class="fg">
-        <div class="fl">
+        <div class="fl ff">
           <label>Assign to <span style="color:var(--red)">*</span></label>
-          <select id="task-assignee"><option value="">-- select team member --</option></select>
+          <div id="task-assignees-wrap" style="display:flex;flex-wrap:wrap;gap:7px;padding:8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);min-height:40px"></div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px">Tap to select one or more people. Useful for meetings, multi-person deliveries, and follow-ups.</div>
         </div>
         <div class="fl ff">
           <label>Task title <span style="color:var(--red)">*</span></label>
@@ -2011,8 +2012,17 @@ function initTasksPage(){
 
   if(isOwner){
     // Owner: populate assignee dropdown
-    document.getElementById('task-assignee').innerHTML='<option value="">-- select team member --</option>'
-      +D.users.map(u=>`<option value="${u.name}">${u.name} (${u.role})</option>`).join('');
+    // Build multi-select assignee chips
+    const wrap=document.getElementById('task-assignees-wrap');
+    if(wrap){
+      wrap.innerHTML=D.users.map(u=>`
+        <label style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;font-size:12px;user-select:none;transition:all .12s" id="chip-${u.id}">
+          <input type="checkbox" value="${u.name}" data-uid="${u.id}" onchange="updateChip(${u.id})" style="width:auto;margin:0">
+          <div class="av ${avC(u.role)}" style="width:22px;height:22px;font-size:9px;flex-shrink:0">${ini(u.name)}</div>
+          <span>${u.name}</span>
+          <span style="font-size:9px;color:var(--text3)">${u.role}</span>
+        </label>`).join('');
+    }
     document.getElementById('tasks-list-title').textContent='All tasks';
     updateTaskClock();
     setTaskType('dispatch', document.querySelector('.task-type-btn[data-type="dispatch"]'));
@@ -2123,10 +2133,11 @@ function setTaskStatusFilter(status){
 
 function createTask(){
   if(!D.tasks) D.tasks=[];
-  const assignee=document.getElementById('task-assignee').value;
+  const assignees=getSelectedAssignees();
+  const assignee=assignees[0]||''; // primary assignee (for backward compat)
   const title=document.getElementById('task-title').value.trim();
   const date=document.getElementById('task-date').value;
-  if(!assignee){ alert('Please select a team member to assign this task to.'); return; }
+  if(!assignees.length){ toast('Please select at least one team member.','warn'); return; }
   if(!title){ alert('Please enter a task title.'); return; }
   if(!date){ alert('Please select a date.'); return; }
   const meta=TASK_TYPE_META[selectedTaskType]||{icon:'📋',label:'Other'};
@@ -2136,7 +2147,8 @@ function createTask(){
     typeIcon:meta.icon,
     typeLabel:meta.label,
     title,
-    assignee,
+    assignee,           // primary (first selected) — for backward compat
+    assignees,          // full list
     createdBy:currentUser.name,
     date,
     timeStart:document.getElementById('task-time-start').value||'',
@@ -2156,20 +2168,30 @@ function createTask(){
     statusHistory:[{status:'pending',by:currentUser.name,at:new Date().toISOString()}],
   };
   D.tasks.unshift(task);
-  logA('task','Assigned to '+assignee+': '+title);
+  logA('task','Assigned to '+assignees.join(', ')+': '+title);
   saveD();
   ['task-title','task-time-start','task-time-end','task-client-name','task-client-phone',
    'task-location','task-amount','task-items','task-notes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
-  document.getElementById('task-assignee').value='';
+  // Uncheck all chips
+  document.querySelectorAll('#task-assignees-wrap input[type=checkbox]').forEach(cb=>{
+    cb.checked=false; updateChip(parseInt(cb.dataset.uid));
+  });
   document.getElementById('task-priority').value='normal';
   document.getElementById('task-date').value=today();
   renderTasksMetrics(); renderTasks();
   const btn=document.querySelector('#task-create-card .btn[onclick="createTask()"]');
   if(btn){ const o=btn.innerHTML; btn.innerHTML='✓ Task assigned!'; setTimeout(()=>btn.innerHTML=o,1500); }
   pushTask(task);
-  setTimeout(()=>openWAModal(task),600);
+  // Notify each assignee via WhatsApp
+  setTimeout(()=>{
+    if(task.assignees&&task.assignees.length>1){
+      openWAMultiModal(task);
+    } else {
+      openWAModal(task);
+    }
+  },600);
 }
 
 function renderTasksMetrics(){
@@ -2214,12 +2236,12 @@ function renderTasks(){
     const byStatus=_taskStatusFilter!=='all'?_taskStatusFilter:(document.getElementById('tf-status')||{}).value||'all';
     const byType=(document.getElementById('tf-type')||{}).value||'all';
     filtered=tasks;
-    if(byAssignee!=='all') filtered=filtered.filter(t=>t.assignee===byAssignee);
+    if(byAssignee!=='all') filtered=filtered.filter(t=>t.assignee===byAssignee||(t.assignees&&t.assignees.includes(byAssignee)));
     if(byStatus!=='all') filtered=filtered.filter(t=>t.status===byStatus);
     if(byType!=='all') filtered=filtered.filter(t=>t.type===byType);
   } else {
     // Staff/Manager only see their own tasks
-    filtered=tasks.filter(t=>t.assignee===currentUser.name);
+    filtered=tasks.filter(t=>t.assignee===currentUser.name||(t.assignees&&t.assignees.includes(currentUser.name)));
     const byStatus=(document.getElementById('tf-status')||{}).value||'active';
     if(byStatus==='active') filtered=filtered.filter(t=>t.status==='pending'||t.status==='in-progress');
     else if(byStatus==='done') filtered=filtered.filter(t=>t.status==='done'||t.status==='cancelled');
@@ -2247,7 +2269,7 @@ function renderTasks(){
     const st=TASK_STATUS[t.status]||TASK_STATUS['pending'];
     const isUrgent=t.priority==='urgent';
     const isDone=t.status==='done'||t.status==='cancelled';
-    const isAssignee=t.assignee===currentUser.name;
+    const isAssignee=t.assignee===currentUser.name||(t.assignees&&t.assignees.includes(currentUser.name));
     const isReadOnly=currentUser.role==='manager'||currentUser.role==='staff';
     const canMarkDone=isAssignee&&!isDone&&!isReadOnly;
     const timeStr=t.timeStart?(fmt12(t.timeStart)+(t.timeEnd?' – '+fmt12(t.timeEnd):'')):'';
@@ -2356,12 +2378,28 @@ function confirmDone(){
   if(!doneTaskId) return;
   const task=D.tasks.find(t=>t.id===doneTaskId);
   if(!task) return;
-  task.status='done';
-  task.completedAt=new Date().toISOString();
-  task.completionNote=document.getElementById('done-note').value.trim();
-  task.amountCollected=parseFloat(document.getElementById('done-amount').value)||0;
-  task.deliveryCost=parseFloat(document.getElementById('done-delivery-cost').value)||0;
-  task.deliveryMethod=document.getElementById('done-delivery-method').value||'Cash';
+  // Multi-assignee: track who completed
+  if(!task.completions) task.completions={};
+  task.completions[currentUser.name]={
+    note:document.getElementById('done-note').value.trim(),
+    amount:parseFloat(document.getElementById('done-amount').value)||0,
+    deliveryCost:parseFloat(document.getElementById('done-delivery-cost').value)||0,
+    deliveryMethod:document.getElementById('done-delivery-method').value||'Cash',
+    at:new Date().toISOString()
+  };
+  // Mark full task done only if ALL assignees have completed
+  const allAssignees=task.assignees&&task.assignees.length>1?task.assignees:[task.assignee];
+  const allDone=allAssignees.every(a=>task.completions[a]);
+  if(allDone||allAssignees.length<=1){
+    task.status='done';
+    task.completedAt=new Date().toISOString();
+  } else {
+    task.status='in-progress'; // partial completion
+  }
+  task.completionNote=task.completions[currentUser.name].note;
+  task.amountCollected=task.completions[currentUser.name].amount;
+  task.deliveryCost=task.completions[currentUser.name].deliveryCost;
+  task.deliveryMethod=task.completions[currentUser.name].deliveryMethod;
   task.statusHistory=task.statusHistory||[];
   task.statusHistory.push({status:'done',by:currentUser.name,at:new Date().toISOString(),note:task.completionNote});
   logA('task','Completed: '+task.title+(task.completionNote?' — '+task.completionNote:''));
@@ -2433,7 +2471,7 @@ async function sbDel(table,id){
 // Map DB rows to app format
 function mapSale(r){return{id:r.id,date:r.date,items:r.items||[],amount:r.amount||0,cost:r.cost||0,pnl:r.pnl||0,paidAmount:r.paid_amount||0,paymentStatus:r.payment_status||'paid',custName:r.cust_name||'Walk-in',custId:r.cust_id||'',channel:r.channel||'',payment:r.payment||'M-Pesa',ref:r.ref||'',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapExp(r){return{id:r.id,date:r.date,amount:r.amount||0,cat:r.cat||'Other',supId:r.sup_id||'',supName:'',vendor:r.vendor||'',ref:r.ref||'',paymethod:r.paymethod||'M-Pesa',notes:r.notes||'',by:r.by_user||'',evidence:null};}
-function mapTask(r){return{id:r.id,title:r.title,assignee:r.assignee,createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[]};}
+function mapTask(r){return{id:r.id,title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[]};}
 function mapUser(r){return{id:r.id,name:r.name,role:r.role,password:r.password||'',phone:r.phone||''};}
 
 // Merge helper: Supabase wins, keep local-only items
@@ -2450,7 +2488,7 @@ function pushExp(e){ sbUpsert('expenses',{id:e.id,company_id:currentCo.id,date:e
 function pushItem(i){ sbUpsert('inventory',{id:i.id,company_id:currentCo.id,name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:new Date().toISOString()}); }
 function pushCust(c2){ sbUpsert('customers',{id:c2.id,company_id:currentCo.id,name:c2.name,phone:c2.phone||'',channel:c2.channel||'',loc:c2.loc||'',type:c2.type||'Individual',notes:c2.notes||'',created_at:new Date().toISOString()}); }
 function pushSup(s){ sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()}); }
-function pushTask(t){ sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString()}); }
+function pushTask(t){ sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString()}); }
 function updateTask(t){ sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt}); }
 async function pushUser(u){
   const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({password:u.password||'',phone:u.phone||''})});
@@ -3497,6 +3535,83 @@ function toast(msg, type='success', duration=2800){
   t.style.opacity='1';
   clearTimeout(t._timer);
   t._timer=setTimeout(()=>{t.style.opacity='0';},duration);
+}
+
+
+function updateChip(uid){
+  const chip=document.getElementById('chip-'+uid);
+  const cb=chip&&chip.querySelector('input[type=checkbox]');
+  if(!chip||!cb) return;
+  if(cb.checked){
+    chip.style.background='var(--black)';
+    chip.style.color='#fff';
+    chip.style.borderColor='var(--black)';
+    chip.querySelectorAll('.av').forEach(el=>{el.style.background='rgba(255,255,255,0.2)';el.style.color='#fff';});
+  } else {
+    chip.style.background='';chip.style.color='';chip.style.borderColor='';
+    chip.querySelectorAll('.av').forEach(el=>{el.style.background='';el.style.color='';});
+  }
+}
+
+function getSelectedAssignees(){
+  return Array.from(document.querySelectorAll('#task-assignees-wrap input[type=checkbox]:checked'))
+    .map(cb=>cb.value);
+}
+
+
+// Multi-assignee WhatsApp notification
+let _waMultiTask=null;
+let _waMultiIdx=0;
+function openWAMultiModal(task){
+  _waMultiTask=task;
+  _waMultiIdx=0;
+  sendNextWA();
+}
+function sendNextWA(){
+  if(!_waMultiTask) return;
+  const assignees=_waMultiTask.assignees||[_waMultiTask.assignee];
+  if(_waMultiIdx>=assignees.length) return;
+  const assigneeName=assignees[_waMultiIdx];
+  // Build role-specific message for each assignee
+  const u=D.users.find(x=>x.name===assigneeName);
+  const isDelivery=u&&u.role==='delivery';
+  const taskForWA={..._waMultiTask, assignee:assigneeName};
+  // Add role hint to notes
+  if(assignees.length>1){
+    const otherAssignees=assignees.filter(a=>a!==assigneeName);
+    const roleNote=isDelivery?'Your role: Handle the delivery/transport':'Your role: Follow up and coordinate';
+    taskForWA.notes=(taskForWA.notes?taskForWA.notes+'\n\n':'')+roleNote+'\nAlso involved: '+otherAssignees.join(', ');
+  }
+  // Check if more people after this
+  const isLast=_waMultiIdx>=assignees.length-1;
+  const modal=document.getElementById('wa-modal');
+  if(!modal){ openWAModal(taskForWA); return; }
+  // Temporarily override modal close to go to next
+  const sendBtn=document.getElementById('wa-send-btn');
+  if(sendBtn){
+    sendBtn.onclick=()=>{
+      // Send WA for current person
+      const u2=D.users.find(x=>x.name===assigneeName);
+      const phone=u2&&u2.phone?u2.phone.replace(/[^0-9+]/g,''):'';
+      const f12=t=>{if(!t)return'';const[h,m]=t.split(':');const hr=+h;return(hr%12||12)+':'+(m||'00')+(hr<12?'am':'pm');};
+      const fd=d=>{try{return new Date(d+'T00:00').toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long'})}catch(e){return d}};
+      let msg='*New task — Baraka Enterprise*\n\n*'+(taskForWA.typeIcon||'📋')+' '+taskForWA.title+'*\n';
+      msg+='Date: '+fd(taskForWA.date)+(taskForWA.timeStart?' at '+f12(taskForWA.timeStart):'')+'\n';
+      if(taskForWA.priority==='urgent')msg+='🔴 URGENT\n';
+      if(taskForWA.notes)msg+='\n'+taskForWA.notes+'\n';
+      const url=phone?'https://wa.me/'+phone.replace(/^0/,'254')+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg);
+      window.open(url,'_blank');
+      modal.classList.remove('open');
+      _waMultiIdx++;
+      if(!isLast){
+        setTimeout(()=>sendNextWA(),800);
+      }
+    };
+  }
+  openWAModal(taskForWA);
+  // Update header to show progress
+  const lbl=document.getElementById('wa-assignee-label');
+  if(lbl&&assignees.length>1) lbl.textContent+=' ('+(_waMultiIdx+1)+' of '+assignees.length+')';
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
