@@ -1090,18 +1090,30 @@ function doLogin(user){
       return false;
     }
     function syncBoth(supaRows, localRows, mapFn, pushFn, table) {
+      const localIds = new Set((localRows||[]).map(r=>String(r.id)));
+      const localDel = r => _isDeleted(r.id, table);
+
       if(supaRows&&supaRows.length) {
-        // Filter out anything deleted (locally or globally)
-        const filtered=supaRows.filter(r=>!_isDeleted(r.id,table));
-        const supaIds=new Set(filtered.map(r=>String(r.id)));
-        const localOnly=localRows.filter(r=>!supaIds.has(String(r.id))&&!_isDeleted(r.id,table));
-        // Push local-only records up (but not deleted ones)
-        localOnly.forEach(r=>pushFn(r));
-        return [...filtered.map(mapFn), ...localOnly];
+        // Only bring in records from Supabase that we don't have locally yet
+        // (and haven't deleted). Never overwrite local records with Supabase.
+        const newFromSupa = supaRows
+          .filter(r => !localIds.has(String(r.id)) && !localDel(r))
+          .map(mapFn);
+
+        // Push local records that Supabase doesn't have yet
+        const supaIds = new Set(supaRows.map(r=>String(r.id)));
+        const localOnly = (localRows||[]).filter(r => !supaIds.has(String(r.id)) && !localDel(r));
+        localOnly.forEach(r => pushFn(r));
+
+        // Keep all local records (authoritative) + new ones from Supabase
+        // Filter out anything deleted
+        const kept = (localRows||[]).filter(r => !localDel(r));
+        return [...kept, ...newFromSupa];
       } else {
-        const localOnly=localRows.filter(r=>!_isDeleted(r.id,table));
-        localOnly.forEach(r=>pushFn(r));
-        return localOnly;
+        // Nothing in Supabase — push everything local (except deleted)
+        const kept = (localRows||[]).filter(r => !localDel(r));
+        kept.forEach(r => pushFn(r));
+        return kept;
       }
     }
     D.sales    = syncBoth(d.sales,     D.sales||[],     mapSale,  pushSale,  'sales');
