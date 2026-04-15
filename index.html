@@ -246,7 +246,7 @@ tr:hover td{background:var(--bg2)}
       <div class="av" id="top-av" style="margin-left:6px"></div>
       <div><div style="font-size:12px;font-weight:600;color:var(--text)" id="top-name"></div><span class="badge" id="top-role"></span></div>
     </div>
-    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.4);margin-right:6px;letter-spacing:.04em"></span><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
+    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.4);margin-right:6px;letter-spacing:.04em;cursor:pointer" onclick="syncNow(true)" title="Tap to sync now"></span><button class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
   </div>
   <div id="due-alerts"></div>
   <div class="nav" id="main-nav"></div>
@@ -1069,84 +1069,9 @@ function doLogin(user){
   // Sync with Supabase in background — NEVER blocks login, NEVER loses data
   const _ss=document.getElementById('sync-status');
   if(_ss) _ss.textContent='Syncing...';
-  // Push any locally-deleted IDs to Supabase before fetching (handles offline deletions)
-  if(D.deletedIds&&D.deletedIds.length){
-    const tbls=['sales','expenses','inventory','customers','suppliers','tasks','bundles'];
-    D.deletedIds.forEach(rid=>tbls.forEach(tbl=>{
-      fetch(SUPA_URL+'/rest/v1/deleted_records',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({record_id:String(rid),table_name:tbl,company_id:currentCo.id,deleted_at:new Date().toISOString()})}).catch(()=>{});
-    }));
-  }
-  // Fetch deleted records from Supabase FIRST so we never restore deleted data
-  fetchDeletedIds(currentCo.id).then(globalDeleted=>{
-  fetchAllFromSupa(currentCo.id).then(d=>{
-    if(!d) return;
-    // Helper: merge local into Supabase — push any local records not in Supabase
-    // Combine local deletedIds + global Supabase deletedIds for maximum coverage
-    const _localDel=new Set((D.deletedIds||[]).map(String));
-    function _isDeleted(id,table){
-      const sid=String(id);
-      if(_localDel.has(sid)) return true;
-      if(globalDeleted[table]&&globalDeleted[table].has(sid)) return true;
-      return false;
-    }
-    function syncBoth(supaRows, localRows, mapFn, pushFn, table) {
-      const localIds = new Set((localRows||[]).map(r=>String(r.id)));
-      const localDel = r => _isDeleted(r.id, table);
-
-      if(supaRows&&supaRows.length) {
-        // Only bring in records from Supabase that we don't have locally yet
-        // (and haven't deleted). Never overwrite local records with Supabase.
-        const newFromSupa = supaRows
-          .filter(r => !localIds.has(String(r.id)) && !localDel(r))
-          .map(mapFn);
-
-        // Push local records that Supabase doesn't have yet
-        const supaIds = new Set(supaRows.map(r=>String(r.id)));
-        const localOnly = (localRows||[]).filter(r => !supaIds.has(String(r.id)) && !localDel(r));
-        localOnly.forEach(r => pushFn(r));
-
-        // Keep all local records (authoritative) + new ones from Supabase
-        // Filter out anything deleted
-        const kept = (localRows||[]).filter(r => !localDel(r));
-        return [...kept, ...newFromSupa];
-      } else {
-        // Nothing in Supabase — push everything local (except deleted)
-        const kept = (localRows||[]).filter(r => !localDel(r));
-        kept.forEach(r => pushFn(r));
-        return kept;
-      }
-    }
-    D.sales    = syncBoth(d.sales,     D.sales||[],     mapSale,  pushSale,  'sales');
-    D.expenses = syncBoth(d.expenses,  D.expenses||[],  mapExp,   pushExp,   'expenses');
-    D.inventory= syncBoth(d.inventory, D.inventory||[], r=>r,     pushItem,  'inventory');
-    D.customers= syncBoth(d.customers, D.customers||[], r=>r,     pushCust,  'customers');
-    D.suppliers= syncBoth(d.suppliers, D.suppliers||[], r=>r,     pushSup,   'suppliers');
-    D.tasks    = syncBoth(d.tasks,     D.tasks||[],     mapTask,  pushTask,  'tasks');
-    // Users — always trust Supabase for passwords, push new local users up
-    if(d.users&&d.users.length) {
-      const supaIds=new Set(d.users.map(r=>r.id));
-      const localOnly=(D.users||[]).filter(u=>!supaIds.has(u.id));
-      localOnly.forEach(u=>pushUser(u));
-      D.users=d.users.map(r=>mapUser(r));
-    } else { (D.users||[]).forEach(u=>pushUser(u)); }
-    saveD();
-    // Mark this device as synced
-    // Merge globalDeleted into local deletedIds to keep them in sync
-    Object.values(globalDeleted).forEach(ids=>{ids.forEach(id=>{if(!_localDel.has(id)){D.deletedIds=D.deletedIds||[];D.deletedIds.push(Number(id)||id);}});});
-    localStorage.setItem('baraka_synced_'+currentCo.id,'1');
-    const _ss2=document.getElementById('sync-status');
-    if(_ss2){_ss2.textContent='✓ Synced';setTimeout(()=>{if(_ss2)_ss2.textContent='';},3000);}
-    // Refresh current page with latest data
-    try{
-      const pg=document.querySelector('.page.on')?.id||'';
-      if(pg.includes('dashboard'))renderDash();
-      else if(pg.includes('tasks')){renderTasksMetrics();renderTasks();}
-      else if(pg.includes('sales'))renderSales();
-      else if(pg.includes('expenses'))renderExpenses();
-      else if(pg.includes('inventory'))renderInv();
-    }catch(e){}
-  }).catch(()=>{});
-  }).catch(()=>{}); // end fetchDeletedIds
+  // Sync with Supabase in background
+  syncNow(false);
+  startAutoSync();
   if(currentUser.role==='delivery'){ goPage('tasks'); }
   else { popAll(); goPage('dashboard'); checkDue(); }
 }
@@ -1235,13 +1160,14 @@ function buildNav(){
     ?[{id:'tasks',l:'My Tasks'}]
     :[{id:'dashboard',l:'Dashboard'},{id:'quick',l:'Quick record'},{id:'sales',l:'Sales'},{id:'expenses',l:'Expenses'},{id:'inventory',l:'Inventory'},{id:'customers',l:'Customers'},{id:'suppliers',l:'Suppliers'},{id:'tasks',l:'Tasks'}];
   if(!isDelivery&&can('pl')) p.push({id:'pl',l:'P&L'});
+  if(!isDelivery&&can('pl')) p.push({id:'channels',l:'Channels'});
   if(!isDelivery&&can('team')) p.push({id:'team',l:'Team'});
   if(!isDelivery&&(isAccountant||currentUser.role==='owner'||currentUser.role==='manager')) p.push({id:'accounts',l:'📊 Accounts'});
   if(!isDelivery) p.push({id:'calendar',l:'Calendar'});
   if(!isDelivery) p.push({id:'ai',l:'AI'});
   document.getElementById('main-nav').innerHTML=p.map(x=>`<button class="nb" id="nb-${x.id}" onclick="goPage('${x.id}')">${x.l}</button>`).join('');
 }
-function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar}[pg]||(() =>{}))(); }
+function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar,channels:initChannels}[pg]||(() =>{}))(); }
 function setDates(){ ['s-date','e-date'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.value=today(); }); }
 function allMonths(){ const ms=new Set([...D.sales.map(r=>r.date.substring(0,7)),...D.expenses.map(r=>r.date.substring(0,7))]); return[...ms].sort().reverse(); }
 function popMonths(){ const o='<option value="all">All months</option>'+allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`).join(''); ['sf-mo','ef-mo','pl-mo'].forEach(id=>{ const el=document.getElementById(id); if(el){ const v=el.value; el.innerHTML=o; el.value=v||'all'; }}); }
@@ -2471,12 +2397,17 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 // Generic upsert
 async function sbUpsert(table,row){
   try{
-    await fetch(SUPA_URL+'/rest/v1/'+table,{
+    const r=await fetch(SUPA_URL+'/rest/v1/'+table,{
       method:'POST',
       headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
       body:JSON.stringify(row)
     });
-  }catch(e){}
+    if(!r.ok){
+      const err=await r.text().catch(()=>'');
+      console.warn('sbUpsert failed:',table,r.status,err);
+    }
+    return r.ok;
+  }catch(e){console.warn('sbUpsert error:',table,e);return false;}
 }
 
 // Generic fetch
@@ -3666,6 +3597,302 @@ function sendNextWA(){
   if(lbl&&assignees.length>1) lbl.textContent+=' ('+(_waMultiIdx+1)+' of '+assignees.length+')';
 }
 
+
+// ════════════════════════════════════════════════════════
+// CHANNELS — Platform × Product performance analytics
+// ════════════════════════════════════════════════════════
+
+const CH_COLORS = {
+  'WhatsApp':   {bg:'#E8F9EF', text:'#128C4A', dot:'#25D366'},
+  'Instagram':  {bg:'#FDE8F5', text:'#9C1B7A', dot:'#C13584'},
+  'Facebook':   {bg:'#E8EFF9', text:'#1A4F96', dot:'#1877F2'},
+  'Website':    {bg:'#EEEDFE', text:'#534AB7', dot:'#7F77DD'},
+  'Phone call': {bg:'#FAF0DC', text:'#8C5C10', dot:'#BA7517'},
+  'Walk-in':    {bg:'#F1EFE8', text:'#5F5E5A', dot:'#888780'},
+};
+
+function initChannels(){
+  // Populate month filter
+  const ms = document.getElementById('ch-mo-filter');
+  if(ms){
+    const opts = '<option value="all">All time</option>' +
+      allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`).join('');
+    const cur = ms.value;
+    ms.innerHTML = opts;
+    ms.value = cur || 'all';
+  }
+  // Populate product filter
+  const pf = document.getElementById('ch-product-filter');
+  if(pf){
+    const products = getProductList();
+    pf.innerHTML = '<option value="all">All products</option>' +
+      products.map(p=>`<option value="${p}">${p}</option>`).join('');
+  }
+  renderChannels();
+}
+
+function getProductList(){
+  const names = new Set();
+  (D.sales||[]).forEach(s=>(s.items||[]).forEach(it=>{ if(it.name) names.add(it.name); }));
+  return [...names].sort();
+}
+
+function getChannelData(mo, productFilter){
+  let sales = D.sales||[];
+  if(mo !== 'all') sales = sales.filter(s=>s.date&&s.date.startsWith(mo));
+  if(productFilter !== 'all'){
+    sales = sales.filter(s=>(s.items||[]).some(it=>it.name===productFilter));
+  }
+
+  const channels = ['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in'];
+  const products = getProductList();
+
+  // Build channel → product map
+  const data = {};
+  channels.forEach(ch=>{ data[ch]={revenue:0, orders:0, pnl:0, products:{}}; });
+  data['Other'] = {revenue:0, orders:0, pnl:0, products:{}};
+
+  sales.forEach(s=>{
+    const ch = channels.includes(s.channel) ? s.channel : 'Other';
+    data[ch].revenue += s.amount||0;
+    data[ch].orders += 1;
+    data[ch].pnl += s.pnl||0;
+    (s.items||[]).forEach(it=>{
+      if(!it.name) return;
+      if(!data[ch].products[it.name]) data[ch].products[it.name]={revenue:0,orders:0,pnl:0,qty:0};
+      const itemRev = (it.price||0)*(it.qty||1);
+      const itemPnl = ((it.price||0)-(it.cost||0))*(it.qty||1);
+      data[ch].products[it.name].revenue += itemRev;
+      data[ch].products[it.name].orders += 1;
+      data[ch].products[it.name].qty += it.qty||1;
+      data[ch].products[it.name].pnl += itemPnl;
+    });
+  });
+  return data;
+}
+
+function renderChannels(){
+  const mo = (document.getElementById('ch-mo-filter')||{}).value||'all';
+  const view = (document.getElementById('ch-view')||{}).value||'revenue';
+  const productFilter = (document.getElementById('ch-product-filter')||{}).value||'all';
+  const data = getChannelData(mo, productFilter);
+  const channels = Object.keys(data).filter(ch=>data[ch].orders>0);
+  const totalRev = channels.reduce((s,ch)=>s+data[ch].revenue,0);
+  const totalOrders = channels.reduce((s,ch)=>s+data[ch].orders,0);
+  const totalPnl = channels.reduce((s,ch)=>s+data[ch].pnl,0);
+  channels.sort((a,b)=>data[b][view]-data[a][view]);
+
+  // ── Overview metrics ──────────────────────────────────────────────────────
+  const bestCh = channels[0]||'—';
+  const bestChData = data[bestCh]||{revenue:0,orders:0};
+  document.getElementById('ch-overview-metrics').innerHTML = `
+    <div class="mc"><div class="mc-l">Total revenue</div><div class="mc-v g">${fmt(totalRev)}</div></div>
+    <div class="mc"><div class="mc-l">Total orders</div><div class="mc-v b">${totalOrders}</div></div>
+    <div class="mc"><div class="mc-l">Best channel</div>
+      <div class="mc-v" style="font-size:13px;font-weight:800">${bestCh}</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">${fmt(bestChData.revenue)} · ${bestChData.orders} orders</div>
+    </div>
+    <div class="mc"><div class="mc-l">Avg order value</div><div class="mc-v a">${totalOrders?fmt(Math.round(totalRev/totalOrders)):'—'}</div></div>`;
+
+  // ── Channel summary bars ───────────────────────────────────────────────────
+  const maxVal = Math.max(...channels.map(ch=>data[ch][view]), 1);
+  const summaryEl = document.getElementById('ch-summary-bars');
+  summaryEl.innerHTML = channels.map(ch=>{
+    const d = data[ch];
+    const val = d[view];
+    const pct = Math.round(val/maxVal*100);
+    const share = view==='revenue'&&totalRev ? Math.round(val/totalRev*100) : null;
+    const col = CH_COLORS[ch]||{bg:'var(--bg2)',text:'var(--text)',dot:'var(--text2)'};
+    const topProduct = Object.entries(d.products).sort((a,b)=>b[1][view]-a[1][view])[0];
+    return `
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;flex-wrap:wrap;gap:5px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:10px;height:10px;border-radius:50%;background:${col.dot};display:inline-block;flex-shrink:0"></span>
+            <span style="font-weight:700;font-size:13px">${ch}</span>
+            ${share!==null?`<span style="font-size:10px;background:${col.bg};color:${col.text};padding:2px 7px;border-radius:2px;font-weight:700">${share}% of revenue</span>`:''}
+          </div>
+          <div style="text-align:right">
+            <span style="font-weight:800;font-size:13px;color:${view==='pnl'&&val<0?'var(--red)':'var(--green)'}">${view==='orders'?val:fmt(val)}</span>
+            <span style="font-size:11px;color:var(--text2);margin-left:6px">${d.orders} order${d.orders!==1?'s':''} · avg ${fmt(d.orders?Math.round(d.revenue/d.orders):0)}</span>
+          </div>
+        </div>
+        <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+          <div style="height:8px;background:${col.dot};border-radius:4px;width:${pct}%;transition:width .3s"></div>
+        </div>
+        ${topProduct?`<div style="font-size:11px;color:var(--text2);margin-top:4px">Top product: <strong style="color:var(--text)">${topProduct[0].substring(0,40)}</strong> — ${fmt(topProduct[1].revenue)}</div>`:''}
+      </div>`;
+  }).join('') || '<div class="empty">No sales data for this period.</div>';
+
+  // ── Product × Channel matrix ───────────────────────────────────────────────
+  const allProducts = new Set();
+  channels.forEach(ch=>Object.keys(data[ch].products).forEach(p=>allProducts.add(p)));
+  const products = [...allProducts];
+
+  const matrixEl = document.getElementById('ch-product-matrix');
+  if(!products.length){
+    matrixEl.innerHTML='<div class="empty">No product data found.</div>';
+  } else {
+    // For each product, show which channels it sells on
+    const productStats = products.map(p=>{
+      const chSales = channels
+        .filter(ch=>data[ch].products[p])
+        .map(ch=>({ch, ...data[ch].products[p], col:CH_COLORS[ch]||{bg:'var(--bg2)',text:'var(--text)',dot:'var(--text3)'}}))
+        .sort((a,b)=>b[view]-a[view]);
+      const totalProdRev = chSales.reduce((s,x)=>s+x.revenue,0);
+      const totalProdOrders = chSales.reduce((s,x)=>s+x.orders,0);
+      return {p, chSales, totalProdRev, totalProdOrders};
+    }).filter(x=>x.totalProdOrders>0)
+      .sort((a,b)=>b.totalProdRev-a.totalProdRev);
+
+    matrixEl.innerHTML = productStats.map(({p, chSales, totalProdRev, totalProdOrders})=>{
+      const maxChVal = Math.max(...chSales.map(x=>x[view]),1);
+      return `
+        <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:4px">
+            <span style="font-weight:700;font-size:13px">${p.substring(0,50)}</span>
+            <span style="font-size:11px;color:var(--text2)">${fmt(totalProdRev)} · ${totalProdOrders} orders</span>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            ${chSales.map(x=>{
+              const pct=Math.round(x[view]/maxChVal*100);
+              const shareOfProd=totalProdOrders?Math.round(x.orders/totalProdOrders*100):0;
+              return`<div style="flex:1;min-width:80px;max-width:160px;background:${x.col.bg};border-radius:var(--radius);padding:8px 10px">
+                <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+                  <span style="width:7px;height:7px;border-radius:50%;background:${x.col.dot};display:inline-block"></span>
+                  <span style="font-size:10px;font-weight:700;color:${x.col.text}">${x.ch}</span>
+                </div>
+                <div style="font-size:12px;font-weight:800;color:${x.col.text}">${view==='orders'?x.orders:fmt(x[view])}</div>
+                <div style="font-size:10px;color:${x.col.text};opacity:.7">${shareOfProd}% of orders</div>
+                <div style="height:3px;background:${x.col.dot};opacity:.3;border-radius:2px;margin-top:5px">
+                  <div style="height:3px;background:${x.col.dot};border-radius:2px;width:${pct}%"></div>
+                </div>
+              </div>`;}).join('')}
+          </div>
+        </div>`;
+    }).join('') || '<div class="empty">No product data found.</div>';
+  }
+
+  // ── Full detail table ─────────────────────────────────────────────────────
+  const tableEl = document.getElementById('ch-detail-table');
+  if(!products.length){
+    tableEl.innerHTML='<div class="empty">No data yet.</div>';
+  } else {
+    const rows = [];
+    channels.forEach(ch=>{
+      Object.entries(data[ch].products).forEach(([prod, stat])=>{
+        const avgOrder = stat.orders ? Math.round(stat.revenue/stat.orders) : 0;
+        const margin = stat.revenue ? Math.round(stat.pnl/stat.revenue*100) : 0;
+        rows.push({ch, prod, ...stat, avgOrder, margin});
+      });
+    });
+    rows.sort((a,b)=>b.revenue-a.revenue);
+    const col = ch => CH_COLORS[ch]||{bg:'var(--bg2)',text:'var(--text)'};
+    tableEl.innerHTML = `<table>
+      <thead><tr>
+        <th>Channel</th><th>Product</th><th>Orders</th><th>Qty sold</th>
+        <th>Revenue</th><th>PNL</th><th>Avg order</th><th>Margin</th>
+      </tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:2px;background:${col(r.ch).bg};color:${col(r.ch).text}">${r.ch}</span></td>
+        <td style="font-weight:500;font-size:12px">${r.prod.substring(0,35)}</td>
+        <td style="text-align:center;font-weight:600">${r.orders}</td>
+        <td style="text-align:center">${r.qty}</td>
+        <td style="color:var(--green);font-weight:700">${fmt(r.revenue)}</td>
+        <td style="color:${r.pnl>=0?'var(--blue)':'var(--red)'};font-weight:700">${fmt(r.pnl)}</td>
+        <td>${fmt(r.avgOrder)}</td>
+        <td style="color:${r.margin>=0?'var(--green)':'var(--red)'}">${r.margin}%</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+}
+
+
+// ── Manual / background sync — call anytime to pull latest from Supabase ──────
+async function syncNow(showFeedback=true){
+  if(!currentCo||!currentUser) return;
+  const ss=document.getElementById('sync-status');
+  if(ss) ss.textContent='Syncing...';
+  try{
+    // Push local deletions first
+    if(D.deletedIds&&D.deletedIds.length){
+      const tbls=['sales','expenses','inventory','customers','suppliers','tasks','bundles'];
+      D.deletedIds.forEach(rid=>tbls.forEach(tbl=>{
+        fetch(SUPA_URL+'/rest/v1/deleted_records',{
+          method:'POST',
+          headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+          body:JSON.stringify({record_id:String(rid),table_name:tbl,company_id:currentCo.id,deleted_at:new Date().toISOString()})
+        }).catch(()=>{});
+      }));
+    }
+    const [globalDeleted, d] = await Promise.all([
+      fetchDeletedIds(currentCo.id),
+      fetchAllFromSupa(currentCo.id)
+    ]);
+    if(!d){ if(ss){ss.textContent='⚠ Sync failed';setTimeout(()=>{if(ss)ss.textContent='';},3000);} return; }
+
+    const _localDel=new Set((D.deletedIds||[]).map(String));
+    function _isDel(id,table){
+      const sid=String(id);
+      if(_localDel.has(sid)) return true;
+      if(globalDeleted[table]&&globalDeleted[table].has(sid)) return true;
+      return false;
+    }
+
+    let added=0;
+    function pullNew(supaRows, localRows, mapFn, pushFn, table){
+      if(!supaRows||!supaRows.length){ (localRows||[]).filter(r=>!_isDel(r.id,table)).forEach(r=>pushFn(r)); return localRows||[]; }
+      const localIds=new Set((localRows||[]).map(r=>String(r.id)));
+      const newFromSupa=supaRows.filter(r=>!localIds.has(String(r.id))&&!_isDel(r.id,table)).map(mapFn);
+      added+=newFromSupa.length;
+      const supaIds=new Set(supaRows.map(r=>String(r.id)));
+      (localRows||[]).filter(r=>!supaIds.has(String(r.id))&&!_isDel(r.id,table)).forEach(r=>pushFn(r));
+      return [...(localRows||[]).filter(r=>!_isDel(r.id,table)), ...newFromSupa];
+    }
+
+    D.sales    = pullNew(d.sales,     D.sales||[],     mapSale,  pushSale,  'sales');
+    D.expenses = pullNew(d.expenses,  D.expenses||[],  mapExp,   pushExp,   'expenses');
+    D.inventory= pullNew(d.inventory, D.inventory||[], r=>r,     pushItem,  'inventory');
+    D.customers= pullNew(d.customers, D.customers||[], r=>r,     pushCust,  'customers');
+    D.suppliers= pullNew(d.suppliers, D.suppliers||[], r=>r,     pushSup,   'suppliers');
+    D.tasks    = pullNew(d.tasks,     D.tasks||[],     mapTask,  pushTask,  'tasks');
+
+    if(d.users&&d.users.length){
+      const supaUids=new Set(d.users.map(r=>r.id));
+      (D.users||[]).filter(u=>!supaUids.has(u.id)).forEach(u=>pushUser(u));
+      D.users=d.users.map(r=>mapUser(r));
+    }
+
+    saveD();
+
+    if(ss){ ss.textContent=added>0?`✓ ${added} new record${added>1?'s':''} synced`:'✓ Up to date'; setTimeout(()=>{if(ss)ss.textContent='';},3000); }
+    if(showFeedback&&added>0){ toast(`${added} new record${added>1?'s':''} synced from cloud`,'info'); }
+
+    // Refresh current page
+    try{
+      const pg=document.querySelector('.page.on')?.id||'';
+      if(pg.includes('dashboard'))renderDash();
+      else if(pg.includes('tasks')){renderTasksMetrics();renderTasks();}
+      else if(pg.includes('sales'))renderSales();
+      else if(pg.includes('expenses'))renderExpenses();
+      else if(pg.includes('inventory'))renderInv();
+      else if(pg.includes('customers'))renderCust();
+      else if(pg.includes('suppliers'))renderSup();
+      else if(pg.includes('calendar'))renderCalendar();
+    }catch(e){}
+  }catch(e){
+    console.warn('syncNow error:',e);
+    if(ss){ss.textContent='⚠ Sync failed';setTimeout(()=>{if(ss)ss.textContent='';},3000);}
+  }
+}
+
+// Auto-sync every 60 seconds when app is open
+let _syncInterval=null;
+function startAutoSync(){
+  if(_syncInterval) clearInterval(_syncInterval);
+  _syncInterval=setInterval(()=>syncNow(false), 60000);
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',function(){applyDark();init();});
@@ -3777,6 +4004,55 @@ window.addEventListener('resize',setVH);
       </div>
       <div id="cal-detail-content"></div>
     </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════
+     CHANNELS — Platform performance analytics
+═══════════════════════════════════════ -->
+<div id="pg-channels" class="page">
+
+  <!-- Header + filters -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">Channel analytics</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">See which platforms drive the most sales for each product</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <select id="ch-mo-filter" onchange="renderChannels()" style="font-size:11px;padding:5px 9px;border-radius:var(--radius);border:1px solid var(--border2)"></select>
+      <select id="ch-view" onchange="renderChannels()" style="font-size:11px;padding:5px 9px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <option value="revenue">By revenue</option>
+        <option value="orders">By orders</option>
+        <option value="pnl">By PNL</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Top-level channel metrics -->
+  <div class="metrics" id="ch-overview-metrics" style="margin-bottom:1rem"></div>
+
+  <!-- Channel × Product matrix -->
+  <div class="card" style="margin-bottom:.9rem">
+    <div class="ct">Channel performance overview</div>
+    <div id="ch-summary-bars"></div>
+  </div>
+
+  <!-- Product breakdown per channel -->
+  <div class="card" style="margin-bottom:.9rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:7px">
+      <div class="ct" style="margin-bottom:0">Which products sell on which platform</div>
+      <select id="ch-product-filter" onchange="renderChannels()" style="font-size:11px;padding:5px 9px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <option value="all">All products</option>
+      </select>
+    </div>
+    <div id="ch-product-matrix"></div>
+  </div>
+
+  <!-- Channel × Product detail table -->
+  <div class="card">
+    <div class="ct">Full breakdown — channel by product</div>
+    <div class="tbl-wrap" id="ch-detail-table"></div>
   </div>
 
 </div>
