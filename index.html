@@ -250,6 +250,21 @@ tr:hover td{background:var(--bg2)}
       </div>
     </div>
     <div class="metrics" id="dash-m"></div>
+
+    <!-- Drill-down panel -->
+    <div id="dash-drilldown" style="display:none;margin-bottom:.9rem">
+      <div class="card" style="margin-bottom:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+          <div class="ct" style="margin-bottom:0" id="dd-title">Detail</div>
+          <button onclick="closeDrilldown()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit">✕ Close</button>
+        </div>
+        <div id="dd-content"></div>
+      </div>
+    </div>
+
+    <!-- Net profit -->
+    <div class="card" id="net-profit-card" style="margin-bottom:.9rem"></div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:.9rem">
       <div class="card" style="margin-bottom:0"><div class="ct" id="bar-title">Monthly overview</div><div class="chw"><canvas id="ch-bar"></canvas></div></div>
       <div class="card" style="margin-bottom:0"><div class="ct">Sales by channel</div><div class="chw"><canvas id="ch-ch"></canvas></div></div>
@@ -554,9 +569,10 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
       <div class="fg">
-        <div class="fl">
+        <div class="fl ff">
           <label>Assign to <span style="color:var(--red)">*</span></label>
-          <select id="task-assignee"><option value="">-- select team member --</option></select>
+          <div id="task-assignees-wrap" style="display:flex;flex-wrap:wrap;gap:7px;padding:8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);min-height:40px"></div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px">Tap to select. Multiple people for meetings, multi-person deliveries.</div>
         </div>
         <div class="fl ff">
           <label>Task title <span style="color:var(--red)">*</span></label>
@@ -627,6 +643,14 @@ tr:hover td{background:var(--bg2)}
         <div class="fl ff" id="done-payment-row" style="display:none">
           <label>Amount collected on delivery (KES)</label>
           <input type="number" id="done-amount" placeholder="e.g. 15000">
+        </div>
+        <div class="fl" id="done-delivery-cost-row" style="display:none">
+          <label>Your delivery cost (KES) <span style="font-size:10px;color:var(--text2)">fuel, transport etc.</span></label>
+          <input type="number" id="done-delivery-cost" placeholder="e.g. 500">
+        </div>
+        <div class="fl" id="done-delivery-method-row" style="display:none">
+          <label>Paid via</label>
+          <select id="done-delivery-method"><option>Cash</option><option>M-Pesa</option><option>Fuel card</option><option>Reimbursed</option></select>
         </div>
       </div>
       <div class="br">
@@ -929,7 +953,14 @@ function renderDash(){
   let cmpHTML='';
   if(!isAll&&dashMonth){ const months=getSortedMonths(); const idx=months.indexOf(dashMonth); if(idx>0){ const pm=months[idx-1]; const ps=D.sales.filter(r=>r.date.startsWith(pm)); const pi=ps.reduce((s,r)=>s+r.amount,0); const pp=ps.reduce((s,r)=>s+(r.pnl||0),0); const rd=pi?Math.round((mInc-pi)/pi*100):null; const pd=pp?Math.round((mPNL-pp)/pp*100):null; if(rd!==null) cmpHTML=`<div style="font-size:11px;color:var(--text2);margin-bottom:.5rem">vs ${fmtM(pm)}: Revenue <span class="${rd>=0?'up':'dn'}">${rd>=0?'+':''}${rd}%</span> · PNL <span class="${(pd||0)>=0?'up':'dn'}">${(pd||0)>=0?'+':''}${pd||0}%</span></div>`; } }
   const sb=document.getElementById('sub-banner'); if(currentCo.parent){ sb.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.9rem">${companies.filter(c=>!c.parent).map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;flex:1;min-width:140px;padding:10px 13px;border-radius:var(--radius);border:0.5px solid var(--border)"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c.color}"></span><span style="font-size:12px;font-weight:500">${c.name}</span></span><button class="btn bsm" onclick="switchSub('${c.id}')">View →</button></div>`).join('')}</div>`; } else sb.innerHTML='';
-  document.getElementById('dash-m').innerHTML=cmpHTML+`<div class="mc"><div class="mc-l">Revenue</div><div class="mc-v g">${fmt(mInc)}</div></div><div class="mc"><div class="mc-l">Cost of goods</div><div class="mc-v a">${fmt(mCost)}</div></div><div class="mc"><div class="mc-l">Gross PNL</div><div class="mc-v ${mPNL>=0?'b':'r'}">${fmt(mPNL)}</div></div><div class="mc"><div class="mc-l">Other expenses</div><div class="mc-v r">${fmt(mExp)}</div></div><div class="mc"><div class="mc-l">Transactions</div><div class="mc-v p">${mS.length}</div></div><div class="mc"><div class="mc-l">Outstanding</div><div class="mc-v ${outstanding>0?'a':'g'}">${fmt(outstanding)}</div></div><div class="mc"><div class="mc-l">Low stock</div><div class="mc-v ${lw?'r':'g'}">${lw}</div></div><div class="mc"><div class="mc-l">Payments due</div><div class="mc-v ${due?'a':'g'}">${due}</div></div>`;
+  document.getElementById('dash-m').innerHTML=cmpHTML+`
+    <div class="mc" style="cursor:pointer" onclick="showDrilldown('revenue')"><div class="mc-l">Revenue</div><div class="mc-v g">${fmt(mInc)}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div></div>
+    <div class="mc" style="cursor:pointer" onclick="showDrilldown('expenses')"><div class="mc-l">Expenses</div><div class="mc-v r">${fmt(mExp)}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div></div>
+    <div class="mc" style="cursor:pointer" onclick="showDrilldown('transactions')"><div class="mc-l">Transactions</div><div class="mc-v p">${mS.length}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div></div>
+    <div class="mc" style="cursor:pointer" onclick="showDrilldown('outstanding')"><div class="mc-l">Outstanding</div><div class="mc-v ${outstanding>0?'r':'g'}">${fmt(outstanding)}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em">tap ›</div></div>`;
+  const _np=mPNL-mExp; const _margin=mInc?Math.round(_np/mInc*100):0;
+  const npEl=document.getElementById('net-profit-card');
+  if(npEl) npEl.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><div class="ct" style="margin-bottom:4px">Net profit${isAll?'':' — '+fmtM(dashMonth||tM())}</div><div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:${_np>=0?'var(--green)':'var(--red)'}">${fmt(_np)}</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Gross PNL ${fmt(mPNL)} − Expenses ${fmt(mExp)}</div></div><div style="display:flex;gap:10px;flex-wrap:wrap"><div style="text-align:center;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Margin</div><div style="font-size:18px;font-weight:800;color:${_margin>=0?'var(--blue)':'var(--red)'}">${_margin}%</div></div><div style="text-align:center;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Cost of goods</div><div style="font-size:18px;font-weight:800;color:var(--amber)">${fmt(mCost)}</div></div><div style="text-align:center;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Low stock</div><div style="font-size:18px;font-weight:800;color:${lw?'var(--red)':'var(--green)'}">${lw}</div></div></div></div>`;
   const pend=D.sales.filter(s=>s.paymentStatus!=='paid').slice(0,7); const pp2=document.getElementById('pending-panel'); pp2.innerHTML=`<div class="ct">Outstanding payments (${D.sales.filter(s=>s.paymentStatus!=='paid').length})</div>`+(pend.length?pend.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px"><div><span style="font-weight:500">${s.custName||'Walk-in'}</span> <span class="badge ${psC(s.paymentStatus)}">${psL(s.paymentStatus)}</span><div style="font-size:11px;color:var(--text2)">${s.date} · ${(s.items||[]).map(i=>i.name).join(', ').substring(0,50)}</div></div><div style="text-align:right"><div style="color:var(--red);font-weight:600">${fmt(s.amount-(s.paidAmount||0))}</div><button class="btn bsm" style="margin-top:3px" onclick="openPU(${s.id})">Update</button></div></div>`).join(''):'<div class="empty">All payments up to date.</div>');
   document.getElementById('dash-act').innerHTML=[...D.activity].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,7).map(a=>`<div class="arow"><span><span class="badge bp" style="margin-right:5px">${a.user}</span>${a.desc}</span><span style="color:var(--text2);font-size:11px">${a.date}</span></div>`).join('')||'<div class="empty">No activity yet.</div>';
   document.getElementById('bar-title').textContent=isAll?'Monthly overview (all time)':`Daily sales — ${fmtM(dashMonth||tM())}`;
@@ -1250,7 +1281,7 @@ function addSale(){
   alert('Sale saved!');
 }
 function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay);   rows=[...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  document.getElementById('s-tbody').innerHTMLows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
+  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
 function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); pushSale(s); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); toast('✓ Payment updated'); }
 
@@ -2422,6 +2453,69 @@ function renderChannels(){
   rows.sort((a,b)=>b.revenue-a.revenue);
   const col=ch=>CH_COLORS[ch]||{bg:'var(--bg2)',text:'var(--text)'};
   document.getElementById('ch-detail-table').innerHTML=rows.length?`<table><thead><tr><th>Channel</th><th>Product</th><th>Orders</th><th>Qty</th><th>Revenue</th><th>PNL</th><th>Avg</th><th>Margin</th></tr></thead><tbody>${rows.map(r=>`<tr><td><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:2px;background:${col(r.ch).bg};color:${col(r.ch).text}">${r.ch}</span></td><td style="font-weight:500;font-size:12px">${r.prod.substring(0,35)}</td><td style="text-align:center;font-weight:600">${r.orders}</td><td style="text-align:center">${r.qty}</td><td style="color:var(--green);font-weight:700">${fmt(r.revenue)}</td><td style="color:${r.pnl>=0?'var(--blue)':'var(--red)'};font-weight:700">${fmt(r.pnl)}</td><td>${fmt(r.avgOrder)}</td><td style="color:${r.margin>=0?'var(--green)':'var(--red)'}">${r.margin}%</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No data yet.</div>';
+}
+
+
+// ── Dashboard drill-down ──────────────────────────────────────────────────────
+function closeDrilldown(){
+  document.getElementById('dash-drilldown').style.display='none';
+  document.querySelectorAll('#dash-m .mc').forEach(el=>{el.style.outline='';el.style.background='';});
+}
+function showDrilldown(type){
+  const dd=document.getElementById('dash-drilldown');
+  const title=document.getElementById('dd-title');
+  const content=document.getElementById('dd-content');
+  const mS=filterByDash(D.sales); const mE=filterByDash(D.expenses);
+  document.querySelectorAll('#dash-m .mc').forEach(el=>{el.style.outline='';});
+  const cards=document.querySelectorAll('#dash-m .mc');
+  const ci={revenue:0,expenses:1,transactions:2,outstanding:3};
+  if(cards[ci[type]]) cards[ci[type]].style.outline='2px solid var(--black)';
+  dd.style.display='block';
+  dd.scrollIntoView({behavior:'smooth',block:'nearest'});
+  if(type==='revenue'){
+    title.textContent='Revenue breakdown';
+    const byItem={};mS.forEach(s=>(s.items||[]).forEach(it=>{byItem[it.name]=(byItem[it.name]||0)+it.price*(it.qty||1);}));
+    const byCh={};mS.forEach(s=>{byCh[s.channel||'Unknown']=(byCh[s.channel||'Unknown']||0)+s.amount;});
+    const total=mS.reduce((s,r)=>s+r.amount,0);
+    content.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By product</div>
+      ${Object.entries(byItem).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px"><span>${k.substring(0,28)}</span><span style="font-weight:700;color:var(--green)">${fmt(v)}</span></div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;font-weight:800;border-top:2px solid var(--border)"><span>Total</span><span style="color:var(--green)">${fmt(total)}</span></div></div>
+      <div><div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By channel</div>
+      ${Object.entries(byCh).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px"><span class="badge ${chC(k)}">${k}</span><span style="font-weight:700;color:var(--green)">${fmt(v)}</span></div>`).join('')}
+      </div></div>`;
+  } else if(type==='expenses'){
+    title.textContent='Expenses breakdown';
+    const byCat={};mE.forEach(e=>{byCat[e.cat]=(byCat[e.cat]||0)+e.amount;});
+    const total=mE.reduce((s,e)=>s+e.amount,0);
+    content.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">By category</div>
+      ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const pct=total?Math.round(v/total*100):0;return`<div style="padding:5px 0;border-bottom:.5px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>${k}</span><span style="font-weight:700;color:var(--red)">${fmt(v)}</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="height:4px;background:var(--black);border-radius:2px;width:${pct}%"></div></div></div>`;}).join('')}
+      <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;font-weight:800;border-top:2px solid var(--border)"><span>Total</span><span style="color:var(--red)">${fmt(total)}</span></div></div>
+      <div><div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Recent</div>
+      ${mE.slice(0,8).map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px"><div><span style="font-weight:500">${e.vendor||e.cat}</span><div style="font-size:10px;color:var(--text2)">${e.date} · ${e.cat}</div></div><span style="font-weight:700;color:var(--red)">${fmt(e.amount)}</span></div>`).join('')}
+      </div></div>`;
+  } else if(type==='transactions'){
+    title.textContent='All transactions';
+    const sorted=[...mS].sort((a,b)=>b.date.localeCompare(a.date));
+    content.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Items</th><th>Customer</th><th>Amount</th><th>PNL</th><th>Status</th></tr></thead><tbody>${sorted.map(s=>`<tr><td>${s.date}</td><td style="font-size:11px">${(s.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ').substring(0,35)}</td><td>${s.custName||'Walk-in'}</td><td style="font-weight:700;color:var(--green)">${fmt(s.amount)}</td><td style="font-weight:700;color:${(s.pnl||0)>=0?'var(--blue)':'var(--red)'}">${fmt(s.pnl||0)}</td><td><span class="badge ${psC(s.paymentStatus)}">${psL(s.paymentStatus)}</span></td></tr>`).join('')}</tbody></table></div>`;
+  } else if(type==='outstanding'){
+    title.textContent='Outstanding payments';
+    const unpaid=D.sales.filter(s=>s.paymentStatus!=='paid').sort((a,b)=>a.date.localeCompare(b.date));
+    content.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Balance</th><th>Status</th><th></th></tr></thead><tbody>${unpaid.map(s=>{const bal=s.amount-(s.paidAmount||0);const days=Math.floor((new Date()-new Date(s.date+'T00:00'))/(1000*60*60*24));return`<tr style="${days>30?'background:var(--red-bg)':''}"><td>${s.date}<div style="font-size:10px;color:var(--text2)">${days}d ago</div></td><td style="font-weight:600">${s.custName||'Walk-in'}</td><td style="font-size:11px">${(s.items||[]).map(i=>i.name).join(', ').substring(0,30)}</td><td style="font-weight:800;color:var(--red)">${fmt(bal)}</td><td><span class="badge ${psC(s.paymentStatus)}">${psL(s.paymentStatus)}</span></td><td><button class="btn bsm" onclick="openPU(${s.id})">Update</button></td></tr>`;}).join('')}</tbody></table></div>`;
+  }
+}
+
+// ── Multi-assignee chip helpers ───────────────────────────────────────────────
+function updateChip(uid){
+  const chip=document.getElementById('chip-'+uid);
+  const cb=chip&&chip.querySelector('input[type=checkbox]');
+  if(!chip||!cb)return;
+  if(cb.checked){chip.style.background='var(--black)';chip.style.color='#fff';chip.style.borderColor='var(--black)';}
+  else{chip.style.background='';chip.style.color='';chip.style.borderColor='';}
+}
+function getSelectedAssignees(){
+  return Array.from(document.querySelectorAll('#task-assignees-wrap input[type=checkbox]:checked')).map(cb=>cb.value);
 }
 
 </script>
