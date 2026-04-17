@@ -758,7 +758,7 @@ function defD(){ return {
     {id:3,name:'Staff 1',role:'staff',password:'Baraka@staff1'},
     {id:4,name:'Staff 2',role:'delivery',password:'Baraka@staff2'}
   ],
-  recurring:[],recPay:[],activity:[],pins:[],tasks:[]
+  recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{}
 }; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -798,7 +798,8 @@ function selectCo(id){
   currentCo=companies.find(c=>c.id===id);
   let saved=loadD(id);
   D=saved||defD();
-  ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; });
+  ['bundles','pins','recurring','recPay','tasks'].forEach(k=>{ if(!D[k]) D[k]=[]; });
+  if(!D.deletedIds||Array.isArray(D.deletedIds)) D.deletedIds={};
   D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
   if(!saved&&id==='baraka'){ D.sales=seedData(); saveD(); }
   document.getElementById('co-screen').style.display='none';
@@ -1250,7 +1251,7 @@ function addSale(){
 }
 function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay); document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
-function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); }
+function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); pushSale(s); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); toast('✓ Payment updated'); }
 
 // ── Expenses ──────────────────────────────────────────────────────────────────
 // ── Expenses ──────────────────────────────────────────────────────────────────
@@ -1858,29 +1859,33 @@ async function syncNow(showFeedback){
       fetch(base+'users?company_id=eq.'+co+'&order=id.asc',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
     ]);
 
-    // Replace local with Supabase (Supabase is truth)
-    // Only replace if Supabase returned data (protects against network failures)
-    if(sales.length)     D.sales     = sales.map(mapSale);
-    if(expenses.length)  D.expenses  = expenses.map(mapExp);
-    if(inventory.length) D.inventory = inventory;
-    if(customers.length) D.customers = customers;
-    if(suppliers.length) D.suppliers = suppliers;
-    if(tasks.length)     D.tasks     = tasks.map(mapTask);
-    if(users.length)     D.users     = users.map(mapUser);
+    // Blacklist: deleted IDs never come back
+    const _del=D.deletedIds||{};
+    const notDel=(type,r)=>!_del[type+'_'+r.id];
 
-    // Push anything local-only (handles first-time device or offline entries)
-    const sIds=new Set(sales.map(r=>String(r.id)));
-    const eIds=new Set(expenses.map(r=>String(r.id)));
-    const iIds=new Set(inventory.map(r=>String(r.id)));
-    const cuIds=new Set(customers.map(r=>String(r.id)));
-    const suIds=new Set(suppliers.map(r=>String(r.id)));
-    const tIds=new Set(tasks.map(r=>String(r.id)));
-    (D.sales||[]).forEach(r=>{if(!sIds.has(String(r.id)))pushSale(r);});
-    (D.expenses||[]).forEach(r=>{if(!eIds.has(String(r.id)))pushExp(r);});
-    (D.inventory||[]).forEach(r=>{if(!iIds.has(String(r.id)))pushItem(r);});
-    (D.customers||[]).forEach(r=>{if(!cuIds.has(String(r.id)))pushCust(r);});
-    (D.suppliers||[]).forEach(r=>{if(!suIds.has(String(r.id)))pushSup(r);});
-    (D.tasks||[]).forEach(r=>{if(!tIds.has(String(r.id)))pushTask(r);});
+    // MERGE: Keep local edits. Only pull NEW records from Supabase.
+    // This means local changes are NEVER overwritten by sync.
+    function mergeIn(supaRows, localRows, mapFn, table, pushFn){
+      const localIds=new Set((localRows||[]).map(r=>String(r.id)));
+      const supaIds=new Set((supaRows||[]).map(r=>String(r.id)));
+      // New from Supabase (not in local, not deleted)
+      const newRows=(supaRows||[]).filter(r=>!localIds.has(String(r.id))&&notDel(table,r)).map(mapFn);
+      // Keep all local (except deleted), push local-only to Supabase
+      const kept=(localRows||[]).filter(r=>notDel(table,r));
+      kept.forEach(r=>{if(!supaIds.has(String(r.id)))pushFn(r);});
+      return [...kept,...newRows];
+    }
+
+    D.sales     = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
+    D.expenses  = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
+    D.inventory = mergeIn(inventory, D.inventory||[], r=>r,    'inventory', pushItem);
+    D.customers = mergeIn(customers, D.customers||[], r=>r,    'customers', pushCust);
+    D.suppliers = mergeIn(suppliers, D.suppliers||[], r=>r,    'suppliers', pushSup);
+    D.tasks     = mergeIn(tasks,     D.tasks||[],     mapTask, 'tasks',     pushTask);
+    // Users: trust Supabase for passwords only
+    if(users.length) users.forEach(row=>{const u=D.users.find(x=>x.id===row.id);if(u){u.password=row.password||u.password;u.phone=row.phone||u.phone;}else D.users.push(mapUser(row));});
+
+    // Local-only push handled by mergeIn above
 
     saveD();
     if(ss){ss.textContent='✓ Synced';setTimeout(()=>{if(ss)ss.textContent='';},2500);}
@@ -1979,18 +1984,25 @@ function saveNewPw(uid){
 
 async function deleteTask(taskId){
   if(!confirm('Delete this task?'))return;
-  await sbDel('tasks',taskId);
+  // Record deletion FIRST so sync never restores it
+  if(!D.deletedIds) D.deletedIds={};
+  D.deletedIds['tasks_'+taskId]=1;
   D.tasks=D.tasks.filter(t=>t.id!==taskId);
-  saveD();renderTasksMetrics();renderTasks();toast('Task deleted');
+  saveD();
+  sbDel('tasks',taskId); // async - don't wait, blacklist protects us
+  renderTasksMetrics();renderTasks();toast('Task deleted');
 }
 
 async function delR(type,id){
   if(!can('del')){alert('Owners and managers only.');return;}
   if(!confirm('Delete this record?'))return;
-  const tbl={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];
-  if(tbl) await sbDel(tbl,id);
+  // Record deletion FIRST so sync never restores it
+  if(!D.deletedIds) D.deletedIds={};
+  D.deletedIds[type+'_'+id]=1;
   if(type==='bundles') D.bundles=D.bundles.filter(r=>r.id!=id); else if(D[type]) D[type]=D[type].filter(r=>r.id!=id);
   saveD();toast('Deleted');
+  const tbl={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];
+  if(tbl) sbDel(tbl,id); // async - blacklist protects us if it fails
   if(type==='sales')renderSales();
   else if(type==='expenses')renderExpenses();
   else if(type==='inventory'){renderInv();popAll();}
