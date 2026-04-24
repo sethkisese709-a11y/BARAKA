@@ -232,7 +232,7 @@ tr:hover td{background:var(--bg2)}
       <div class="av" id="top-av" style="margin-left:6px"></div>
       <div><div style="font-size:12px;font-weight:600;color:var(--text)" id="top-name"></div><span class="badge" id="top-role"></span></div>
     </div>
-    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.45);margin-right:4px;letter-spacing:.04em"></span><button class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
+    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.45);margin-right:4px;letter-spacing:.04em;cursor:pointer" onclick="syncNow(true)" title="Tap to sync"></span><span id="health-dot" title="Supabase connection" style="width:7px;height:7px;border-radius:50%;background:#666;display:inline-block;margin-right:8px;flex-shrink:0"></span><button class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
   </div>
   <div id="due-alerts"></div>
   <div class="nav" id="main-nav"></div>
@@ -1020,7 +1020,7 @@ function saveQuickProduct(){
     cost,sell,
     low:parseInt(document.getElementById('qp-low').value)||2
   };
-  D.inventory.push(newItem);
+  D.inventory.push(newItem); pushItem(newItem);
   // Auto-pin it so it appears immediately at the top
   D.pins.push('i_'+newItem.id);
   logA('inventory','Added product: '+name);
@@ -1275,7 +1275,7 @@ function addSale(){
   pev.s=null; document.getElementById('s-ev-p').innerHTML='';
   document.getElementById('s-items').innerHTML='';
   document.getElementById('s-items-total').style.display='none';
-  saveD(); popMonths(); renderSales();
+  saveD(); pushSale(D.sales[0]); popMonths(); renderSales();
   ['s-notes','s-ref','s-addr'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('s-ps').value='paid'; togPart('s');
   pushSale(D.sales[0]);
@@ -1365,7 +1365,7 @@ function addExpense(){
   });
   logA('expense',selectedExpCat+' — '+fmt(amount)+(document.getElementById('e-vendor').value?' ('+document.getElementById('e-vendor').value+')':''));
   pev.e=null;
-  saveD(); popMonths(); renderExpenses();
+  saveD(); pushExp(D.expenses[0]); popMonths(); renderExpenses();
   // Success flash
   const btn=document.querySelector('#exp-form-card .btn');
   if(btn){ const orig=btn.innerHTML; btn.innerHTML='&#x2713; Saved!'; setTimeout(()=>{ btn.innerHTML=orig; },1200); }
@@ -1399,7 +1399,7 @@ function renderExpenses(){
 
 // ── Inventory ──────────────────────────────────────────────────────────────────
 function invT(t,btn){ document.getElementById('inv-i').style.display=t==='items'?'block':'none'; document.getElementById('inv-b').style.display=t==='bundles'?'block':'none'; document.querySelectorAll('#pg-inventory .tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(t==='bundles') renderBundles(); }
-function addItem(){ const name=document.getElementById('i-name').value.trim(); if(!name){ alert('Enter name.'); return; } const ex=D.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase()); if(ex){ ex.qty=parseInt(document.getElementById('i-qty').value)||ex.qty; ex.cat=document.getElementById('i-cat').value; ex.cost=parseFloat(document.getElementById('i-cost').value)||ex.cost||0; ex.sell=parseFloat(document.getElementById('i-sell').value)||ex.sell||0; ex.low=parseInt(document.getElementById('i-low').value)||ex.low||2; } else D.inventory.push({id:Date.now(),name,cat:document.getElementById('i-cat').value,qty:parseInt(document.getElementById('i-qty').value)||0,cost:parseFloat(document.getElementById('i-cost').value)||0,sell:parseFloat(document.getElementById('i-sell').value)||0,low:parseInt(document.getElementById('i-low').value)||2}); logA('inventory','Stock: '+name); saveD(); renderInv(); popAll(); document.getElementById('i-name').value=''; document.getElementById('i-qty').value=1; document.getElementById('i-cost').value=''; document.getElementById('i-sell').value=''; }
+function addItem(){ const name=document.getElementById('i-name').value.trim(); if(!name){ alert('Enter name.'); return; } const ex=D.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase()); if(ex){ ex.qty=parseInt(document.getElementById('i-qty').value)||ex.qty; ex.cat=document.getElementById('i-cat').value; ex.cost=parseFloat(document.getElementById('i-cost').value)||ex.cost||0; ex.sell=parseFloat(document.getElementById('i-sell').value)||ex.sell||0; ex.low=parseInt(document.getElementById('i-low').value)||ex.low||2; } else D.inventory.push({id:Date.now(),name,cat:document.getElementById('i-cat').value,qty:parseInt(document.getElementById('i-qty').value)||0,cost:parseFloat(document.getElementById('i-cost').value)||0,sell:parseFloat(document.getElementById('i-sell').value)||0,low:parseInt(document.getElementById('i-low').value)||2}); logA('inventory','Stock: '+name); saveD(); const _invItem=D.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase()); if(_invItem) pushItem(_invItem); renderInv(); popAll(); document.getElementById('i-name').value=''; document.getElementById('i-qty').value=1; document.getElementById('i-cost').value=''; document.getElementById('i-sell').value=''; }
 function renderInv(){ const tv=D.inventory.reduce((s,i)=>s+i.qty*(i.cost||0),0); const lc=D.inventory.filter(i=>i.qty<=i.low).length; document.getElementById('inv-m').innerHTML=`<div class="mc"><div class="mc-l">SKUs</div><div class="mc-v b">${D.inventory.length}</div></div><div class="mc"><div class="mc-l">Bundles</div><div class="mc-v p">${D.bundles.length}</div></div><div class="mc"><div class="mc-l">Stock value</div><div class="mc-v b">${fmt(tv)}</div></div><div class="mc"><div class="mc-l">Low stock</div><div class="mc-v ${lc?'r':'g'}">${lc}</div></div>`; const _sortedInv=[...D.inventory].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   document.getElementById('i-tbody').innerHTML=_sortedInv.length?_sortedInv.map(i=>{ const mg=i.sell&&i.cost?Math.round((i.sell-i.cost)/i.sell*100):0; const low=i.qty<=i.low; const pinned=D.pins.includes('i_'+i.id); return`<tr><td style="font-weight:500">${i.name}</td><td>${i.cat}</td><td style="color:${low?'var(--red)':'var(--green)'};font-weight:600">${i.qty}${low?' ⚠':''}</td><td>${fmt(i.cost)}</td><td>${fmt(i.sell)}</td><td>${mg?mg+'%':'—'}</td><td><span class="badge ${low?'be':'bi'}">${low?'Low':'OK'}</span></td><td><span class="badge ${pinned?'bg':'bw'}" style="cursor:pointer" onclick="togglePin('i_${i.id}')">${pinned?'★':'☆'}</span></td><td>${can('del')?`<button class="del" onclick="delR('inventory',${i.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No items yet.</td></tr>'; }
 function addBRow(){ const opts=D.inventory.map(i=>`<option value="${i.id}" data-price="${i.sell}" data-cost="${i.cost||0}">${i.name} (${fmt(i.sell)})</option>`).join(''); document.getElementById('b-items').innerHTML+=`<div class="sitem-row"><select onchange="calcBun()">${opts}</select><input type="number" value="1" min="1" style="width:48px" oninput="calcBun()"><button class="del" onclick="this.parentElement.remove();calcBun()">✕</button></div>`; calcBun(); }
@@ -1409,13 +1409,13 @@ function renderBundles(){ document.getElementById('b-list').innerHTML=D.bundles.
 
 // ── Customers ─────────────────────────────────────────────────────────────────
 function custT(t,btn){ ['single','bulk','list'].forEach(x=>document.getElementById('c-'+x).style.display=x===t?'block':'none'); document.querySelectorAll('#pg-customers .tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(t==='list') renderCust(); }
-function addCust(){ const name=document.getElementById('c-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.customers.push({id:Date.now(),name,phone:document.getElementById('c-phone').value,channel:document.getElementById('c-ch').value,loc:document.getElementById('c-loc').value,type:document.getElementById('c-type').value,notes:document.getElementById('c-notes').value}); logA('customer','Added: '+name); saveD(); popAll(); ['c-name','c-phone','c-loc','c-notes'].forEach(id=>document.getElementById(id).value=''); alert('Customer saved!'); }
+function addCust(){ const name=document.getElementById('c-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.customers.push({id:Date.now(),name,phone:document.getElementById('c-phone').value,channel:document.getElementById('c-ch').value,loc:document.getElementById('c-loc').value,type:document.getElementById('c-type').value,notes:document.getElementById('c-notes').value}); const _newCust=D.customers[D.customers.length-1]; pushCust(_newCust); logA('customer','Added: '+name); saveD(); popAll(); ['c-name','c-phone','c-loc','c-notes'].forEach(id=>document.getElementById(id).value=''); alert('Customer saved!'); }
 function bulkImport(){ const lines=document.getElementById('bulk-in').value.trim().split('\n').filter(l=>l.trim()); let count=0; lines.forEach(line=>{ const p=line.split(',').map(x=>x.trim()); const name=p[0]; if(!name) return; const chs=['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in']; const ch=p[2]&&chs.find(c=>c.toLowerCase()===p[2].toLowerCase())||'WhatsApp'; D.customers.push({id:Date.now()+Math.random(),name,phone:p[1]||'',channel:ch,loc:p[3]||'',type:'Individual',notes:''}); count++; }); saveD(); popAll(); document.getElementById('bulk-res').textContent=count+' customers imported!'; document.getElementById('bulk-in').value=''; }
 function renderCust(){ const q=(document.getElementById('c-search').value||'').toLowerCase(); const cf=(document.getElementById('c-chf')||{}).value||'all'; let list=D.customers; if(q) list=list.filter(c=>c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)); if(cf!=='all') list=list.filter(c=>c.channel===cf);   list=[...list].sort((a,b)=>b.id-a.id);
   document.getElementById('c-tbody').innerHTML=ist.length?list.map(c=>{ const spent=D.sales.filter(s=>s.custId==c.id).reduce((s,r)=>s+r.amount,0); const out=D.sales.filter(s=>s.custId==c.id&&s.paymentStatus!=='paid').reduce((s,r)=>s+(r.amount-(r.paidAmount||0)),0); const last=D.sales.filter(s=>s.custId==c.id).map(s=>s.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${c.name}</td><td>${c.phone||'—'}</td><td><span class="badge ${chC(c.channel)}">${c.channel||'—'}</span></td><td>${c.loc||'—'}</td><td><span class="badge bg">${c.type}</span></td><td style="color:var(--green);font-weight:500">${spent?fmt(spent):'—'}</td><td style="color:${out>0?'var(--red)':'var(--text2)'};font-weight:${out>0?500:400}">${out>0?fmt(out):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('customers',${c.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No customers yet.</td></tr>'; }
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
-function addSup(){ const name=document.getElementById('sup-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.suppliers.push({id:Date.now(),name,contact:document.getElementById('sup-contact').value,phone:document.getElementById('sup-phone').value,cat:document.getElementById('sup-cat').value,terms:document.getElementById('sup-terms').value,notes:document.getElementById('sup-notes').value}); logA('supplier','Added: '+name); saveD(); renderSup(); popAll(); ['sup-name','sup-contact','sup-phone','sup-notes'].forEach(id=>document.getElementById(id).value=''); }
+function addSup(){ const name=document.getElementById('sup-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.suppliers.push({id:Date.now(),name,contact:document.getElementById('sup-contact').value,phone:document.getElementById('sup-phone').value,cat:document.getElementById('sup-cat').value,terms:document.getElementById('sup-terms').value,notes:document.getElementById('sup-notes').value}); logA('supplier','Added: '+name); pushSup(D.suppliers[D.suppliers.length-1]); saveD(); renderSup(); popAll(); ['sup-name','sup-contact','sup-phone','sup-notes'].forEach(id=>document.getElementById(id).value=''); }
 function renderSup(){   const _sortedSup=[...D.suppliers].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   document.getElementById('sup-tbody').innerHTML=_sortedSup.length?_sortedSup.map(s=>{ const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0); const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${s.name}</td><td>${s.contact||'—'}</td><td>${s.phone||'—'}</td><td><span class="badge bw">${s.cat}</span></td><td>${s.terms}</td><td style="color:var(--amber);font-weight:500">${paid?fmt(paid):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('suppliers',${s.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="8" class="empty">No suppliers yet.</td></tr>'; }
 
@@ -1799,6 +1799,28 @@ function ownerUpdateStatus(taskId, newStatus){
 
 
 
+
+// ── Connection health check ───────────────────────────────────────────────────
+async function checkHealth(){
+  const dot=document.getElementById('health-dot');
+  if(!dot||!currentCo) return;
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/users?company_id=eq.'+currentCo.id+'&limit=1',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    if(r.ok){
+      dot.style.background='#25D366';
+      dot.title='Supabase connected ✓';
+    } else {
+      dot.style.background='#e53935';
+      dot.title='Supabase error: '+r.status;
+    }
+  }catch(e){
+    dot.style.background='#e53935';
+    dot.title='No connection to Supabase';
+  }
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
@@ -1944,6 +1966,7 @@ async function syncNow(showFeedback){
     saveD();
     if(ss){ss.textContent='✓ Synced';setTimeout(()=>{if(ss)ss.textContent='';},2500);}
     if(showFeedback) toast('✓ Data synced','success');
+    checkHealth();
     refreshCurrentPage();
   }catch(e){
     console.warn('syncNow error:',e);
@@ -1954,7 +1977,11 @@ async function syncNow(showFeedback){
 let _syncTimer=null;
 function startAutoSync(){
   if(_syncTimer) clearInterval(_syncTimer);
-  _syncTimer=setInterval(()=>syncNow(false),30000);
+  _syncTimer=setInterval(()=>syncNow(false),10000);
+  setInterval(checkHealth, 120000);
+  // Sync immediately when user returns to the app (tab/phone switch)
+  window.addEventListener('focus', ()=>syncNow(false), {once:false});
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncNow(false); }, {once:false});
 }
 
 function refreshCurrentPage(){
@@ -2021,6 +2048,7 @@ function doLogin(user){
   buildNav();setDates();popAll();
   syncNow(false);
   startAutoSync();
+  setTimeout(checkHealth, 2000);
   if(currentUser.role==='delivery'){goPage('tasks');}
   else{goPage('dashboard');checkDue();}
 }
@@ -2297,7 +2325,7 @@ function confirmConvert(){
   const pa=ps==='paid'?amt:ps==='partial'?(parseFloat(document.getElementById('conv-pa').value)||0):0;
   const custName=document.getElementById('conv-cust').value||t.clientName||'Walk-in';
   const sale={id:Date.now(),date:t.date||today(),items:[{pid:'',name:t.items||t.title,qty:1,price:amt,cost,type:'item'}],amount:amt,cost,pnl:amt-cost,paidAmount:pa,paymentStatus:ps,custName,custId:'',channel:'Walk-in',payment:document.getElementById('conv-pay').value,ref:document.getElementById('conv-ref').value||'',notes:'From delivery: '+t.title,by:currentUser.name,evidence:null};
-  D.sales.unshift(sale);
+  D.sales.unshift(sale); pushSale(sale);
   t.convertedToSale=true;t.saleId=sale.id;
   logA('sale','Delivery converted: '+custName+' '+fmt(amt));
   saveD();pushSale(sale);updateTask(t);
