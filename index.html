@@ -1633,18 +1633,20 @@ function renderTasks(){
   const isOwner=currentUser.role==='owner';
 
   // Filter logic differs by role
+  // Owner, Manager, Staff1 see ALL tasks. Delivery sees only their own.
+  const canSeeAll=currentUser.role==='owner'||currentUser.role==='manager'||currentUser.role==='staff';
   let filtered;
-  if(isOwner){
+  if(canSeeAll){
     const byAssignee=(document.getElementById('tf-assignee')||{}).value||'all';
     const byStatus=(document.getElementById('tf-status')||{}).value||'all';
     const byType=(document.getElementById('tf-type')||{}).value||'all';
     filtered=tasks;
-    if(byAssignee!=='all') filtered=filtered.filter(t=>t.assignee===byAssignee);
+    if(byAssignee!=='all') filtered=filtered.filter(t=>t.assignee===byAssignee||(t.assignees&&t.assignees.includes(byAssignee)));
     if(byStatus!=='all') filtered=filtered.filter(t=>t.status===byStatus);
     if(byType!=='all') filtered=filtered.filter(t=>t.type===byType);
   } else {
-    // Staff/Manager only see their own tasks
-    filtered=tasks.filter(t=>t.assignee===currentUser.name);
+    // Delivery only sees their own tasks
+    filtered=tasks.filter(t=>t.assignee===currentUser.name||(t.assignees&&t.assignees.includes(currentUser.name)));
     const byStatus=(document.getElementById('tf-status')||{}).value||'active';
     if(byStatus==='active') filtered=filtered.filter(t=>t.status==='pending'||t.status==='in-progress');
     else if(byStatus==='done') filtered=filtered.filter(t=>t.status==='done'||t.status==='cancelled');
