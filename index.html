@@ -782,7 +782,7 @@ function defD(){ return {
     {id:3,name:'Staff 1',role:'staff',password:'Baraka@staff1'},
     {id:4,name:'Staff 2',role:'delivery',password:'Baraka@staff2'}
   ],
-  recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{}
+  recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{},auditLog:[]
 }; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -824,6 +824,7 @@ function selectCo(id){
   D=saved||defD();
   ['bundles','pins','recurring','recPay','tasks'].forEach(k=>{ if(!D[k]) D[k]=[]; });
   if(!D.deletedIds||Array.isArray(D.deletedIds)) D.deletedIds={};
+  if(!D.auditLog) D.auditLog=[];
   D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
   if(!saved&&id==='baraka'){ D.sales=seedData(); saveD(); }
   document.getElementById('co-screen').style.display='none';
@@ -924,10 +925,11 @@ function buildNav(){
   if(!isDelivery&&(currentUser.role==='staff'||currentUser.role==='owner'||currentUser.role==='manager')) p.push({id:'accounts',l:'Accounts'});
   if(!isDelivery) p.push({id:'calendar',l:'Calendar'});
   if(!isDelivery&&can('pl')) p.push({id:'channels',l:'Channels'});
+  if(!isDelivery&&(currentUser.role==='owner'||currentUser.role==='manager'||currentUser.role==='staff')) p.push({id:'audit',l:'Audit'});
   if(!isDelivery) p.push({id:'ai',l:'AI'});
   document.getElementById('main-nav').innerHTML=p.map(x=>`<button class="nb" id="nb-${x.id}" onclick="goPage('${x.id}')">${x.l}</button>`).join('');
 }
-function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar,channels:initChannels}[pg]||(() =>{}))(); }
+function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar,channels:initChannels,audit:initAuditLog}[pg]||(() =>{}))(); }
 function setDates(){ ['s-date','e-date'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.value=today(); }); }
 function allMonths(){ const ms=new Set([...D.sales.map(r=>r.date.substring(0,7)),...D.expenses.map(r=>r.date.substring(0,7))]); return[...ms].sort().reverse(); }
 function popMonths(){ const o='<option value="all">All months</option>'+allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`).join(''); ['sf-mo','ef-mo','pl-mo'].forEach(id=>{ const el=document.getElementById(id); if(el){ const v=el.value; el.innerHTML=o; el.value=v||'all'; }}); }
@@ -1275,6 +1277,8 @@ function addSale(){
   pev.s=null; document.getElementById('s-ev-p').innerHTML='';
   document.getElementById('s-items').innerHTML='';
   document.getElementById('s-items-total').style.display='none';
+  auditLog('sale',D.sales[0].id,'created','Sale recorded: '+fmt(D.sales[0].amount)+' — '+(D.sales[0].custName||'Walk-in')+' via '+(D.sales[0].channel||'—'));
+  auditLog('sale',D.sales[0].id,'created','Sale: '+fmt(D.sales[0].amount)+' — '+(D.sales[0].custName||'Walk-in')+' via '+(D.sales[0].channel||'—'));
   saveD(); pushSale(D.sales[0]); popMonths(); renderSales();
   ['s-notes','s-ref','s-addr'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('s-ps').value='paid'; togPart('s');
@@ -1284,7 +1288,7 @@ function addSale(){
 function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay);   rows=[...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>${r.paymentStatus!=='paid'?`<button class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)">💵</button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
-function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); pushSale(s); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); toast('✓ Payment updated'); }
+function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; auditLog('sale',s.id,'payment_updated','Status → '+psL(s.paymentStatus)+' | paid '+fmt(s.paidAmount||0)+' of '+fmt(s.amount)); logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); pushSale(s); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); toast('✓ Payment updated'); }
 
 // ── Expenses ──────────────────────────────────────────────────────────────────
 // ── Expenses ──────────────────────────────────────────────────────────────────
@@ -1365,6 +1369,7 @@ function addExpense(){
   });
   logA('expense',selectedExpCat+' — '+fmt(amount)+(document.getElementById('e-vendor').value?' ('+document.getElementById('e-vendor').value+')':''));
   pev.e=null;
+  auditLog('expense',D.expenses[0].id,'created','Expense: '+D.expenses[0].cat+' — '+fmt(D.expenses[0].amount)+(D.expenses[0].vendor?' to '+D.expenses[0].vendor:''));
   saveD(); pushExp(D.expenses[0]); popMonths(); renderExpenses();
   // Success flash
   const btn=document.querySelector('#exp-form-card .btn');
@@ -1465,12 +1470,12 @@ function initTasksPage(){
   const isOwner=currentUser.role==='owner';
 
   // Show/hide create card
-  document.getElementById('task-create-card').style.display=isOwner?'block':'none';
-  document.getElementById('my-tasks-banner').style.display=isOwner?'none':'block';
+  const canAssign=currentUser.role==='owner'||currentUser.role==='manager';
+  document.getElementById('task-create-card').style.display=canAssign?'block':'none';
+  document.getElementById('my-tasks-banner').style.display=canAssign?'none':'block';
 
-  if(isOwner){
-    // Owner: populate assignee dropdown
-    // Build multi-assignee chips
+  if(canAssign){
+    // Owner + Manager: populate assignee chips
     const _wrap=document.getElementById('task-assignees-wrap');
     if(_wrap){
       _wrap.innerHTML=D.users.map(u=>`
@@ -1571,7 +1576,7 @@ function createTask(){
   if(!date){toast('Please select a date','warn');return;}
   const meta=TASK_TYPE_META[selectedTaskType]||{icon:'📋',label:'Other'};
   const task={
-    id:Date.now(),type:selectedTaskType,typeIcon:meta.icon,typeLabel:meta.label,
+    id:Date.now(),ticketNo:nextTicketNo(),type:selectedTaskType,typeIcon:meta.icon,typeLabel:meta.label,
     title,assignee:allAssignees[0],assignees:allAssignees,createdBy:currentUser.name,date,
     timeStart:document.getElementById('task-time-start').value||'',
     timeEnd:document.getElementById('task-time-end').value||'',
@@ -1588,6 +1593,7 @@ function createTask(){
   };
   D.tasks.unshift(task);
   logA('task','Assigned to '+allAssignees.join(', ')+': '+title);
+  auditLog('task',task.id,'created','['+task.ticketNo+'] Assigned to '+allAssignees.join(', ')+': '+title);
   saveD(); pushTask(task);
   // Reset form
   ['task-title','task-time-start','task-time-end','task-client-name','task-client-phone',
@@ -1700,7 +1706,8 @@ function renderTasks(){
                 <option value="done"        ${t.status==='done'?'selected':''}>✅ Done</option>
                 <option value="cancelled"   ${t.status==='cancelled'?'selected':''}>❌ Cancel</option>
               </select>`:''}
-              ${isOwner?`<button class="del" onclick="deleteTask(${t.id})" title="Delete">🗑</button>`:''}
+              ${isOwner||currentUser.role==='manager'?`<button class="del" onclick="deleteTask(${t.id})" title="Delete">🗑</button>`:''}
+              <button class="btn bsm" onclick="openTicketReview(${t.id})" title="View ticket" style="padding:3px 8px;font-size:10px">🎫</button>
             </div>
           </div>
 
@@ -1776,6 +1783,7 @@ function confirmDone(){
   task.deliveryMethod=document.getElementById('done-delivery-method')?.value||'Cash';
   task.statusHistory=task.statusHistory||[];
   task.statusHistory.push({status:'done',by:currentUser.name,at:new Date().toISOString(),note:task.completionNote});
+  auditLog('task',task.id,'done','['+task.ticketNo+'] Done by '+currentUser.name+(task.completionNote?' — '+task.completionNote:''));
   logA('task','Completed: '+task.title+(task.completionNote?' — '+task.completionNote:''));
   saveD(); updateTask(task);
   document.getElementById('done-modal').classList.remove('open');
@@ -1819,6 +1827,171 @@ async function checkHealth(){
     dot.style.background='#e53935';
     dot.title='No connection to Supabase';
   }
+}
+
+
+// ════════════════════════════════════════════════════════
+// TICKET SYSTEM
+// ════════════════════════════════════════════════════════
+
+function nextTicketNo(){
+  // Format: BRK-YYYY-NNNN (e.g. BRK-2026-0042)
+  const year=new Date().getFullYear();
+  const key='baraka_ticket_seq_'+year+'_'+currentCo.id;
+  let seq=parseInt(localStorage.getItem(key)||'0')+1;
+  localStorage.setItem(key,seq);
+  return 'BRK-'+year+'-'+String(seq).padStart(4,'0');
+}
+
+// ── Audit trail: log a change ─────────────────────────────────────────────────
+function auditLog(entity, entityId, action, details){
+  if(!D.auditLog) D.auditLog=[];
+  D.auditLog.unshift({
+    id:Date.now(),
+    entity,      // 'task','sale','expense','inventory','customer','supplier'
+    entityId,
+    ticketNo: entity==='task'?(D.tasks.find(t=>t.id===entityId)||{}).ticketNo||'':'',
+    action,      // 'created','updated','deleted','status_changed','payment_updated','done' etc
+    details,     // human-readable description of what changed
+    by:currentUser?currentUser.name:'System',
+    at:new Date().toISOString(),
+  });
+  // Keep last 500 entries
+  if(D.auditLog.length>500) D.auditLog=D.auditLog.slice(0,500);
+  saveD();
+  // Push to Supabase async
+  sbUpsert('activity_log',{
+    id:D.auditLog[0].id,
+    company_id:currentCo.id,
+    entity:entity,
+    entity_id:String(entityId),
+    ticket_no:D.auditLog[0].ticketNo||'',
+    action:action,
+    details:details,
+    by_user:currentUser?currentUser.name:'System',
+    created_at:D.auditLog[0].at
+  });
+}
+
+// ── Ticket review modal ───────────────────────────────────────────────────────
+let _reviewTaskId=null;
+function openTicketReview(taskId){
+  const task=D.tasks.find(t=>t.id===taskId);
+  if(!task) return;
+  _reviewTaskId=taskId;
+  const modal=document.getElementById('ticket-review-modal');
+  if(!modal) return;
+
+  const fd=d=>{try{return new Date(d+'T00:00').toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}catch(e){return d}};
+  const fdt=d=>{try{return new Date(d).toLocaleString('en-KE',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return d}};
+
+  document.getElementById('tr-ticket-no').textContent=task.ticketNo||'—';
+  document.getElementById('tr-title').textContent=(task.typeIcon||'📋')+' '+task.title;
+  document.getElementById('tr-status').innerHTML=`<span class="task-status-badge t${task.status.replace('-','')}">${task.status}</span>`;
+  document.getElementById('tr-date').textContent=fd(task.date)+(task.timeStart?' at '+task.timeStart:'');
+  document.getElementById('tr-assignees').textContent=(task.assignees&&task.assignees.length>1?task.assignees.join(', '):task.assignee)||'—';
+  document.getElementById('tr-client').textContent=task.clientName||'—';
+  document.getElementById('tr-phone').textContent=task.clientPhone||'—';
+  document.getElementById('tr-location').textContent=task.location||'—';
+  document.getElementById('tr-items').textContent=task.items||'—';
+  document.getElementById('tr-notes').textContent=task.notes||'—';
+  document.getElementById('tr-amount').textContent=task.amountOnDelivery?'KES '+fmt(task.amountOnDelivery):'—';
+  document.getElementById('tr-collected').textContent=task.amountCollected?'KES '+fmt(task.amountCollected):'—';
+  document.getElementById('tr-completion-note').textContent=task.completionNote||'—';
+  document.getElementById('tr-delivery-cost').textContent=task.deliveryCost?'KES '+fmt(task.deliveryCost)+' ('+( task.deliveryMethod||'Cash')+')':'—';
+  document.getElementById('tr-completed-at').textContent=task.completedAt?fdt(task.completedAt):'Not yet';
+  document.getElementById('tr-created-by').textContent=task.createdBy||'—';
+
+  // Audit trail for this task
+  const logs=(D.auditLog||[]).filter(l=>l.entityId===taskId);
+  const logsEl=document.getElementById('tr-audit-log');
+  logsEl.innerHTML=logs.length?logs.map(l=>`
+    <div style="display:flex;gap:10px;padding:7px 0;border-bottom:.5px solid var(--border);font-size:11px">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${ini(l.by)}</div>
+      <div>
+        <div style="font-weight:600">${l.by} <span style="color:var(--text2);font-weight:400">${l.action}</span></div>
+        <div style="color:var(--text2)">${l.details}</div>
+        <div style="color:var(--text3);margin-top:2px">${fdt(l.at)}</div>
+      </div>
+    </div>`).join(''):'<div style="color:var(--text2);font-size:11px;padding:8px 0">No activity recorded yet.</div>';
+
+  // Notes field
+  document.getElementById('tr-review-notes').value=task.reviewNotes||'';
+
+  // Show convert button only for staff/owner/manager on dispatch/collection
+  const canConvert=(task.type==='dispatch'||task.type==='collection')&&!task.convertedToSale;
+  document.getElementById('tr-convert-btn').style.display=canConvert&&currentUser.role!=='delivery'?'inline-flex':'none';
+
+  modal.classList.add('open');
+}
+
+function saveTicketReview(){
+  const task=D.tasks.find(t=>t.id===_reviewTaskId);
+  if(!task) return;
+  const newNotes=document.getElementById('tr-review-notes').value.trim();
+  if(newNotes!==task.reviewNotes){
+    const old=task.reviewNotes||'';
+    task.reviewNotes=newNotes;
+    auditLog('task',task.id,'review_note_added',
+      old?'Updated review notes':'Added review notes: '+newNotes.substring(0,60));
+  }
+  saveD(); updateTask(task);
+  document.getElementById('ticket-review-modal').classList.remove('open');
+  toast('✓ Ticket saved');
+}
+
+function closeTicketReview(){
+  document.getElementById('ticket-review-modal').classList.remove('open');
+  _reviewTaskId=null;
+}
+
+// ── Audit log page ────────────────────────────────────────────────────────────
+function initAuditLog(){
+  const el=document.getElementById('pg-audit');
+  if(!el) return;
+  renderAuditLog();
+}
+
+function renderAuditLog(){
+  const search=(document.getElementById('audit-search')||{}).value||'';
+  const filter=(document.getElementById('audit-entity-filter')||{}).value||'all';
+  const logs=D.auditLog||[];
+  let rows=logs;
+  if(filter!=='all') rows=rows.filter(l=>l.entity===filter);
+  if(search) rows=rows.filter(l=>
+    (l.by||'').toLowerCase().includes(search.toLowerCase())||
+    (l.action||'').toLowerCase().includes(search.toLowerCase())||
+    (l.details||'').toLowerCase().includes(search.toLowerCase())||
+    (l.ticketNo||'').toLowerCase().includes(search.toLowerCase())
+  );
+
+  const fdt=d=>{try{return new Date(d).toLocaleString('en-KE',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return d}};
+  const entityColors={task:'var(--blue-bg)',sale:'var(--green-bg)',expense:'var(--red-bg)',inventory:'var(--amber-bg)',customer:'var(--purple-bg)',supplier:'var(--bg2)'};
+  const entityTextColors={task:'var(--blue)',sale:'var(--green)',expense:'var(--red)',inventory:'var(--amber)',customer:'var(--purple)',supplier:'var(--text2)'};
+
+  const tbody=document.getElementById('audit-tbody');
+  if(!tbody) return;
+  tbody.innerHTML=rows.length?rows.map(l=>`<tr>
+    <td style="font-size:10px;color:var(--text2);white-space:nowrap">${fdt(l.at)}</td>
+    <td><div style="display:flex;align-items:center;gap:7px">
+      <div style="width:26px;height:26px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${ini(l.by||'?')}</div>
+      <span style="font-weight:600">${l.by||'—'}</span>
+    </div></td>
+    <td><span style="font-size:10px;padding:2px 8px;border-radius:2px;font-weight:700;background:${entityColors[l.entity]||'var(--bg2)'};color:${entityTextColors[l.entity]||'var(--text2)'}">${l.entity}</span></td>
+    <td>${l.ticketNo?`<span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--black)">${l.ticketNo}</span>`:'—'}</td>
+    <td style="font-weight:600">${l.action}</td>
+    <td style="font-size:11px;color:var(--text2);max-width:300px">${l.details}</td>
+  </tr>`).join(''):'<tr><td colspan="6" class="empty">No activity recorded yet.</td></tr>';
+
+  // Summary metrics
+  const today=new Date().toISOString().substring(0,10);
+  const todayCount=logs.filter(l=>l.at&&l.at.startsWith(today)).length;
+  const byUser={};logs.forEach(l=>{byUser[l.by]=(byUser[l.by]||0)+1;});
+  const topUser=Object.entries(byUser).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('audit-metrics').innerHTML=`
+    <div class="mc"><div class="mc-l">Total entries</div><div class="mc-v b">${logs.length}</div></div>
+    <div class="mc"><div class="mc-l">Today</div><div class="mc-v p">${todayCount}</div></div>
+    <div class="mc"><div class="mc-l">Most active</div><div class="mc-v" style="font-size:13px;font-weight:800">${topUser?topUser[0]:'—'}</div></div>`;
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -1890,7 +2063,7 @@ async function sbDel(table,id){
 // ── Row mappers ────────────────────────────────────────────────────
 function mapSale(r){return{id:r.id,date:r.date,items:r.items||[],amount:r.amount||0,cost:r.cost||0,pnl:r.pnl||0,paidAmount:r.paid_amount||0,paymentStatus:r.payment_status||'paid',custName:r.cust_name||'Walk-in',custId:r.cust_id||'',channel:r.channel||'',payment:r.payment||'M-Pesa',ref:r.ref||'',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapExp(r){return{id:r.id,date:r.date,amount:r.amount||0,cat:r.cat||'Other',supId:r.sup_id||'',supName:'',vendor:r.vendor||'',ref:r.ref||'',paymethod:r.paymethod||'M-Pesa',notes:r.notes||'',by:r.by_user||'',evidence:null};}
-function mapTask(r){return{id:r.id,title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false};}
+function mapTask(r){return{id:r.id,ticketNo:r.ticket_no||'',title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false};}
 function mapUser(r){return{id:r.id,name:r.name,role:r.role,password:r.password||'',phone:r.phone||''};}
 
 // ── Push functions ─────────────────────────────────────────────────
@@ -1899,7 +2072,7 @@ function pushExp(e){sbUpsert('expenses',{id:e.id,company_id:currentCo.id,date:e.
 function pushItem(i){sbUpsert('inventory',{id:i.id,company_id:currentCo.id,name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:new Date().toISOString()});}
 function pushCust(cu){sbUpsert('customers',{id:cu.id,company_id:currentCo.id,name:cu.name,phone:cu.phone||'',channel:cu.channel||'',loc:cu.loc||'',type:cu.type||'Individual',notes:cu.notes||'',created_at:new Date().toISOString()});}
 function pushSup(s){sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()});}
-function pushTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString()});}
+function pushTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString()});}
 function updateTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,assignees:t.assignees,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:t.deliveryCostExpensed||false});}
 async function pushUser(u){
   const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({password:u.password||'',phone:u.phone||''})});
@@ -2067,6 +2240,8 @@ function saveNewPw(uid){
 async function deleteTask(taskId){
   if(!confirm('Delete this task?'))return;
   // Record deletion FIRST so sync never restores it
+  const _dtask=D.tasks.find(t=>t.id===taskId);
+  auditLog('task',taskId,'deleted','Task deleted: '+(_dtask?_dtask.title:'#'+taskId));
   if(!D.deletedIds) D.deletedIds={};
   D.deletedIds['tasks_'+taskId]=1;
   D.tasks=D.tasks.filter(t=>t.id!==taskId);
@@ -2727,6 +2902,86 @@ function confirmMP(){
     <div id="ch-product-matrix"></div>
   </div>
   <div class="card"><div class="ct">Full breakdown</div><div class="tbl-wrap" id="ch-detail-table"></div></div>
+</div>
+
+<!-- ═══ TICKET REVIEW MODAL ═══════════════════════════════════════════════════ -->
+<div class="modal-bg" id="ticket-review-modal" onclick="if(event.target===this)closeTicketReview()">
+  <div class="modal" style="max-width:560px">
+    <button class="mc-close" onclick="closeTicketReview()">✕</button>
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem">
+      <div style="width:44px;height:44px;border-radius:var(--radius);background:var(--black);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎫</div>
+      <div>
+        <div style="font-family:monospace;font-size:16px;font-weight:800;letter-spacing:.08em" id="tr-ticket-no">TKT-0000</div>
+        <div style="font-size:12px;color:var(--text2)" id="tr-title">Task title</div>
+      </div>
+      <div style="margin-left:auto" id="tr-status"></div>
+    </div>
+
+    <!-- Task details grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1rem;font-size:12px">
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Date & Time</div><div id="tr-date" style="font-weight:600"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Assigned to</div><div id="tr-assignees" style="font-weight:600"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Client name</div><div id="tr-client" style="font-weight:600"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Client phone</div><div id="tr-phone" style="font-weight:600"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Location</div><div id="tr-location" style="font-weight:600"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Items</div><div id="tr-items" style="font-weight:600"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Amount on delivery</div><div id="tr-amount" style="font-weight:600;color:var(--green)"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Amount collected</div><div id="tr-collected" style="font-weight:600;color:var(--blue)"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Delivery cost</div><div id="tr-delivery-cost" style="font-weight:600;color:var(--amber)"></div></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Completed at</div><div id="tr-completed-at" style="font-weight:600"></div></div>
+      <div style="padding:8px 12px;border-right:1px solid var(--border);grid-column:1/-1"><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:3px">Notes / completion note</div><div id="tr-notes" style="color:var(--text2)"></div><div id="tr-completion-note" style="color:var(--text2);margin-top:4px;font-style:italic"></div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:.5rem">Created by <strong id="tr-created-by"></strong></div>
+
+    <!-- Review notes -->
+    <div class="fl" style="margin-bottom:1rem">
+      <label>Review notes <span style="font-size:10px;color:var(--text2);font-weight:400">(visible to owner, manager, accounts)</span></label>
+      <textarea id="tr-review-notes" rows="2" placeholder="Add follow-up notes, observations, or instructions…"></textarea>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+      <button class="btn" onclick="saveTicketReview()" style="background:var(--black);color:#fff;border-color:var(--black)">✓ Save notes</button>
+      <button id="tr-convert-btn" class="btn" onclick="closeTicketReview();openConvertModal(_reviewTaskId)" style="background:var(--green);color:#fff;border-color:var(--green);display:none">💳 Convert to sale</button>
+      <button class="btn bsm" onclick="closeTicketReview()">Close</button>
+    </div>
+
+    <!-- Audit trail -->
+    <div class="ct" style="margin-bottom:.5rem">Activity log</div>
+    <div id="tr-audit-log"></div>
+  </div>
+</div>
+
+<!-- ═══ AUDIT LOG PAGE ════════════════════════════════════════════════════════ -->
+<div id="pg-audit" class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">Audit log</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Every action — who did what and when</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <input type="text" id="audit-search" placeholder="Search ticket, name, action…" onchange="renderAuditLog()" oninput="renderAuditLog()" style="font-size:11px;padding:5px 9px;width:200px">
+      <select id="audit-entity-filter" onchange="renderAuditLog()" style="font-size:11px;padding:5px 9px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <option value="all">All types</option>
+        <option value="task">Tasks</option>
+        <option value="sale">Sales</option>
+        <option value="expense">Expenses</option>
+        <option value="inventory">Inventory</option>
+        <option value="customer">Customers</option>
+      </select>
+    </div>
+  </div>
+  <div class="metrics" id="audit-metrics" style="margin-bottom:1rem"></div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>By</th><th>Type</th><th>Ticket</th><th>Action</th><th>Details</th></tr></thead>
+        <tbody id="audit-tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 </body>
 </html>
