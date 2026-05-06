@@ -169,6 +169,7 @@ tr:hover td{background:var(--bg2)}
 @media(max-width:600px){.co-grid,.fg,.fg3{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr);border:none;gap:8px}.mc{border:1px solid var(--border);border-radius:var(--radius-lg);border-right:1px solid var(--border)}.co-card,.lcard{padding:1.5rem 1.1rem}#co-screen,#login-screen{padding:.65rem}.main{padding:.75rem .85rem 3rem}.nav{padding:.4rem .75rem}.topbar{padding:.55rem .85rem}.modal{padding:1.25rem 1rem}}
 @media(min-width:768px){.main{padding:1.25rem 1.75rem 3rem}.metrics{grid-template-columns:repeat(4,1fr)}}
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <!-- iOS Install Banner (shown only in Safari, not standalone) -->
@@ -807,7 +808,7 @@ function pwStrength(pw){ let s=0; if(pw.length>=6) s++; if(pw.length>=10) s++; i
 function showStrength(inputId,barId){ const pw=document.getElementById(inputId).value; const s=pwStrength(pw); const bar=document.getElementById(barId); const widths=['0%','25%','45%','65%','85%','100%']; const colors=['transparent','#E24B4A','#E24B4A','#BA7517','#1D9E75','#3B6D11']; bar.style.width=widths[s]; bar.style.background=colors[s]; }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-function init(){ const sc=loadCos(); companies=sc||DEF_COS; renderCoScreen(); }
+function init(){ applyDark(); initSupabaseClient(); const sc=loadCos(); companies=sc||DEF_COS; renderCoScreen(); }
 
 function renderCoScreen(){
   document.getElementById('co-screen').style.display='block';
@@ -1996,6 +1997,61 @@ function renderAuditLog(){
     <div class="mc"><div class="mc-l">Most active</div><div class="mc-v" style="font-size:13px;font-weight:800">${topUser?topUser[0]:'—'}</div></div>`;
 }
 
+
+// ════════════════════════════════════════════════════════
+// SUPABASE JS CLIENT + REALTIME
+// ════════════════════════════════════════════════════════
+let _supabaseClient = null;
+
+function initSupabaseClient(){
+  try{
+    _supabaseClient = supabase.createClient(SUPA_URL, SUPA_KEY, {
+      realtime: { params: { eventsPerSecond: 10 } }
+    });
+    console.log('Supabase client ready');
+  }catch(e){
+    console.warn('Supabase client init failed:', e);
+  }
+}
+
+let _realtimeChannel = null;
+
+function initRealtime(){
+  if(!_supabaseClient || !currentCo) return;
+  if(_realtimeChannel){
+    _supabaseClient.removeChannel(_realtimeChannel);
+    _realtimeChannel = null;
+  }
+
+  const tables = ['sales','expenses','tasks','inventory','customers','suppliers'];
+  let ch = _supabaseClient.channel('baraka-'+currentCo.id);
+
+  tables.forEach(table => {
+    ch = ch.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: table,
+      filter: 'company_id=eq.'+currentCo.id
+    }, (payload) => {
+      console.log('Realtime:', table, payload.eventType);
+      syncNow(false);
+    });
+  });
+
+  ch.subscribe((status) => {
+    const dot = document.getElementById('health-dot');
+    if(status === 'SUBSCRIBED'){
+      if(dot){ dot.style.background='#25D366'; dot.title='Live sync active ✓'; }
+      console.log('✓ Realtime connected');
+    } else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
+      if(dot){ dot.style.background='#FF9800'; dot.title='Realtime offline — polling every 10s'; }
+      console.warn('Realtime disconnected, using polling fallback');
+    }
+  });
+
+  _realtimeChannel = ch;
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
@@ -2047,7 +2103,15 @@ async function sbUpsert(table,row){
       headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
       body:JSON.stringify(row)
     });
-    if(!r.ok){const e=await r.text().catch(()=>'');console.warn('sbUpsert fail:',table,r.status,e.substring(0,200));}
+    if(!r.ok){
+      const e=await r.text().catch(()=>'');
+      console.warn('sbUpsert fail:',table,r.status,e.substring(0,300));
+      // Show visible warning for non-activity_log failures
+      if(table!=='activity_log'){
+        const dot=document.getElementById('health-dot');
+        if(dot){dot.style.background='#e53935';dot.title='Sync error: '+table+' '+r.status+' — check Supabase columns';}
+      }
+    }
     return r.ok;
   }catch(e){console.warn('sbUpsert err:',table,e);return false;}
 }
@@ -2154,9 +2218,10 @@ function startAutoSync(){
   if(_syncTimer) clearInterval(_syncTimer);
   _syncTimer=setInterval(()=>syncNow(false),10000);
   setInterval(checkHealth, 120000);
-  // Sync immediately when user returns to the app (tab/phone switch)
   window.addEventListener('focus', ()=>syncNow(false), {once:false});
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncNow(false); }, {once:false});
+  // Start Supabase Realtime for instant cross-device sync
+  setTimeout(initRealtime, 1500);
 }
 
 function refreshCurrentPage(){
