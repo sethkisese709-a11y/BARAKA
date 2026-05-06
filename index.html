@@ -1675,8 +1675,8 @@ function renderTasks(){
     const st=TASK_STATUS[t.status]||TASK_STATUS['pending'];
     const isUrgent=t.priority==='urgent';
     const isDone=t.status==='done'||t.status==='cancelled';
-    const isAssignee=t.assignee===currentUser.name;
-    const canMarkDone=isAssignee&&!isDone;
+    const isAssignee=t.assignee===currentUser.name||(t.assignees&&t.assignees.includes(currentUser.name));
+    const canMarkDone=(isAssignee||currentUser.role==='owner'||currentUser.role==='manager')&&!isDone;
     const timeStr=t.timeStart?(fmt12(t.timeStart)+(t.timeEnd?' – '+fmt12(t.timeEnd):'')):'';
 
     return`<div class="task-card ${isUrgent&&!isDone?'urgent':''} ${isDone?'done-card':''}">
@@ -1773,6 +1773,12 @@ function openDoneModal(taskId){
   // Show collect field only if there's an amount on delivery
   document.getElementById('done-payment-row').style.display=task.amountOnDelivery>0?'flex':'none';
   if(task.amountOnDelivery>0) document.getElementById('done-amount').placeholder='e.g. '+task.amountOnDelivery.toLocaleString();
+  const isDeliveryTask=task.type==='dispatch'||task.type==='collection';
+  document.getElementById('done-delivery-cost-row').style.display=isDeliveryTask?'flex':'none';
+  document.getElementById('done-delivery-method-row').style.display=isDeliveryTask?'flex':'none';
+  if(!isDeliveryTask){ 
+    const dcEl=document.getElementById('done-delivery-cost'); if(dcEl) dcEl.value='';
+  }
   document.getElementById('done-modal').classList.add('open');
 }
 function confirmDone(){
