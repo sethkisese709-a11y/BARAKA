@@ -2193,20 +2193,57 @@ async function syncNow(showFeedback){
       fetch(base+'users?company_id=eq.'+co+'&order=id.asc',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
     ]);
 
-    // MERGE: Keep local edits + pull new from Supabase.
-    // Remove anything in deleted_records (server) or deletedIds (local blacklist).
+    // MERGE strategy:
+    // - New records from Supabase → add to local
+    // - Local-only records → push to Supabase
+    // - Records on BOTH → merge: keep local data but update status/completion from Supabase
+    // - Deleted records → remove from everywhere
     function mergeIn(supaRows, localRows, mapFn, table, pushFn){
-      const localIds=new Set((localRows||[]).map(r=>String(r.id)));
-      const supaIds=new Set((supaRows||[]).map(r=>String(r.id)));
-      // New from Supabase (not in local, not deleted on any device)
-      const newRows=(supaRows||[])
-        .filter(r=>!localIds.has(String(r.id))&&!isDeleted(table,r.id))
-        .map(mapFn);
-      // Keep local records that haven't been deleted on any device
-      const kept=(localRows||[]).filter(r=>!isDeleted(table,r.id));
-      // Push local-only records up to Supabase
-      kept.forEach(r=>{if(!supaIds.has(String(r.id)))pushFn(r);});
-      return [...kept,...newRows];
+      const localMap=new Map((localRows||[]).map(r=>[String(r.id),r]));
+      const supaMap=new Map((supaRows||[]).map(r=>[String(r.id),r]));
+
+      const result=[];
+
+      // Process local records
+      (localRows||[]).forEach(local=>{
+        const sid=String(local.id);
+        if(isDeleted(table,local.id)) return; // deleted — skip
+        const supaRow=supaMap.get(sid);
+        if(supaRow){
+          // Exists in both — merge status fields from Supabase into local
+          const merged=mapFn(supaRow);
+          // Keep local edits for data fields, take Supabase for status fields
+          if(table==='tasks'){
+            // Always trust Supabase for task status/completion
+            local.status=merged.status||local.status;
+            local.completedAt=merged.completedAt||local.completedAt;
+            local.completionNote=merged.completionNote||local.completionNote;
+            local.amountCollected=merged.amountCollected??local.amountCollected;
+            local.deliveryCost=merged.deliveryCost??local.deliveryCost;
+            local.deliveryCostExpensed=merged.deliveryCostExpensed??local.deliveryCostExpensed;
+            local.convertedToSale=merged.convertedToSale??local.convertedToSale;
+          }
+          if(table==='sales'){
+            // Always trust Supabase for payment status
+            local.paymentStatus=merged.paymentStatus||local.paymentStatus;
+            local.paidAmount=merged.paidAmount??local.paidAmount;
+          }
+          result.push(local);
+        } else {
+          // Local only — push to Supabase
+          pushFn(local);
+          result.push(local);
+        }
+      });
+
+      // Add new records from Supabase not in local
+      supaMap.forEach((supaRow,sid)=>{
+        if(!localMap.has(sid)&&!isDeleted(table,supaRow.id)){
+          result.push(mapFn(supaRow));
+        }
+      });
+
+      return result;
     }
 
     D.sales     = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
