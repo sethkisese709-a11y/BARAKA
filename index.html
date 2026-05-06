@@ -2118,10 +2118,17 @@ async function sbUpsert(table,row){
 
 async function sbDel(table,id){
   try{
+    // 1. Delete from source table
     const r=await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id+'&company_id=eq.'+currentCo.id,{
       method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
     });
-    if(!r.ok)console.warn('sbDel fail:',table,id,r.status);
+    if(!r.ok) console.warn('sbDel fail:',table,id,r.status);
+    // 2. Record deletion in deleted_records so ALL devices know
+    await fetch(SUPA_URL+'/rest/v1/deleted_records',{
+      method:'POST',
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({record_id:String(id),table_name:table,company_id:currentCo.id,deleted_at:new Date().toISOString()})
+    });
     return r.ok;
   }catch(e){console.warn('sbDel err:',e);return false;}
 }
@@ -2160,6 +2167,22 @@ async function syncNow(showFeedback){
     const h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
     const co=currentCo.id;
     const base=SUPA_URL+'/rest/v1/';
+    // Fetch deleted_records first — any ID here must be removed from all devices
+    const deletedRows=await fetch(base+'deleted_records?company_id=eq.'+co+'&select=record_id,table_name',{headers:h})
+      .then(r=>r.ok?r.json():[]).catch(()=>[]);
+    const _serverDel={};
+    deletedRows.forEach(row=>{
+      if(!_serverDel[row.table_name]) _serverDel[row.table_name]=new Set();
+      _serverDel[row.table_name].add(String(row.record_id));
+    });
+    // Merge with local deletedIds blacklist
+    const _localDel=D.deletedIds||{};
+    const isDeleted=(table,id)=>{
+      const sid=String(id);
+      if(_localDel[table+'_'+sid]) return true;
+      if(_serverDel[table]&&_serverDel[table].has(sid)) return true;
+      return false;
+    };
     const [sales,expenses,inventory,customers,suppliers,tasks,users]=await Promise.all([
       fetch(base+'sales?company_id=eq.'+co+'&order=created_at.desc&limit=2000',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
       fetch(base+'expenses?company_id=eq.'+co+'&order=created_at.desc&limit=2000',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
@@ -2170,19 +2193,18 @@ async function syncNow(showFeedback){
       fetch(base+'users?company_id=eq.'+co+'&order=id.asc',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
     ]);
 
-    // Blacklist: deleted IDs never come back
-    const _del=D.deletedIds||{};
-    const notDel=(type,r)=>!_del[type+'_'+r.id];
-
-    // MERGE: Keep local edits. Only pull NEW records from Supabase.
-    // This means local changes are NEVER overwritten by sync.
+    // MERGE: Keep local edits + pull new from Supabase.
+    // Remove anything in deleted_records (server) or deletedIds (local blacklist).
     function mergeIn(supaRows, localRows, mapFn, table, pushFn){
       const localIds=new Set((localRows||[]).map(r=>String(r.id)));
       const supaIds=new Set((supaRows||[]).map(r=>String(r.id)));
-      // New from Supabase (not in local, not deleted)
-      const newRows=(supaRows||[]).filter(r=>!localIds.has(String(r.id))&&notDel(table,r)).map(mapFn);
-      // Keep all local (except deleted), push local-only to Supabase
-      const kept=(localRows||[]).filter(r=>notDel(table,r));
+      // New from Supabase (not in local, not deleted on any device)
+      const newRows=(supaRows||[])
+        .filter(r=>!localIds.has(String(r.id))&&!isDeleted(table,r.id))
+        .map(mapFn);
+      // Keep local records that haven't been deleted on any device
+      const kept=(localRows||[]).filter(r=>!isDeleted(table,r.id));
+      // Push local-only records up to Supabase
       kept.forEach(r=>{if(!supaIds.has(String(r.id)))pushFn(r);});
       return [...kept,...newRows];
     }
@@ -2286,6 +2308,23 @@ function doLogin(user){
   const rb=document.getElementById('top-role');rb.textContent=currentUser.role;rb.className='badge '+rcC(currentUser.role);
   dashMonth=tM();
   buildNav();setDates();popAll();
+  // Push any locally-deleted IDs to Supabase deleted_records on login
+  // This handles deletions made while offline
+  if(D.deletedIds && Object.keys(D.deletedIds).length){
+    const tableMap={sales:'sales',expenses:'expenses',inventory:'inventory',
+      customers:'customers',suppliers:'suppliers',tasks:'tasks',bundles:'bundles'};
+    Object.entries(D.deletedIds).forEach(([key])=>{
+      const parts=key.split('_');
+      const tbl=parts[0]; const rid=parts.slice(1).join('_');
+      if(tableMap[tbl]){
+        fetch(SUPA_URL+'/rest/v1/deleted_records',{
+          method:'POST',
+          headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+          body:JSON.stringify({record_id:rid,table_name:tbl,company_id:currentCo.id,deleted_at:new Date().toISOString()})
+        }).catch(()=>{});
+      }
+    });
+  }
   syncNow(false);
   startAutoSync();
   setTimeout(checkHealth, 2000);
