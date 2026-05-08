@@ -1088,6 +1088,7 @@ function qCard(p){
   const pinned=D.pins.includes(p.pid);
   return`<div class="qcard${pinned?' pinned':''}" onclick="addToCart('${p.pid}','${p.type}')">
     <button class="qpin${pinned?' pinned':''}" onclick="event.stopPropagation();togglePin('${p.pid}')" title="${pinned?'Unpin':'Pin to top'}">${pinned?'★':'☆'}</button>
+    <button onclick="event.stopPropagation();openEditProduct('${p.pid}')" title="Edit product" style="position:absolute;bottom:6px;right:6px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px;line-height:1" class="edit-prod-btn">✏️</button>
     <div class="qn">${p.name}</div>
     <div class="qp">${fmt(p.price)}</div>
   </div>`;
@@ -2063,6 +2064,95 @@ function nextTicketNo(type){
   let seq=parseInt(localStorage.getItem(key)||'0')+1;
   localStorage.setItem(key,seq);
   return prefix+'-'+String(seq).padStart(4,'0');
+}
+
+
+// ── Edit product (inventory item) from Quick Record ──────────────────────────
+function openEditProduct(pid){
+  // pid format: 'i_123' for inventory, 'b_123' for bundle
+  const isBundle = pid.startsWith('b_');
+  const id = parseInt(pid.replace(/^[ib]_/,''));
+  const modal = document.getElementById('edit-product-modal');
+  if(!modal) return;
+
+  if(isBundle){
+    const b = D.bundles.find(x=>x.id===id);
+    if(!b) return;
+    document.getElementById('ep-pid').value = pid;
+    document.getElementById('ep-name').value = b.name;
+    document.getElementById('ep-cat').value = '';
+    document.getElementById('ep-price').value = b.price||0;
+    document.getElementById('ep-cost').value = b.cost||0;
+    document.getElementById('ep-qty').value = '';
+    document.getElementById('ep-low').value = '';
+    document.getElementById('ep-qty').parentElement.style.display='none';
+    document.getElementById('ep-low').parentElement.style.display='none';
+  } else {
+    const item = D.inventory.find(x=>x.id===id);
+    if(!item) return;
+    document.getElementById('ep-pid').value = pid;
+    document.getElementById('ep-name').value = item.name;
+    document.getElementById('ep-cat').value = item.cat||'';
+    document.getElementById('ep-price').value = item.sell||0;
+    document.getElementById('ep-cost').value = item.cost||0;
+    document.getElementById('ep-qty').value = item.qty||0;
+    document.getElementById('ep-low').value = item.low||2;
+    document.getElementById('ep-qty').parentElement.style.display='flex';
+    document.getElementById('ep-low').parentElement.style.display='flex';
+  }
+  modal.classList.add('open');
+}
+
+function saveEditProduct(){
+  const pid = document.getElementById('ep-pid').value;
+  const isBundle = pid.startsWith('b_');
+  const id = parseInt(pid.replace(/^[ib]_/,''));
+  const name = document.getElementById('ep-name').value.trim();
+  const price = parseFloat(document.getElementById('ep-price').value)||0;
+  const cost = parseFloat(document.getElementById('ep-cost').value)||0;
+  if(!name){ toast('Enter a product name','warn'); return; }
+  if(!price){ toast('Enter a selling price','warn'); return; }
+
+  if(isBundle){
+    const b = D.bundles.find(x=>x.id===id);
+    if(!b) return;
+    const oldName = b.name;
+    b.name = name; b.price = price; b.cost = cost;
+    auditLog('inventory',id,'updated','['+( b.ticketNo||'bundle')+'] '+oldName+' → '+name+' | Price: '+fmt(price));
+    saveD(); pushItem(b);
+  } else {
+    const item = D.inventory.find(x=>x.id===id);
+    if(!item) return;
+    const oldName = item.name;
+    item.name = name;
+    item.cat = document.getElementById('ep-cat').value.trim()||item.cat;
+    item.sell = price;
+    item.cost = cost;
+    item.qty = parseInt(document.getElementById('ep-qty').value)||item.qty;
+    item.low = parseInt(document.getElementById('ep-low').value)||item.low||2;
+    auditLog('inventory',id,'updated','['+(item.ticketNo||'INV')+'] '+oldName+' → '+name+' | Price: '+fmt(price)+' | Cost: '+fmt(cost)+' | Qty: '+item.qty);
+    saveD(); pushItem(item);
+  }
+
+  document.getElementById('edit-product-modal').classList.remove('open');
+  renderQuick(); renderInv();
+  popAll();
+  toast('✓ Product updated');
+}
+
+async function confirmDeleteProduct(){
+  const pid = document.getElementById('ep-pid').value;
+  const isBundle = pid.startsWith('b_');
+  const id = parseInt(pid.replace(/^[ib]_/,''));
+  const type = isBundle ? 'bundles' : 'inventory';
+  const arr = isBundle ? D.bundles : D.inventory;
+  const item = arr.find(x=>x.id===id);
+  if(!item) return;
+  if(!confirm('Delete "'+item.name+'"? This cannot be undone.')) return;
+
+  document.getElementById('edit-product-modal').classList.remove('open');
+  await delR(type, id);
+  renderQuick(); renderInv(); popAll();
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -3161,6 +3251,47 @@ function confirmMP(){
         <thead><tr><th>Time</th><th>By</th><th>Type</th><th>Ticket</th><th>Action</th><th>Details</th></tr></thead>
         <tbody id="audit-tbody"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EDIT PRODUCT MODAL ═══════════════════════════════════════════════════ -->
+<div class="modal-bg" id="edit-product-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:440px">
+    <button class="mc-close" onclick="document.getElementById('edit-product-modal').classList.remove('open')">✕</button>
+    <div class="ct">Edit product</div>
+
+    <input type="hidden" id="ep-pid">
+    <div class="fg" style="margin-bottom:1rem">
+      <div class="fl ff">
+        <label>Product name <span style="color:var(--red)">*</span></label>
+        <input type="text" id="ep-name" placeholder="e.g. 3-seater sofa">
+      </div>
+      <div class="fl">
+        <label>Category</label>
+        <input type="text" id="ep-cat" placeholder="e.g. Sofas">
+      </div>
+      <div class="fl">
+        <label>Selling price (KES) <span style="color:var(--red)">*</span></label>
+        <input type="number" id="ep-price" placeholder="0">
+      </div>
+      <div class="fl">
+        <label>Cost price (KES)</label>
+        <input type="number" id="ep-cost" placeholder="0">
+      </div>
+      <div class="fl">
+        <label>Current stock (qty)</label>
+        <input type="number" id="ep-qty" placeholder="0">
+      </div>
+      <div class="fl">
+        <label>Low stock alert</label>
+        <input type="number" id="ep-low" placeholder="2">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="saveEditProduct()" style="background:var(--black);color:#fff;border-color:var(--black);flex:1">✓ Save changes</button>
+      <button class="btn bsm" onclick="confirmDeleteProduct()" style="background:var(--red-bg);color:var(--red);border-color:var(--red)">🗑 Delete</button>
     </div>
   </div>
 </div>
