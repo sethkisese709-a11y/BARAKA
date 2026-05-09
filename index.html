@@ -187,7 +187,6 @@ tr:hover td{background:var(--bg2)}
       <button class="co-btn parent" onclick="selectCo('baraka')"><div class="co-dot" style="background:#111"></div><div class="co-name">Baraka Enterprise</div><div class="co-desc">Parent — Office &amp; Home Furniture</div></button>
       <button class="co-btn" onclick="selectCo('tk')"><div class="co-dot" style="background:#185FA5"></div><div class="co-name">TK Furnitures</div><div class="co-desc">Subsidiary</div></button>
       <button class="co-btn" onclick="selectCo('luxecraft')"><div class="co-dot" style="background:#0F6E56"></div><div class="co-name">Luxecraft Furnitures</div><div class="co-desc">Subsidiary</div></button>
-      <button class="co-btn" onclick="selectCo('fireshield')" style="border-left:3px solid #C0392B"><div class="co-dot" style="background:#C0392B"></div><div class="co-name">Fireshield Supplies</div><div class="co-desc">Subsidiary — Fire Safety &amp; Supplies</div></button>
     </div>
     <div class="section-divider">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="section-label">Add subsidiary</div><button onclick="clearCompanyCache()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3);font-family:inherit;text-decoration:underline">↺ Clear cache</button></div>
@@ -768,8 +767,7 @@ const CO_KEY='baraka_cos_v4_html', DP='baraka_data_v4_html_';
 const DEF_COS=[
   {id:'baraka',name:'Baraka Enterprise',desc:'Parent — Office & Home Furniture',color:'#3C3489',parent:true},
   {id:'tk',name:'TK Furnitures',desc:'Subsidiary',color:'#185FA5',parent:false},
-  {id:'luxecraft',name:'Luxecraft Furnitures',desc:'Subsidiary',color:'#0F6E56',parent:false},
-  {id:'fireshield',name:'Fireshield Supplies',desc:'Subsidiary — Fire Safety & Supplies',color:'#C0392B',parent:false}
+  {id:'luxecraft',name:'Luxecraft Furnitures',desc:'Subsidiary',color:'#0F6E56',parent:false}
 ];
 
 let companies=[],currentCo=null,currentUser=null,D=null;
