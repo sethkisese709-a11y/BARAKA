@@ -186,7 +186,7 @@ tr:hover td{background:var(--bg2)}
     <div class="co-grid" id="co-grid">
       <button class="co-btn parent" onclick="selectCo('baraka')"><div class="co-dot" style="background:#111"></div><div class="co-name">Baraka Enterprise</div><div class="co-desc">Parent — Office &amp; Home Furniture</div></button>
       <button class="co-btn" onclick="selectCo('tk')"><div class="co-dot" style="background:#185FA5"></div><div class="co-name">TK Furnitures</div><div class="co-desc">Subsidiary</div></button>
-      <button class="co-btn" onclick="selectCo('lux')"><div class="co-dot" style="background:#0F6E56"></div><div class="co-name">Luxecraft Furnitures</div><div class="co-desc">Subsidiary</div></button>
+      <button class="co-btn" onclick="selectCo('luxecraft')"><div class="co-dot" style="background:#0F6E56"></div><div class="co-name">Luxecraft Furnitures</div><div class="co-desc">Subsidiary</div></button>
       <button class="co-btn" onclick="selectCo('fireshield')" style="border-left:3px solid #C0392B"><div class="co-dot" style="background:#C0392B"></div><div class="co-name">Fireshield Supplies</div><div class="co-desc">Subsidiary — Fire Safety &amp; Supplies</div></button>
     </div>
     <div class="section-divider">
@@ -543,7 +543,14 @@ tr:hover td{background:var(--bg2)}
         <div class="br"><button class="btn" onclick="addMember()">Add member</button></div>
       </div>
     </div>
-    <div class="card"><div class="ct">Activity log</div><div id="team-act"></div></div>
+    <div class="card"><div class="ct">Activity log</div><div id="team-act"></div>
+
+  <!-- Danger zone - owner only -->
+  <div class="card" id="reset-data-card" style="display:none;border-color:var(--red);margin-top:.5rem">
+    <div class="ct" style="color:var(--red)">⚠ Danger zone</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:.85rem">Permanently delete ALL data for <strong id="reset-co-name"></strong> — sales, expenses, tasks, inventory and all records. Cannot be undone.</div>
+    <button class="btn" onclick="resetCompanyData()" style="background:var(--red);color:#fff;border-color:var(--red)">🗑 Reset all data for this company</button>
+  </div></div>
   </div>
 
 
@@ -772,18 +779,35 @@ let puId=null,mpId=null,cart=[];
 let setPwTargetId=null,dashMonth=null,loginTargetUser=null;
 
 // ── Local Storage (replaces window.storage for standalone use) ────────────────
-function loadCos(){ try{ const r=localStorage.getItem(CO_KEY); if(r) return JSON.parse(r); }catch(e){} return null; }
+function loadCos(){
+  // Always return DEF_COS as the authoritative company list
+  // Merge with any custom companies saved locally
+  try{
+    const saved=localStorage.getItem(CO_KEY);
+    if(saved){
+      const parsed=JSON.parse(saved);
+      // Add any DEF_COS companies not in saved list
+      const savedIds=new Set(parsed.map(c=>c.id));
+      DEF_COS.forEach(dc=>{ if(!savedIds.has(dc.id)) parsed.push(dc); });
+      return parsed;
+    }
+  }catch(e){}
+  return DEF_COS;
+}
 function saveCos(){ try{ localStorage.setItem(CO_KEY,JSON.stringify(companies)); }catch(e){} }
 function loadD(id){ try{ const r=localStorage.getItem(DP+id); if(r) return JSON.parse(r); }catch(e){} return null; }
 function saveD(){ try{ localStorage.setItem(DP+currentCo.id,JSON.stringify(D)); }catch(e){} }
 
-function defD(){ return {
+function defD(coId){
+  // Default passwords only for Baraka — other companies start with no passwords
+  const pw=coId==='baraka'||!coId;
+  return {
   sales:[],expenses:[],inventory:[],bundles:[],customers:[],suppliers:[],
   users:[
-    {id:1,name:'Owner',role:'owner',password:'Baraka@owner'},
-    {id:2,name:'Manager',role:'manager',password:'Baraka@manager'},
-    {id:3,name:'Staff 1',role:'staff',password:'Baraka@staff1'},
-    {id:4,name:'Staff 2',role:'delivery',password:'Baraka@staff2'}
+    {id:1,name:'Owner',role:'owner',password:pw?'Baraka@owner':''},
+    {id:2,name:'Manager',role:'manager',password:pw?'Baraka@manager':''},
+    {id:3,name:'Staff 1',role:'staff',password:pw?'Baraka@staff1':''},
+    {id:4,name:'Staff 2',role:'delivery',password:pw?'Baraka@staff2':''}
   ],
   recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{},auditLog:[]
 }; }
@@ -822,14 +846,33 @@ function renderCoScreen(){
 function addCompany(){ const n=document.getElementById('new-co-name').value.trim(); if(!n) return; const cols=['#D85A30','#BA7517','#D4537E','#888780','#1D9E75']; companies.push({id:'co_'+Date.now(),name:n,desc:document.getElementById('new-co-desc').value||'Subsidiary',color:cols[companies.length%cols.length],parent:false}); saveCos(); renderCoScreen(); document.getElementById('new-co-name').value=''; document.getElementById('new-co-desc').value=''; }
 
 function selectCo(id){
-  currentCo=companies.find(c=>c.id===id);
+  // Stop any running sync/realtime from previous company
+  if(_syncTimer){ clearInterval(_syncTimer); _syncTimer=null; }
+  if(_realtimeChannel&&_supabaseClient){ _supabaseClient.removeChannel(_realtimeChannel); _realtimeChannel=null; }
+  currentUser=null;
+
+  currentCo=companies.find(c=>c.id===id)||DEF_COS.find(c=>c.id===id);
+  if(!currentCo){ console.warn('Company not found:',id); return; }
   let saved=loadD(id);
-  D=saved||defD();
+  // Safety check: if saved data looks like it belongs to a different company, discard it
+  if(saved && saved._companyId && saved._companyId !== id) saved=null;
+  D=saved||defD(id);
+  D._companyId=id; // stamp company ID on the data
   ['bundles','pins','recurring','recPay','tasks'].forEach(k=>{ if(!D[k]) D[k]=[]; });
   if(!D.deletedIds||Array.isArray(D.deletedIds)) D.deletedIds={};
   if(!D.auditLog) D.auditLog=[];
   D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
-  if(!saved&&id==='baraka'){ D.sales=seedData(); saveD(); }
+  if(!saved){
+    if(id==='baraka'){
+      // Baraka default passwords
+      D.users[0].password='Baraka@owner';
+      D.users[1].password='Baraka@manager';
+      D.users[2].password='Baraka@staff1';
+      D.users[3].password='Baraka@staff2';
+      D.sales=seedData();
+    }
+    saveD();
+  }
   document.getElementById('co-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
   document.getElementById('l-co-name').textContent=currentCo.name;
@@ -856,7 +899,14 @@ function backToPickUser(){ showPickStep(); }
 
 
 
-function lockOut(){ currentUser=null; document.getElementById('main-app').style.display='none'; document.getElementById('login-screen').style.display='block'; showPickStep(); }
+function lockOut(){
+  // Stop sync and realtime
+  if(_syncTimer){ clearInterval(_syncTimer); _syncTimer=null; }
+  currentUser=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+  showPickStep();
+}
 
 // ── PW Management ─────────────────────────────────────────────────────────────
 function renderPwMgmt(){
@@ -946,7 +996,7 @@ function dashSetAll(){ dashMonth='all'; renderDash(); }
 function filterByDash(arr){ if(!dashMonth||dashMonth==='all') return arr; return arr.filter(r=>r.date.startsWith(dashMonth)); }
 function updateMonthNav(){ const months=getSortedMonths(); const isAll=dashMonth==='all'; document.getElementById('mnav-all-btn').classList.toggle('active-all',isAll); document.getElementById('mnav-label').textContent=isAll?'All time':fmtM(dashMonth||tM()); document.getElementById('dash-period-label').textContent=isAll?'All time overview':fmtM(dashMonth||tM()); const idx=months.indexOf(dashMonth); document.querySelectorAll('.mnav-btn')[0].style.opacity=(isAll||idx<=0)?'0.3':'1'; document.querySelectorAll('.mnav-btn')[1].style.opacity=(isAll||idx>=months.length-1)?'0.3':'1'; }
 
-async function switchSub(id){ currentCo=companies.find(c=>c.id===id); let saved=loadD(id); D=saved||defD(); ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; }); document.getElementById('top-dot').style.background=currentCo.color; document.getElementById('top-co').textContent=currentCo.name; popAll(); renderDash(); checkDue(); }
+async function switchSub(id){ currentCo=companies.find(c=>c.id===id); let saved=loadD(id); D=saved||defD(id); ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; }); document.getElementById('top-dot').style.background=currentCo.color; document.getElementById('top-co').textContent=currentCo.name; popAll(); renderDash(); checkDue(); }
 
 function renderDash(){
   updateMonthNav();
@@ -1430,7 +1480,12 @@ function renderSup(){   const _sortedSup=[...D.suppliers].sort((a,b)=>(a.name||'
   document.getElementById('sup-tbody').innerHTML=_sortedSup.length?_sortedSup.map(s=>{ const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0); const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${s.name}</td><td>${s.contact||'—'}</td><td>${s.phone||'—'}</td><td><span class="badge bw">${s.cat}</span></td><td>${s.terms}</td><td style="color:var(--amber);font-weight:500">${paid?fmt(paid):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('suppliers',${s.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="8" class="empty">No suppliers yet.</td></tr>'; }
 
 // ── Team ──────────────────────────────────────────────────────────────────────
-function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.map(u=>{ const s=D.sales.filter(x=>x.by===u.name); const e=D.expenses.filter(x=>x.by===u.name).length; const rv=s.reduce((t,x)=>t+x.amount,0); const pnl=s.reduce((t,x)=>t+(x.pnl||0),0); return`<tr><td style="display:flex;align-items:center;gap:7px"><div class="av ${avC(u.role)}" style="width:27px;height:27px;font-size:10px">${ini(u.name)}</div>${u.name}</td><td><span class="badge ${rcC(u.role)}">${u.role}</span></td><td>${s.length}</td><td>${e}</td><td style="color:var(--green);font-weight:500">${rv?fmt(rv):'—'}</td><td class="${pnl>0?'pnl-pos':'pnl-neg'}">${pnl?fmt(pnl):'—'}</td></tr>`; }).join(''); renderPwMgmt(); document.getElementById('team-act').innerHTML=D.activity.slice(0,25).map(a=>`<div class="arow"><span><span class="badge bp" style="margin-right:5px">${a.user}</span>${a.desc}</span><span style="color:var(--text2);font-size:11px">${a.date}</span></div>`).join('')||'<div class="empty">No activity yet.</div>'; }
+function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.map(u=>{ const s=D.sales.filter(x=>x.by===u.name); const e=D.expenses.filter(x=>x.by===u.name).length; const rv=s.reduce((t,x)=>t+x.amount,0); const pnl=s.reduce((t,x)=>t+(x.pnl||0),0); return`<tr><td style="display:flex;align-items:center;gap:7px"><div class="av ${avC(u.role)}" style="width:27px;height:27px;font-size:10px">${ini(u.name)}</div>${u.name}</td><td><span class="badge ${rcC(u.role)}">${u.role}</span></td><td>${s.length}</td><td>${e}</td><td style="color:var(--green);font-weight:500">${rv?fmt(rv):'—'}</td><td class="${pnl>0?'pnl-pos':'pnl-neg'}">${pnl?fmt(pnl):'—'}</td></tr>`; }).join(''); renderPwMgmt(); document.getElementById('team-act').innerHTML=D.activity.slice(0,25).map(a=>`<div class="arow"><span><span class="badge bp" style="margin-right:5px">${a.user}</span>${a.desc}</span><span style="color:var(--text2);font-size:11px">${a.date}</span></div>`).join('')||'<div class="empty">No activity yet.</div>';
+  const _rc=document.getElementById('reset-data-card');
+  if(_rc) _rc.style.display=currentUser.role==='owner'?'block':'none';
+  const _rn=document.getElementById('reset-co-name');
+  if(_rn&&currentCo) _rn.textContent=currentCo.name;
+}
 
 // ── Recurring (basic) ─────────────────────────────────────────────────────────
 function checkDue(){ if(!currentUser||!D||!D.recurring) return; const due=(D.recurring||[]).filter(r=>r.active&&r.due<=today()); const el=document.getElementById('due-alerts'); if(el) el.innerHTML=due.length?`<div class="rec-alert">⚠ Payments due: ${due.map(r=>r.name).join(', ')}</div>`:''; }
@@ -2156,6 +2211,42 @@ async function confirmDeleteProduct(){
   renderQuick(); renderInv(); popAll();
 }
 
+
+// ── Reset company data (clear all Supabase + local data for current company) ──
+async function resetCompanyData(){
+  if(currentUser.role!=='owner'){toast('Only the owner can reset company data.','warn');return;}
+  const name=currentCo.name;
+  const confirm1=prompt('Type the company name to confirm reset: "'+name+'"');
+  if(confirm1!==name){toast('Reset cancelled — name did not match.','warn');return;}
+  if(!confirm('This will permanently delete ALL data for '+name+'. Are you absolutely sure?'))return;
+
+  const ss=document.getElementById('sync-status');
+  if(ss)ss.textContent='Resetting...';
+
+  // Delete all records from Supabase for this company
+  const h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+  const co=currentCo.id;
+  const tables=['sales','expenses','inventory','customers','suppliers','tasks','activity_log','deleted_records'];
+  for(const tbl of tables){
+    await fetch(SUPA_URL+'/rest/v1/'+tbl+'?company_id=eq.'+co,{method:'DELETE',headers:h}).catch(()=>{});
+  }
+
+  // Clear local storage
+  localStorage.removeItem('baraka_data_v4_html_'+co);
+
+  // Reset D to empty
+  D=defD();
+  if(co==='baraka'){
+    D.users[0].password='Baraka@owner';D.users[1].password='Baraka@manager';
+    D.users[2].password='Baraka@staff1';D.users[3].password='Baraka@staff2';
+  }
+  saveD();
+
+  toast('✓ '+name+' data has been reset.','success');
+  if(ss)ss.textContent='';
+  goPage('dashboard');
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
@@ -2266,6 +2357,7 @@ async function pushUser(u){
 // ════════════════════════════════════════════════════════════════════
 async function syncNow(showFeedback){
   if(!currentCo||!currentUser) return;
+  const _syncCoId=currentCo.id; // capture at start — guard against company switch mid-sync
   const ss=document.getElementById('sync-status');
   if(ss) ss.textContent='Syncing...';
   try{
