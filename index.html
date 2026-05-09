@@ -2465,12 +2465,12 @@ async function syncNow(showFeedback){
     }
 
     // For empty local tables, always take whatever Supabase has (full replace)
-    D.sales     = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
-    D.expenses  = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
-    D.inventory = mergeIn(inventory, D.inventory||[], mapItem, 'inventory', pushItem);
-    D.customers = mergeIn(customers, D.customers||[], r=>r,    'customers', pushCust);
-    D.suppliers = mergeIn(suppliers, D.suppliers||[], r=>r,    'suppliers', pushSup);
-    D.tasks     = mergeIn(tasks,     D.tasks||[],     mapTask, 'tasks',     pushTask);
+    if(sales.length) D.sales = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
+    if(expenses.length) D.expenses = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
+    if(inventory.length) D.inventory = mergeIn(inventory, D.inventory||[], mapItem, 'inventory', pushItem);
+    if(customers.length) D.customers = mergeIn(customers, D.customers||[], r=>r,    'customers', pushCust);
+    if(suppliers.length) D.suppliers = mergeIn(suppliers, D.suppliers||[], r=>r,    'suppliers', pushSup);
+    if(tasks.length) D.tasks = mergeIn(tasks,     D.tasks||[],     mapTask, 'tasks',     pushTask);
     // Users: trust Supabase for passwords only
     if(users.length) users.forEach(row=>{const u=D.users.find(x=>x.id===row.id);if(u){u.password=row.password||u.password;u.phone=row.phone||u.phone;}else D.users.push(mapUser(row));});
 
