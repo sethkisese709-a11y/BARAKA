@@ -853,27 +853,10 @@ function selectCo(id){
   currentCo=DEF_COS.find(c=>c.id===id)||companies.find(c=>c.id===id);
   if(!currentCo){ console.warn('Company not found:',id); return; }
 
-  // Always start with completely clean data for each company
-  // Then sync from Supabase on login — this guarantees isolation
+  // Load saved data for this company, or start fresh
   const saved=loadD(id);
-  const isFirstTime=!saved||saved._companyId!==id;
-
-  if(isFirstTime){
-    // Fresh start — completely empty, no inherited data whatsoever
-    D=defD(id);
-    D._companyId=id;
-    if(id==='baraka'){
-      D.users[0].password='Baraka@owner';
-      D.users[1].password='Baraka@manager';
-      D.users[2].password='Baraka@staff1';
-      D.users[3].password='Baraka@staff2';
-      D.sales=seedData();
-    }
-    saveD();
-  } else {
-    D=saved;
-    D._companyId=id;
-  }
+  D=saved||defD(id);
+  D._companyId=id;
 
   ['bundles','pins','recurring','recPay','tasks'].forEach(k=>{ if(!D[k]) D[k]=[]; });
   if(!D.deletedIds||Array.isArray(D.deletedIds)) D.deletedIds={};
@@ -2465,12 +2448,12 @@ async function syncNow(showFeedback){
     }
 
     // For empty local tables, always take whatever Supabase has (full replace)
-    if(sales.length) D.sales = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
-    if(expenses.length) D.expenses = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
-    if(inventory.length) D.inventory = mergeIn(inventory, D.inventory||[], mapItem, 'inventory', pushItem);
-    if(customers.length) D.customers = mergeIn(customers, D.customers||[], r=>r,    'customers', pushCust);
-    if(suppliers.length) D.suppliers = mergeIn(suppliers, D.suppliers||[], r=>r,    'suppliers', pushSup);
-    if(tasks.length) D.tasks = mergeIn(tasks,     D.tasks||[],     mapTask, 'tasks',     pushTask);
+    if(sales.length||D.sales.length) D.sales = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
+    if(expenses.length||D.expenses.length) D.expenses = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
+    if(inventory.length||D.inventory.length) D.inventory = mergeIn(inventory, D.inventory||[], mapItem, 'inventory', pushItem);
+    if(customers.length||D.customers.length) D.customers = mergeIn(customers, D.customers||[], r=>r,    'customers', pushCust);
+    if(suppliers.length||D.suppliers.length) D.suppliers = mergeIn(suppliers, D.suppliers||[], r=>r,    'suppliers', pushSup);
+    if(tasks.length||D.tasks.length) D.tasks = mergeIn(tasks,     D.tasks||[],     mapTask, 'tasks',     pushTask);
     // Users: trust Supabase for passwords only
     if(users.length) users.forEach(row=>{const u=D.users.find(x=>x.id===row.id);if(u){u.password=row.password||u.password;u.phone=row.phone||u.phone;}else D.users.push(mapUser(row));});
 
