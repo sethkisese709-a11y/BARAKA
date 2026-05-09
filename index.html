@@ -2137,9 +2137,8 @@ function saveEditProduct(){
   }
 
   document.getElementById('edit-product-modal').classList.remove('open');
-  renderQuick(); renderInv();
-  popAll();
-  toast('✓ Product updated');
+  renderQuick(); renderInv(); popAll();
+  toast('✓ Product updated — syncing to all devices');
 }
 
 async function confirmDeleteProduct(){
@@ -2247,7 +2246,8 @@ function mapUser(r){return{id:r.id,name:r.name,role:r.role,password:r.password||
 // ── Push functions ─────────────────────────────────────────────────
 function pushSale(s){sbUpsert('sales',{id:s.id,company_id:currentCo.id,ticket_no:s.ticketNo||'',date:s.date,items:s.items,amount:s.amount,cost:s.cost||0,pnl:s.pnl||0,paid_amount:s.paidAmount||0,payment_status:s.paymentStatus||'paid',cust_name:s.custName||'Walk-in',cust_id:s.custId||null,channel:s.channel||'',payment:s.payment||'',ref:s.ref||'',notes:s.notes||'',by_user:s.by||'',created_at:new Date().toISOString()});}
 function pushExp(e){sbUpsert('expenses',{id:e.id,company_id:currentCo.id,ticket_no:e.ticketNo||'',date:e.date,amount:e.amount,cat:e.cat,vendor:e.vendor||'',ref:e.ref||'',paymethod:e.paymethod||'M-Pesa',notes:e.notes||'',by_user:e.by||'',sup_id:e.supId||null,created_at:new Date().toISOString()});}
-function pushItem(i){sbUpsert('inventory',{id:i.id,company_id:currentCo.id,name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:new Date().toISOString()});}
+function mapItem(r){return{id:r.id,ticketNo:r.ticket_no||'',name:r.name,cat:r.cat||'Other',qty:r.qty||0,cost:r.cost||0,sell:r.sell||0,low:r.low||2,created_at:r.created_at||''};}
+function pushItem(i){sbUpsert('inventory',{id:i.id,company_id:currentCo.id,ticket_no:i.ticketNo||'',name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:i.created_at||new Date().toISOString()});}
 function pushCust(cu){sbUpsert('customers',{id:cu.id,company_id:currentCo.id,name:cu.name,phone:cu.phone||'',channel:cu.channel||'',loc:cu.loc||'',type:cu.type||'Individual',notes:cu.notes||'',created_at:new Date().toISOString()});}
 function pushSup(s){sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()});}
 function pushTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString()});}
@@ -2354,7 +2354,7 @@ async function syncNow(showFeedback){
 
     D.sales     = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
     D.expenses  = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
-    D.inventory = mergeIn(inventory, D.inventory||[], r=>r,    'inventory', pushItem);
+    D.inventory = mergeIn(inventory, D.inventory||[], mapItem, 'inventory', pushItem);
     D.customers = mergeIn(customers, D.customers||[], r=>r,    'customers', pushCust);
     D.suppliers = mergeIn(suppliers, D.suppliers||[], r=>r,    'suppliers', pushSup);
     D.tasks     = mergeIn(tasks,     D.tasks||[],     mapTask, 'tasks',     pushTask);
@@ -2413,12 +2413,15 @@ function refreshCurrentPage(){
   try{
     const pg=document.querySelector('.page.on')?.id||'';
     if(pg.includes('dashboard'))renderDash();
+    else if(pg.includes('quick'))renderQuick();
     else if(pg.includes('tasks')){renderTasksMetrics();renderTasks();}
     else if(pg.includes('sales'))renderSales();
     else if(pg.includes('expenses'))renderExpenses();
-    else if(pg.includes('inventory'))renderInv();
+    else if(pg.includes('inventory')){renderInv();renderQuick();}
     else if(pg.includes('customers'))renderCust();
     else if(pg.includes('suppliers'))renderSup();
+    // Always keep quick record in sync since products come from inventory
+    if(!pg.includes('quick')&&document.getElementById('pg-quick')?.classList.contains('on'))renderQuick();
   }catch(e){}
 }
 
