@@ -190,7 +190,7 @@ tr:hover td{background:var(--bg2)}
       <button class="co-btn" onclick="selectCo('fireshield')" style="border-left:3px solid #C0392B"><div class="co-dot" style="background:#C0392B"></div><div class="co-name">Fireshield Supplies</div><div class="co-desc">Subsidiary — Fire Safety &amp; Supplies</div></button>
     </div>
     <div class="section-divider">
-      <div class="section-label">Add subsidiary</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="section-label">Add subsidiary</div><button onclick="clearCompanyCache()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3);font-family:inherit;text-decoration:underline">↺ Clear cache</button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:end">
         <input type="text" id="new-co-name" placeholder="Company name">
         <input type="text" id="new-co-desc" placeholder="Description">
@@ -851,20 +851,20 @@ function selectCo(id){
   if(_realtimeChannel&&_supabaseClient){ _supabaseClient.removeChannel(_realtimeChannel); _realtimeChannel=null; }
   currentUser=null;
 
-  currentCo=companies.find(c=>c.id===id)||DEF_COS.find(c=>c.id===id);
+  // Always use DEF_COS as the truth — never trust stale localStorage company list
+  currentCo=DEF_COS.find(c=>c.id===id)||companies.find(c=>c.id===id);
   if(!currentCo){ console.warn('Company not found:',id); return; }
-  let saved=loadD(id);
-  // Safety check: if saved data looks like it belongs to a different company, discard it
-  if(saved && saved._companyId && saved._companyId !== id) saved=null;
-  D=saved||defD(id);
-  D._companyId=id; // stamp company ID on the data
-  ['bundles','pins','recurring','recPay','tasks'].forEach(k=>{ if(!D[k]) D[k]=[]; });
-  if(!D.deletedIds||Array.isArray(D.deletedIds)) D.deletedIds={};
-  if(!D.auditLog) D.auditLog=[];
-  D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
-  if(!saved){
+
+  // Always start with completely clean data for each company
+  // Then sync from Supabase on login — this guarantees isolation
+  const saved=loadD(id);
+  const isFirstTime=!saved||saved._companyId!==id;
+
+  if(isFirstTime){
+    // Fresh start — completely empty, no inherited data whatsoever
+    D=defD(id);
+    D._companyId=id;
     if(id==='baraka'){
-      // Baraka default passwords
       D.users[0].password='Baraka@owner';
       D.users[1].password='Baraka@manager';
       D.users[2].password='Baraka@staff1';
@@ -872,7 +872,16 @@ function selectCo(id){
       D.sales=seedData();
     }
     saveD();
+  } else {
+    D=saved;
+    D._companyId=id;
   }
+
+  ['bundles','pins','recurring','recPay','tasks'].forEach(k=>{ if(!D[k]) D[k]=[]; });
+  if(!D.deletedIds||Array.isArray(D.deletedIds)) D.deletedIds={};
+  if(!D.auditLog) D.auditLog=[];
+  D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
+
   document.getElementById('co-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
   document.getElementById('l-co-name').textContent=currentCo.name;
@@ -2247,6 +2256,19 @@ async function resetCompanyData(){
   goPage('dashboard');
 }
 
+
+function clearCompanyCache(){
+  if(!confirm('Clear all locally cached data for all companies? Data in Supabase will not be affected.')) return;
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('baraka_data_')) keys.push(k);
+  }
+  keys.forEach(k=>localStorage.removeItem(k));
+  toast('Cache cleared — reload the page','info',3000);
+  setTimeout(()=>location.reload(),2000);
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
@@ -2444,6 +2466,7 @@ async function syncNow(showFeedback){
       return result;
     }
 
+    // For empty local tables, always take whatever Supabase has (full replace)
     D.sales     = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
     D.expenses  = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
     D.inventory = mergeIn(inventory, D.inventory||[], mapItem, 'inventory', pushItem);
