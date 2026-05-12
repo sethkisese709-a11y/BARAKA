@@ -2588,12 +2588,17 @@ function exportCSV(type){
     filename='tasks_'+today()+'.csv';
   }
   const csv=[headers,...rows].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=filename;
+  a.href=url;
+  a.setAttribute('download',filename);
+  a.style.display='none';
+  document.body.appendChild(a);
   a.click();
-  toast('✓ Exported '+filename);
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },300);
+  document.getElementById('export-modal').classList.remove('open');
+  toast('✓ '+filename+' downloaded');
 }
 
 function showExportMenu(){
@@ -2793,50 +2798,94 @@ function populateRecurringUsers(){
 function openWAIntake(){
   const modal=document.getElementById('wa-intake-modal');
   if(!modal) return;
-  // Populate product list
+  // Populate product list with qty selectors
   const list=document.getElementById('wi-products');
-  list.innerHTML=(D.inventory||[]).map(i=>`
-    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid var(--border);cursor:pointer;font-size:12px">
-      <input type="checkbox" value="${i.id}" data-name="${i.name}" data-price="${i.sell||0}" style="width:auto">
-      <span style="flex:1">${i.name}</span>
-      <span style="color:var(--text2)">KES ${fmt(i.sell||0)}</span>
-    </label>`).join('');
+  const inv=D.inventory||[];
+  if(!inv.length){
+    list.innerHTML='<div style="color:var(--text2);font-size:12px;padding:10px;text-align:center">No products in inventory yet. Add products first.</div>';
+  } else {
+    list.innerHTML=inv.map(i=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border)">
+        <input type="checkbox" id="wic_${i.id}" value="${i.id}" data-name="${i.name}" data-price="${i.sell||0}" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+        <label for="wic_${i.id}" style="flex:1;font-size:12px;cursor:pointer">${i.name}</label>
+        <span style="font-size:11px;color:var(--text2);min-width:70px;text-align:right">KES ${fmt(i.sell||0)}</span>
+        <input type="number" id="wiq_${i.id}" value="1" min="1" style="width:46px;font-size:11px;text-align:center;padding:3px">
+      </div>`).join('');
+  }
+  // Clear previous values
+  document.getElementById('wi-name').value='';
+  document.getElementById('wi-phone').value='';
+  document.getElementById('wi-notes').value='';
   modal.classList.add('open');
 }
 
 function sendWAIntakeOrder(){
   const name=document.getElementById('wi-name').value.trim();
-  const phone=document.getElementById('wi-phone').value.trim();
+  const rawPhone=document.getElementById('wi-phone').value.trim();
   const notes=document.getElementById('wi-notes').value.trim();
-  const selected=[...document.querySelectorAll('#wi-products input:checked')];
-  if(!selected.length){ toast('Select at least one product','warn'); return; }
-  const items=selected.map(cb=>cb.dataset.name+' (KES '+fmt(cb.dataset.price)+')');
-  const total=selected.reduce((a,cb)=>a+parseFloat(cb.dataset.price||0),0);
 
-  const msg=`*New Order — ${currentCo.name}*\n\n*Customer:* ${name||'Walk-in'}\n*Phone:* ${phone||'—'}\n\n*Items ordered:*\n${items.map(i=>'• '+i).join('\n')}\n\n*Estimated total:* KES ${fmt(total)}\n\n${notes?'*Notes:* '+notes+'\n\n':''}Please confirm your order and we will be in touch shortly.`;
+  // Get checked products with quantities
+  const checked=[...document.querySelectorAll('#wi-products input[type="checkbox"]:checked')];
+  if(!checked.length){ toast('Select at least one product','warn'); return; }
 
-  // Also create a draft task
-  if(name){
-    const task={
-      id:Date.now(), ticketNo:nextTicketNo('task'), type:'dispatch',
-      typeIcon:'🚚', title:'Order: '+items[0]+(items.length>1?' + '+(items.length-1)+' more':''),
-      assignee:D.users[1]?.name||D.users[0].name,
-      assignees:[D.users[1]?.name||D.users[0].name],
-      date:today(), priority:'normal', status:'pending',
-      clientName:name, clientPhone:phone,
-      items:items.join(', '), notes:notes,
-      amountOnDelivery:total, createdBy:currentUser.name,
-      created_at:new Date().toISOString(),
-    };
-    D.tasks.unshift(task);
-    auditLog('task',task.id,'created','['+task.ticketNo+'] Order intake: '+task.title+' for '+name);
-    saveD(); pushTask(task);
-    toast('✓ Task created for this order');
-  }
+  const items=checked.map(cb=>{
+    const qtyEl=document.getElementById('wiq_'+cb.value);
+    const qty=parseInt(qtyEl?.value||1);
+    const price=parseFloat(cb.dataset.price||0);
+    return {name:cb.dataset.name, qty, price, lineTotal:price*qty};
+  });
+  const total=items.reduce((a,i)=>a+i.lineTotal,0);
 
-  const waUrl='https://wa.me/?text='+encodeURIComponent(msg);
-  window.open(waUrl,'_blank');
+  // Format phone for WhatsApp (Kenya: 07xx → 2547xx, +254 → 254)
+  let phone=rawPhone.replace(/\s/g,'');
+  if(phone.startsWith('07')||phone.startsWith('01')) phone='254'+phone.substring(1);
+  if(phone.startsWith('+')) phone=phone.substring(1);
+
+  // Build WhatsApp message
+  const itemLines=items.map(i=>`• ${i.name} x${i.qty} @ KES ${fmt(i.price)} = KES ${fmt(i.lineTotal)}`).join('\n');
+  const msg=`*${currentCo.name} — Order Confirmation*\n\nHi ${name||'there'}! Here is your order summary:\n\n${itemLines}\n\n*Total: KES ${fmt(total)}*\n${notes?'\n📍 '+notes+'\n':''}\nWe will be in touch to confirm delivery. Thank you!`;
+
+  // Create dispatch task automatically
+  const assignTo=(D.users.find(u=>u.role==='manager')||D.users.find(u=>u.role==='owner')||D.users[0]).name;
+  const tkt=nextTicketNo('task');
+  const task={
+    id:Date.now(),
+    ticketNo:tkt,
+    type:'dispatch',
+    typeIcon:'🚚',
+    title:'Order: '+items.map(i=>i.name+(i.qty>1?' x'+i.qty:'')).join(', ').substring(0,60),
+    assignee:assignTo,
+    assignees:[assignTo],
+    date:today(),
+    priority:'normal',
+    status:'pending',
+    clientName:name,
+    clientPhone:rawPhone,
+    items:items.map(i=>i.name+' x'+i.qty).join(', '),
+    notes:notes,
+    amountOnDelivery:total,
+    createdBy:currentUser.name,
+    created_at:new Date().toISOString(),
+  };
+  D.tasks.unshift(task);
+  auditLog('task',task.id,'created','['+tkt+'] WA order intake: '+task.title+(name?' for '+name:''));
+  saveD();
+  pushTask(task);
+
   document.getElementById('wa-intake-modal').classList.remove('open');
+
+  // Open WhatsApp — use href to avoid popup blocker
+  const waUrl='https://wa.me/'+(phone||'')+'?text='+encodeURIComponent(msg);
+  const link=document.createElement('a');
+  link.href=waUrl;
+  link.target='_blank';
+  link.rel='noopener';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  renderTasks&&renderTasks();
+  toast('✓ ['+tkt+'] Task created + WhatsApp opened');
 }
 
 
