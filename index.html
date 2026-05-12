@@ -2000,6 +2000,8 @@ function openTicketReview(taskId){
   // Clear form fields
   document.getElementById('wi-name').value='';
   document.getElementById('wi-phone').value='';
+  document.getElementById('wi-location').value='';
+  document.getElementById('wi-ref').value='';
   document.getElementById('wi-notes').value='';
   modal.classList.add('open');
 }
@@ -3152,6 +3154,8 @@ function openWAIntake(){
   // Clear previous values
   document.getElementById('wi-name').value='';
   document.getElementById('wi-phone').value='';
+  document.getElementById('wi-location').value='';
+  document.getElementById('wi-ref').value='';
   document.getElementById('wi-notes').value='';
   modal.classList.add('open');
 }
@@ -3159,6 +3163,8 @@ function openWAIntake(){
 function sendWAIntakeOrder(){
   const name=document.getElementById('wi-name').value.trim();
   const rawPhone=document.getElementById('wi-phone').value.trim();
+  const location=document.getElementById('wi-location').value.trim();
+  const ref=document.getElementById('wi-ref').value.trim();
   const notes=document.getElementById('wi-notes').value.trim();
 
   // Get checked products with quantities
@@ -3180,7 +3186,7 @@ function sendWAIntakeOrder(){
 
   // Build WhatsApp message
   const itemLines=items.map(i=>`• ${i.name} x${i.qty} @ KES ${fmt(i.price)} = KES ${fmt(i.lineTotal)}`).join('\n');
-  const msg=`*${currentCo.name} — Order Confirmation*\n\nHi ${name||'there'}! Here is your order summary:\n\n${itemLines}\n\n*Total: KES ${fmt(total)}*\n${notes?'\n📍 '+notes+'\n':''}\nWe will be in touch to confirm delivery. Thank you!`;
+  const msg=`*${currentCo.name} — Order Confirmation*\n\nHi ${name||'there'}! Here is your order summary:\n\n${itemLines}\n\n*Total: KES ${fmt(total)}*${ref?'\n🔖 Ref: '+ref:''}${location?'\n📍 Location: '+location:''}${notes?'\n📝 Notes: '+notes:''}\n\nWe will be in touch to confirm delivery. Thank you!`;
 
   // Create dispatch task automatically
   const assignTo=(D.users.find(u=>u.role==='manager')||D.users.find(u=>u.role==='owner')||D.users[0]).name;
@@ -3198,8 +3204,9 @@ function sendWAIntakeOrder(){
     status:'pending',
     clientName:name,
     clientPhone:rawPhone,
+    location:location,
     items:items.map(i=>i.name+' x'+i.qty).join(', '),
-    notes:notes,
+    notes:(ref?'Ref: '+ref+(notes?' | ':'')+notes:notes),
     amountOnDelivery:total,
     createdBy:currentUser.name,
     created_at:new Date().toISOString(),
@@ -4024,7 +4031,9 @@ async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;c
       <div class="fl"><label>Client name</label><input type="text" id="wi-name" placeholder="e.g. John Kamau"></div>
       <div class="fl"><label>Client phone</label><input type="tel" id="wi-phone" placeholder="e.g. 0712345678"></div>
       <div class="fl ff"><label>Products</label><div id="wi-products" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:8px"></div></div>
-      <div class="fl ff"><label>Notes</label><textarea id="wi-notes" rows="2" placeholder="Delivery address, colour preference, etc."></textarea></div>
+      <div class="fl ff"><label>Delivery location / address</label><input type="text" id="wi-location" placeholder="e.g. Westlands, Ground floor, Suite 4"></div>
+      <div class="fl"><label>Reference / Order no. (optional)</label><input type="text" id="wi-ref" placeholder="e.g. ORD-001 or client ref"></div>
+      <div class="fl ff"><label>Notes</label><textarea id="wi-notes" rows="2" placeholder="Colour preference, special instructions, etc."></textarea></div>
     </div>
     <button class="btn" onclick="sendWAIntakeOrder()" style="background:#25D366;color:#fff;border-color:#25D366;width:100%">💬 Send via WhatsApp + Create task</button>
   </div>
