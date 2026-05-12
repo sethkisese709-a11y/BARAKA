@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -234,7 +233,10 @@ tr:hover td{background:var(--bg2)}
       <div class="av" id="top-av" style="margin-left:6px"></div>
       <div><div style="font-size:12px;font-weight:600;color:var(--text)" id="top-name"></div><span class="badge" id="top-role"></span></div>
     </div>
-    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.45);margin-right:4px;letter-spacing:.04em;cursor:pointer" onclick="syncNow(true)" title="Tap to sync"></span><span id="health-dot" title="Supabase connection" style="width:7px;height:7px;border-radius:50%;background:#666;display:inline-block;margin-right:8px;flex-shrink:0"></span><button class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
+    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.45);margin-right:4px;letter-spacing:.04em;cursor:pointer" onclick="syncNow(true)" title="Tap to sync"></span><span id="health-dot" title="Supabase connection" style="width:7px;height:7px;border-radius:50%;background:#666;display:inline-block;margin-right:4px;flex-shrink:0"></span><button class="swbtn" onclick="showExportMenu()" title="Export data" style="font-size:12px;padding:4px 7px;margin-right:4px">⬇</button><button class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><div style="position:relative;margin-right:4px">
+    <input id="global-search-input" type="text" placeholder="🔍 Search…" oninput="globalSearch(this.value)" onfocus="document.getElementById('search-results-drop').style.display='block'" onblur="setTimeout(()=>{document.getElementById('search-results-drop').style.display='none'},200)" style="font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;width:130px;outline:none" autocomplete="off">
+    <div id="search-results-drop" style="display:none;position:absolute;top:110%;right:0;width:320px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:9999;max-height:380px;overflow-y:auto"></div>
+  </div><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
   </div>
   <div id="due-alerts"></div>
   <div class="nav" id="main-nav"></div>
@@ -242,6 +244,7 @@ tr:hover td{background:var(--bg2)}
   <!-- DASHBOARD -->
   <div id="pg-dashboard" class="page on">
     <div id="sub-banner"></div>
+    <div id="low-stock-alert-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);margin-bottom:12px;font-size:12px;color:#7a5c00"></div>
     <div class="dash-header">
       <div class="dash-title" id="dash-period-label">This month</div>
       <div class="month-nav">
@@ -277,6 +280,7 @@ tr:hover td{background:var(--bg2)}
 
   <!-- QUICK RECORD -->
   <div id="pg-quick" class="page">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn bsm" onclick="openWAIntake()" style="background:#25D366;color:#fff;border-color:#25D366;font-size:11px">💬 New WA order</button></div>
 
     <!-- Step 1: Product picker -->
     <div class="card" id="qs-picker-card">
@@ -414,7 +418,7 @@ tr:hover td{background:var(--bg2)}
     <div class="card" id="exp-picker-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
         <div class="ct" style="margin-bottom:0">What type of expense?</div>
-        <span style="font-size:11px;color:var(--text2)">Tap to select</span>
+        <button class="btn bsm" onclick="openExpReport();populateERMonths()" style="font-size:11px">📊 Breakdown</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px" id="exp-cat-grid">
         <!-- Rendered by JS -->
@@ -564,7 +568,7 @@ tr:hover td{background:var(--bg2)}
     <div class="card" id="task-create-card" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem">
         <div class="ct" style="margin-bottom:0">Assign a task</div>
-        <span style="font-size:11px;color:var(--text2)" id="task-now-time"></span>
+        <span style="font-size:11px;color:var(--text2)" id="task-now-time"></span><button class="btn bsm" onclick="openRecurringManager();populateRecurringUsers()" style="font-size:10px;margin-left:6px">🔁 Recurring</button>
       </div>
       <div style="margin-bottom:.85rem">
         <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Task type</div>
@@ -970,10 +974,11 @@ function buildNav(){
   if(!isDelivery) p.push({id:'calendar',l:'Calendar'});
   if(!isDelivery&&can('pl')) p.push({id:'channels',l:'Channels'});
   if(!isDelivery) p.push({id:'audit',l:'Audit'});
+  if(currentUser.role==='owner'||currentUser.role==='manager') p.push({id:'staff-perf',l:'Performance'});
   if(!isDelivery) p.push({id:'ai',l:'AI'});
   document.getElementById('main-nav').innerHTML=p.map(x=>`<button class="nb" id="nb-${x.id}" onclick="goPage('${x.id}')">${x.l}</button>`).join('');
 }
-function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar,channels:initChannels,audit:initAuditLog}[pg]||(() =>{}))(); }
+function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();setDates();const si=document.getElementById('s-items');if(si&&!si.children.length)addSaleItemRow();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar,channels:initChannels,audit:initAuditLog,'staff-perf':initStaffPerf}[pg]||(() =>{}))(); }
 function setDates(){ ['s-date','e-date'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.value=today(); }); }
 function allMonths(){ const ms=new Set([...D.sales.map(r=>r.date.substring(0,7)),...D.expenses.map(r=>r.date.substring(0,7))]); return[...ms].sort().reverse(); }
 function popMonths(){ const o='<option value="all">All months</option>'+allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`).join(''); ['sf-mo','ef-mo','pl-mo'].forEach(id=>{ const el=document.getElementById(id); if(el){ const v=el.value; el.innerHTML=o; el.value=v||'all'; }}); }
@@ -990,6 +995,17 @@ function updateMonthNav(){ const months=getSortedMonths(); const isAll=dashMonth
 async function switchSub(id){ currentCo=companies.find(c=>c.id===id); let saved=loadD(id); D=saved||defD(id); ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; }); document.getElementById('top-dot').style.background=currentCo.color; document.getElementById('top-co').textContent=currentCo.name; popAll(); renderDash(); checkDue(); }
 
 function renderDash(){
+  // Low stock alert
+  const lowItems=(D.inventory||[]).filter(i=>(i.qty||0)<=(i.low||2)&&i.qty>=0);
+  const alertBar=document.getElementById('low-stock-alert-bar');
+  if(alertBar){
+    if(lowItems.length){
+      alertBar.style.display='flex';
+      alertBar.innerHTML=`<span style="font-size:13px">⚠️</span><span style="flex:1"><strong>${lowItems.length} item${lowItems.length>1?'s':''} low on stock:</strong> ${lowItems.slice(0,4).map(i=>i.name+' ('+i.qty+' left)').join(', ')}${lowItems.length>4?' + '+(lowItems.length-4)+' more':''}</span><button onclick="goPage('inventory')" style="background:none;border:1px solid rgba(0,0,0,0.2);border-radius:4px;cursor:pointer;padding:2px 8px;font-size:11px;font-weight:700">View →</button>`;
+    } else {
+      alertBar.style.display='none';
+    }
+  }
   updateMonthNav();
   const isAll=dashMonth==='all';
   const mS=filterByDash(D.sales); const mE=filterByDash(D.expenses);
@@ -1331,7 +1347,7 @@ function addSale(){
   toast('Sale saved ✓');
 }
 function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay);   rows=[...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td style="font-family:monospace;font-size:10px;font-weight:700;color:var(--text2)">${r.ticketNo||'—'}</td><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})">✎</button>${r.paymentStatus!=='paid'?`<button class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)">💵</button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
+  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td style="font-family:monospace;font-size:10px;font-weight:700;color:var(--text2)">${r.ticketNo||'—'}</td><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})" title="Edit payment">✎</button><button class="del" onclick="openReceipt(${r.id})" title="Receipt" style="background:var(--bg2);color:var(--text)">🧾</button><button class="del" onclick="shareReceiptViaWA(${r.id})" title="WhatsApp receipt" style="background:#d4f5df;color:#1a7a3c">💬</button>${r.paymentStatus!=='paid'?`<button class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)">💵</button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
 function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; auditLog('sale',s.id,'payment_updated','Status → '+psL(s.paymentStatus)+' | paid '+fmt(s.paidAmount||0)+' of '+fmt(s.amount)); logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); pushSale(s); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); toast('✓ Payment updated'); }
 
@@ -1463,12 +1479,13 @@ function custT(t,btn){ ['single','bulk','list'].forEach(x=>document.getElementBy
 function addCust(){ const name=document.getElementById('c-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.customers.push({id:Date.now(),ticketNo:nextTicketNo('customer'),name,phone:document.getElementById('c-phone').value,channel:document.getElementById('c-ch').value,loc:document.getElementById('c-loc').value,type:document.getElementById('c-type').value,notes:document.getElementById('c-notes').value}); const _newCust=D.customers[D.customers.length-1]; pushCust(_newCust); logA('customer','Added: '+name); saveD(); popAll(); ['c-name','c-phone','c-loc','c-notes'].forEach(id=>document.getElementById(id).value=''); alert('Customer saved!'); }
 function bulkImport(){ const lines=document.getElementById('bulk-in').value.trim().split('\n').filter(l=>l.trim()); let count=0; lines.forEach(line=>{ const p=line.split(',').map(x=>x.trim()); const name=p[0]; if(!name) return; const chs=['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in']; const ch=p[2]&&chs.find(c=>c.toLowerCase()===p[2].toLowerCase())||'WhatsApp'; D.customers.push({id:Date.now()+Math.random(),name,phone:p[1]||'',channel:ch,loc:p[3]||'',type:'Individual',notes:''}); count++; }); saveD(); popAll(); document.getElementById('bulk-res').textContent=count+' customers imported!'; document.getElementById('bulk-in').value=''; }
 function renderCust(){ const q=(document.getElementById('c-search').value||'').toLowerCase(); const cf=(document.getElementById('c-chf')||{}).value||'all'; let list=D.customers; if(q) list=list.filter(c=>c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)); if(cf!=='all') list=list.filter(c=>c.channel===cf);   list=[...list].sort((a,b)=>b.id-a.id);
-  document.getElementById('c-tbody').innerHTML=ist.length?list.map(c=>{ const spent=D.sales.filter(s=>s.custId==c.id).reduce((s,r)=>s+r.amount,0); const out=D.sales.filter(s=>s.custId==c.id&&s.paymentStatus!=='paid').reduce((s,r)=>s+(r.amount-(r.paidAmount||0)),0); const last=D.sales.filter(s=>s.custId==c.id).map(s=>s.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${c.name}</td><td>${c.phone||'—'}</td><td><span class="badge ${chC(c.channel)}">${c.channel||'—'}</span></td><td>${c.loc||'—'}</td><td><span class="badge bg">${c.type}</span></td><td style="color:var(--green);font-weight:500">${spent?fmt(spent):'—'}</td><td style="color:${out>0?'var(--red)':'var(--text2)'};font-weight:${out>0?500:400}">${out>0?fmt(out):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('customers',${c.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No customers yet.</td></tr>'; }
+  document.getElementById('c-tbody').innerHTML=ist.length?list.map(c=>{ const spent=D.sales.filter(s=>s.custId==c.id).reduce((s,r)=>s+r.amount,0); const out=D.sales.filter(s=>s.custId==c.id&&s.paymentStatus!=='paid').reduce((s,r)=>s+(r.amount-(r.paidAmount||0)),0); const last=D.sales.filter(s=>s.custId==c.id).map(s=>s.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${c.name}</td><td>${c.phone||'—'}</td><td><span class="badge ${chC(c.channel)}">${c.channel||'—'}</span></td><td>${c.loc||'—'}</td><td><span class="badge bg">${c.type}</span></td><td style="color:var(--green);font-weight:500">${spent?fmt(spent):'—'}</td><td style="color:${out>0?'var(--red)':'var(--text2)'};font-weight:${out>0?500:400}">${out>0?fmt(out):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('customers',${c.id})">✕</button>`:''}
+        <button class="del" onclick="openCustHistory(${c.id})" title="Purchase history" style="background:var(--bg2);color:var(--text)">📋</button></td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No customers yet.</td></tr>'; }
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
 function addSup(){ const name=document.getElementById('sup-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.suppliers.push({id:Date.now(),ticketNo:nextTicketNo('supplier'),name,contact:document.getElementById('sup-contact').value,phone:document.getElementById('sup-phone').value,cat:document.getElementById('sup-cat').value,terms:document.getElementById('sup-terms').value,notes:document.getElementById('sup-notes').value}); logA('supplier','Added: '+name); pushSup(D.suppliers[D.suppliers.length-1]); saveD(); renderSup(); popAll(); ['sup-name','sup-contact','sup-phone','sup-notes'].forEach(id=>document.getElementById(id).value=''); }
 function renderSup(){   const _sortedSup=[...D.suppliers].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  document.getElementById('sup-tbody').innerHTML=_sortedSup.length?_sortedSup.map(s=>{ const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0); const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${s.name}</td><td>${s.contact||'—'}</td><td>${s.phone||'—'}</td><td><span class="badge bw">${s.cat}</span></td><td>${s.terms}</td><td style="color:var(--amber);font-weight:500">${paid?fmt(paid):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('suppliers',${s.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="8" class="empty">No suppliers yet.</td></tr>'; }
+  document.getElementById('sup-tbody').innerHTML=_sortedSup.length?_sortedSup.map(s=>{ const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0); const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${s.name}</td><td>${s.contact||'—'}</td><td>${s.phone||'—'}</td><td><span class="badge bw">${s.cat}</span></td><td>${s.terms}</td><td style="color:var(--amber);font-weight:500">${paid?fmt(paid):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="openSupPayments(${s.id})" title="Track payments" style="background:var(--bg2);color:var(--text)">💳</button><button class="del" onclick="delR('suppliers',${s.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="8" class="empty">No suppliers yet.</td></tr>'; }
 
 // ── Team ──────────────────────────────────────────────────────────────────────
 function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.map(u=>{ const s=D.sales.filter(x=>x.by===u.name); const e=D.expenses.filter(x=>x.by===u.name).length; const rv=s.reduce((t,x)=>t+x.amount,0); const pnl=s.reduce((t,x)=>t+(x.pnl||0),0); return`<tr><td style="display:flex;align-items:center;gap:7px"><div class="av ${avC(u.role)}" style="width:27px;height:27px;font-size:10px">${ini(u.name)}</div>${u.name}</td><td><span class="badge ${rcC(u.role)}">${u.role}</span></td><td>${s.length}</td><td>${e}</td><td style="color:var(--green);font-weight:500">${rv?fmt(rv):'—'}</td><td class="${pnl>0?'pnl-pos':'pnl-neg'}">${pnl?fmt(pnl):'—'}</td></tr>`; }).join(''); renderPwMgmt(); document.getElementById('team-act').innerHTML=D.activity.slice(0,25).map(a=>`<div class="arow"><span><span class="badge bp" style="margin-right:5px">${a.user}</span>${a.desc}</span><span style="color:var(--text2);font-size:11px">${a.date}</span></div>`).join('')||'<div class="empty">No activity yet.</div>';
@@ -2251,6 +2268,627 @@ function clearCompanyCache(){
   setTimeout(()=>location.reload(),2000);
 }
 
+
+// ════════════════════════════════════════════════════════
+// GLOBAL SEARCH
+// ════════════════════════════════════════════════════════
+function globalSearch(q){
+  const drop=document.getElementById('search-results-drop');
+  if(!drop) return;
+  q=(q||'').trim().toLowerCase();
+  if(!q){ drop.innerHTML=''; return; }
+
+  const results=[];
+
+  // Search sales
+  (D.sales||[]).filter(r=>(r.custName||'').toLowerCase().includes(q)||(r.items||[]).some(i=>(i.name||'').toLowerCase().includes(q))||(r.ticketNo||'').toLowerCase().includes(q)).slice(0,4).forEach(r=>{
+    results.push({type:'Sale',icon:'💰',title:(r.ticketNo?r.ticketNo+' — ':'')+fmt(r.amount),sub:(r.custName||'Walk-in')+' • '+r.date,action:`goPage('sales')`});
+  });
+
+  // Search expenses
+  (D.expenses||[]).filter(r=>(r.cat||'').toLowerCase().includes(q)||(r.vendor||'').toLowerCase().includes(q)||(r.ticketNo||'').toLowerCase().includes(q)).slice(0,3).forEach(r=>{
+    results.push({type:'Expense',icon:'💸',title:(r.ticketNo?r.ticketNo+' — ':'')+fmt(r.amount),sub:r.cat+(r.vendor?' • '+r.vendor:'')+' • '+r.date,action:`goPage('expenses')`});
+  });
+
+  // Search inventory
+  (D.inventory||[]).filter(r=>(r.name||'').toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q)).slice(0,4).forEach(r=>{
+    results.push({type:'Product',icon:'📦',title:r.name,sub:'Stock: '+r.qty+' • Sell: '+fmt(r.sell||0),action:`goPage('inventory')`});
+  });
+
+  // Search customers
+  (D.customers||[]).filter(r=>(r.name||'').toLowerCase().includes(q)||(r.phone||'').toLowerCase().includes(q)).slice(0,3).forEach(r=>{
+    results.push({type:'Customer',icon:'👤',title:r.name,sub:r.phone||'No phone',action:`goPage('customers')`});
+  });
+
+  // Search tasks
+  (D.tasks||[]).filter(r=>(r.title||'').toLowerCase().includes(q)||(r.ticketNo||'').toLowerCase().includes(q)||(r.clientName||'').toLowerCase().includes(q)).slice(0,3).forEach(r=>{
+    results.push({type:'Task',icon:'📋',title:(r.ticketNo?r.ticketNo+' — ':'')+r.title,sub:(r.assignee||'')+'  • '+r.status+' • '+r.date,action:`goPage('tasks')`});
+  });
+
+  // Search suppliers
+  (D.suppliers||[]).filter(r=>(r.name||'').toLowerCase().includes(q)).slice(0,2).forEach(r=>{
+    results.push({type:'Supplier',icon:'🏭',title:r.name,sub:r.contact||'',action:`goPage('suppliers')`});
+  });
+
+  if(!results.length){
+    drop.innerHTML='<div style="padding:14px;font-size:12px;color:var(--text2);text-align:center">No results for "'+q+'"</div>';
+    return;
+  }
+
+  drop.innerHTML=results.map(r=>`
+    <div onclick="${r.action};document.getElementById('global-search-input').value='';document.getElementById('search-results-drop').style.display='none'"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:0.5px solid var(--border);transition:background .1s"
+      onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"
+    >
+      <div style="font-size:18px;width:28px;text-align:center;flex-shrink:0">${r.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
+        <div style="font-size:10px;color:var(--text2)">${r.sub}</div>
+      </div>
+      <div style="font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg3);color:var(--text2);font-weight:600;flex-shrink:0">${r.type}</div>
+    </div>`).join('');
+}
+
+
+// ════════════════════════════════════════════════════════
+// RECEIPT / INVOICE GENERATOR
+// ════════════════════════════════════════════════════════
+function openReceipt(saleId){
+  const sale = (D.sales||[]).find(s=>s.id===saleId);
+  if(!sale) return;
+  const cust = sale.custId?(D.customers||[]).find(c=>c.id==sale.custId):null;
+  const phone = cust?.phone||'';
+  const fd = d=>{try{return new Date(d+'T00:00').toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}};
+  const items = (sale.items||[]).map(i=>`
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px">${i.name||'Item'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;text-align:center">${i.qty||1}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;text-align:right">KES ${fmt(i.price||0)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;text-align:right;font-weight:600">KES ${fmt((i.price||0)*(i.qty||1))}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt ${sale.ticketNo||''}</title>
+    <style>body{font-family:Arial,sans-serif;margin:0;padding:20px;color:#222;max-width:480px;margin:0 auto}
+    .logo{font-size:22px;font-weight:900;color:#3C3489;letter-spacing:-.02em}
+    .sub{font-size:11px;color:#888;margin-top:2px}
+    .divider{border:none;border-top:2px solid #3C3489;margin:16px 0}
+    .label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+    table{width:100%;border-collapse:collapse}
+    th{padding:8px 10px;background:#f5f5f5;font-size:11px;text-align:left;font-weight:700}
+    .total-row{background:#3C3489;color:#fff}
+    .total-row td{padding:10px;font-weight:700;font-size:14px}
+    .footer{text-align:center;margin-top:24px;font-size:11px;color:#999}
+    @media print{body{padding:0}button{display:none}}</style></head>
+  <body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div class="logo">${currentCo.name}</div><div class="sub">Office & Home Furniture</div></div>
+      <div style="text-align:right"><div class="label">Receipt</div><div style="font-family:monospace;font-size:16px;font-weight:800">${sale.ticketNo||'—'}</div><div style="font-size:11px;color:#888">${fd(sale.date)}</div></div>
+    </div>
+    <hr class="divider">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><div class="label">Bill to</div><div style="font-size:13px;font-weight:600;margin-top:4px">${sale.custName||'Walk-in'}</div>${phone?'<div style="font-size:11px;color:#666">'+phone+'</div>':''}</div>
+      <div><div class="label">Payment</div><div style="font-size:12px;margin-top:4px">${sale.payment||'M-Pesa'}</div><div style="font-size:11px;color:#666">${sale.paymentStatus==='paid'?'✓ Fully paid':sale.paymentStatus==='partial'?'Partially paid':'Pending'}</div></div>
+    </div>
+    <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>${items}</tbody>
+    <tfoot><tr class="total-row"><td colspan="3" style="padding:10px;font-size:13px">TOTAL</td><td style="padding:10px;text-align:right;font-size:16px">KES ${fmt(sale.amount)}</td></tr></tfoot></table>
+    ${sale.notes?'<div style="margin-top:14px;font-size:11px;color:#666"><span style="font-weight:700">Notes:</span> '+sale.notes+'</div>':''}
+    <div class="footer"><p>Thank you for your business!</p><p>Generated by Baraka Enterprise Hub</p></div>
+    <div style="text-align:center;margin-top:16px"><button onclick="window.print()" style="padding:10px 24px;background:#3C3489;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">🖨 Print / Save PDF</button>
+    <button onclick="shareReceipt()" style="padding:10px 24px;background:#25D366;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;margin-left:8px">💬 WhatsApp</button></div>
+  
+<!-- ═══ CUSTOMER HISTORY MODAL ════════════════════════════════════════════════ -->
+<div class="modal-bg" id="cust-history-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:560px">
+    <button class="mc-close" onclick="document.getElementById('cust-history-modal').classList.remove('open')">✕</button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--purple-bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">👤</div>
+      <div>
+        <div style="font-size:16px;font-weight:800" id="ch-name">Customer</div>
+        <div style="font-size:12px;color:var(--text2)" id="ch-phone"></div>
+      </div>
+    </div>
+    <div class="metrics" id="ch-stats" style="margin-bottom:1rem"></div>
+    <div class="ct" style="margin-bottom:.5rem">Purchase history</div>
+    <div id="ch-sales"></div>
+  </div>
+</div>
+
+<!-- ═══ EXPORT MODAL ═══════════════════════════════════════════════════════════ -->
+<div class="modal-bg" id="export-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:380px">
+    <button class="mc-close" onclick="document.getElementById('export-modal').classList.remove('open')">✕</button>
+    <div class="ct">Export data</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1.2rem">Download your data as CSV — opens in Excel or Google Sheets.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn" onclick="exportCSV('sales')" style="justify-content:flex-start;gap:10px;text-align:left">💰 <span><strong>Sales records</strong><br><span style="font-size:10px;color:var(--text2);font-weight:400">All sales with amounts, customers, channels</span></span></button>
+      <button class="btn" onclick="exportCSV('expenses')" style="justify-content:flex-start;gap:10px;text-align:left">💸 <span><strong>Expenses</strong><br><span style="font-size:10px;color:var(--text2);font-weight:400">All expenses with categories and vendors</span></span></button>
+      <button class="btn" onclick="exportCSV('inventory')" style="justify-content:flex-start;gap:10px;text-align:left">📦 <span><strong>Inventory / Products</strong><br><span style="font-size:10px;color:var(--text2);font-weight:400">All products with prices and stock levels</span></span></button>
+      <button class="btn" onclick="exportCSV('customers')" style="justify-content:flex-start;gap:10px;text-align:left">👥 <span><strong>Customers</strong><br><span style="font-size:10px;color:var(--text2);font-weight:400">All customer records with contacts</span></span></button>
+      <button class="btn" onclick="exportCSV('tasks')" style="justify-content:flex-start;gap:10px;text-align:left">📋 <span><strong>Tasks</strong><br><span style="font-size:10px;color:var(--text2);font-weight:400">All tasks with assignments and status</span></span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EXPENSE REPORT MODAL ═══════════════════════════════════════════════════ -->
+<div class="modal-bg" id="exp-report-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:460px">
+    <button class="mc-close" onclick="document.getElementById('exp-report-modal').classList.remove('open')">✕</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+      <div class="ct" style="margin-bottom:0">Expense breakdown</div>
+      <select id="er-month" onchange="openExpReport()" style="font-size:11px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <option value="all">All time</option>
+      </select>
+    </div>
+    <div style="font-size:24px;font-weight:900;color:var(--red);margin-bottom:1rem" id="er-total">KES 0</div>
+    <div id="er-bars"></div>
+  </div>
+</div>
+
+<!-- ═══ STAFF PERFORMANCE PAGE ════════════════════════════════════════════════ -->
+<div id="pg-staff-perf" class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">Staff performance</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Task completion rates by team member</div>
+    </div>
+    <select id="sp-month" onchange="renderStaffPerf()" style="font-size:11px;padding:5px 9px;border-radius:var(--radius);border:1px solid var(--border2)">
+      <option value="all">All time</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Team member</th><th style="text-align:center">Total tasks</th><th style="text-align:center">Done</th><th style="text-align:center">Pending</th><th style="text-align:center">Completion rate</th><th style="text-align:right">Delivery costs</th></tr></thead>
+        <tbody id="sp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RECURRING TASKS MODAL ════════════════════════════════════════════════ -->
+<div class="modal-bg" id="recurring-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:480px">
+    <button class="mc-close" onclick="document.getElementById('recurring-modal').classList.remove('open')">✕</button>
+    <div class="ct">Recurring tasks</div>
+    <div class="fg" style="margin-bottom:1rem">
+      <div class="fl ff"><label>Task title</label><input type="text" id="rec-title" placeholder="e.g. Weekly stock check"></div>
+      <div class="fl">
+        <label>Assign to</label>
+        <select id="rec-assignee"></select>
+      </div>
+      <div class="fl">
+        <label>Frequency</label>
+        <select id="rec-freq"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
+      </div>
+      <div class="fl">
+        <label>Task type</label>
+        <select id="rec-type"><option value="other">Other</option><option value="dispatch">Dispatch</option><option value="collection">Collection</option><option value="installation">Installation</option></select>
+      </div>
+    </div>
+    <button class="btn" onclick="saveRecurring()" style="background:var(--black);color:#fff;border-color:var(--black);margin-bottom:1.2rem;width:100%">+ Add recurring task</button>
+    <div class="ct" style="margin-bottom:.5rem">Active recurring tasks</div>
+    <div id="rec-list"></div>
+  </div>
+</div>
+
+<!-- ═══ WA INTAKE MODAL ═══════════════════════════════════════════════════════ -->
+<div class="modal-bg" id="wa-intake-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:480px">
+    <button class="mc-close" onclick="document.getElementById('wa-intake-modal').classList.remove('open')">✕</button>
+    <div class="ct">New order via WhatsApp</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Select products, add client details, and send a WhatsApp message with the order summary. A task is also created automatically.</p>
+    <div class="fg" style="margin-bottom:1rem">
+      <div class="fl"><label>Client name</label><input type="text" id="wi-name" placeholder="e.g. John Kamau"></div>
+      <div class="fl"><label>Client phone</label><input type="tel" id="wi-phone" placeholder="e.g. 0712345678"></div>
+      <div class="fl ff"><label>Products</label><div id="wi-products" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:8px"></div></div>
+      <div class="fl ff"><label>Notes</label><textarea id="wi-notes" rows="2" placeholder="Delivery address, colour preference, etc."></textarea></div>
+    </div>
+    <button class="btn" onclick="sendWAIntakeOrder()" style="background:#25D366;color:#fff;border-color:#25D366;width:100%">💬 Send via WhatsApp + Create task</button>
+  </div>
+</div>
+
+<!-- ═══ SUPPLIER PAYMENT MODAL ═══════════════════════════════════════════════ -->
+<div class="modal-bg" id="sup-payment-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:480px">
+    <button class="mc-close" onclick="document.getElementById('sup-payment-modal').classList.remove('open')">✕</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <div style="font-size:24px">🏭</div>
+      <div class="ct" style="margin-bottom:0" id="spm-name">Supplier</div>
+    </div>
+    <input type="hidden" id="spm-sup-id">
+    <div class="metrics" id="spm-stats" style="margin-bottom:1rem"></div>
+    <div class="fg" style="margin-bottom:1rem">
+      <div class="fl"><label>Amount paid (KES)</label><input type="number" id="spm-amount" placeholder="0"></div>
+      <div class="fl"><label>Method</label><select id="spm-method"><option>M-Pesa</option><option>Cash</option><option>Bank transfer</option><option>Paybill</option></select></div>
+      <div class="fl"><label>Ref / M-Pesa code</label><input type="text" id="spm-ref" placeholder="Optional"></div>
+    </div>
+    <button class="btn" onclick="addSupPayment()" style="background:var(--black);color:#fff;border-color:var(--black);width:100%;margin-bottom:1rem">✓ Record payment</button>
+    <div class="ct" style="margin-bottom:.5rem">Payment history</div>
+    <div id="spm-history"></div>
+  </div>
+</div>
+</body></html>`;
+
+  const win = window.open('','_blank','width=520,height=700');
+  win.document.write(html);
+  win.document.close();
+}
+
+function shareReceiptViaWA(saleId){
+  const sale=(D.sales||[]).find(s=>s.id===saleId);
+  if(!sale) return;
+  const cust=sale.custId?(D.customers||[]).find(c=>c.id==sale.custId):null;
+  const phone=(cust?.phone||'').replace(/[^0-9+]/g,'');
+  const text=`*${currentCo.name}*\n*Receipt: ${sale.ticketNo||''}*\nDate: ${sale.date}\nItems: ${(sale.items||[]).map(i=>i.name+' x'+i.qty+' @ KES '+fmt(i.price)).join(', ')}\n*Total: KES ${fmt(sale.amount)}*\nStatus: ${sale.paymentStatus==='paid'?'✓ Fully paid':sale.paymentStatus==='partial'?'Partially paid':'Pending'}\n\nThank you for your business!`;
+  const url='https://wa.me/'+(phone?phone.replace('+',''):'')+'?text='+encodeURIComponent(text);
+  window.open(url,'_blank');
+}
+
+
+// ════════════════════════════════════════════════════════
+// CUSTOMER PURCHASE HISTORY
+// ════════════════════════════════════════════════════════
+function openCustHistory(custId){
+  const cust=(D.customers||[]).find(c=>c.id==custId);
+  if(!cust) return;
+  const sales=(D.sales||[]).filter(s=>String(s.custId)===String(custId));
+  const totalSpent=sales.reduce((a,s)=>a+s.amount,0);
+  const outstanding=sales.filter(s=>s.paymentStatus!=='paid').reduce((a,s)=>a+(s.amount-(s.paidAmount||0)),0);
+  const modal=document.getElementById('cust-history-modal');
+  if(!modal) return;
+  document.getElementById('ch-name').textContent=cust.name;
+  document.getElementById('ch-phone').textContent=cust.phone||'—';
+  document.getElementById('ch-stats').innerHTML=`
+    <div class="mc"><div class="mc-l">Total purchases</div><div class="mc-v g">${sales.length}</div></div>
+    <div class="mc"><div class="mc-l">Total spent</div><div class="mc-v b">KES ${fmt(totalSpent)}</div></div>
+    <div class="mc"><div class="mc-l">Outstanding</div><div class="mc-v r">KES ${fmt(outstanding)}</div></div>
+    <div class="mc"><div class="mc-l">Last purchase</div><div class="mc-v" style="font-size:12px">${sales[0]?.date||'—'}</div></div>`;
+  document.getElementById('ch-sales').innerHTML=sales.length?sales.map(s=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:.5px solid var(--border);gap:12px">
+      <div>
+        <div style="font-size:12px;font-weight:600">${s.ticketNo||'—'} <span style="color:var(--text2);font-weight:400">• ${s.date}</span></div>
+        <div style="font-size:11px;color:var(--text2)">${(s.items||[]).map(i=>i.name+' x'+i.qty).join(', ')}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:700;color:var(--green)">KES ${fmt(s.amount)}</div>
+        <span class="badge ${s.paymentStatus==='paid'?'bg':'br'}" style="font-size:9px">${s.paymentStatus==='paid'?'Paid':'Outstanding'}</span>
+      </div>
+      <button onclick="openReceipt(${s.id})" style="background:none;border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 7px;font-size:11px">🧾</button>
+    </div>`).join(''):'<div style="color:var(--text2);font-size:12px;padding:12px 0">No purchases recorded yet.</div>';
+  modal.classList.add('open');
+}
+
+
+// ════════════════════════════════════════════════════════
+// DATA EXPORT
+// ════════════════════════════════════════════════════════
+function exportCSV(type){
+  let rows=[], headers=[], filename='';
+  const fmt2=n=>isNaN(n)?0:Number(n);
+  if(type==='sales'){
+    headers=['Ticket','Date','Items','Amount','Cost','PNL','Status','Paid','Customer','Channel','Method','Ref'];
+    rows=(D.sales||[]).map(s=>[s.ticketNo||'',s.date,(s.items||[]).map(i=>i.name+' x'+i.qty).join(' | '),fmt2(s.amount),fmt2(s.cost),fmt2(s.pnl),s.paymentStatus,fmt2(s.paidAmount),s.custName||'Walk-in',s.channel||'',s.payment||'',s.ref||'']);
+    filename='sales_'+today()+'.csv';
+  } else if(type==='expenses'){
+    headers=['Ticket','Date','Category','Amount','Vendor','Method','Ref','Notes'];
+    rows=(D.expenses||[]).map(e=>[e.ticketNo||'',e.date,e.cat,fmt2(e.amount),e.vendor||'',e.paymethod||'',e.ref||'',e.notes||'']);
+    filename='expenses_'+today()+'.csv';
+  } else if(type==='inventory'){
+    headers=['Ticket','Name','Category','Qty','Sell Price','Cost Price','Low Stock'];
+    rows=(D.inventory||[]).map(i=>[i.ticketNo||'',i.name,i.cat||'',fmt2(i.qty),fmt2(i.sell),fmt2(i.cost),fmt2(i.low)]);
+    filename='inventory_'+today()+'.csv';
+  } else if(type==='customers'){
+    headers=['Ticket','Name','Phone','Location','Channel','Added'];
+    rows=(D.customers||[]).map(c=>[c.ticketNo||'',c.name,c.phone||'',c.location||'',c.channel||'',c.created_at||'']);
+    filename='customers_'+today()+'.csv';
+  } else if(type==='tasks'){
+    headers=['Ticket','Date','Title','Type','Assignee','Status','Client','Location','Amount','Delivery Cost'];
+    rows=(D.tasks||[]).map(t=>[t.ticketNo||'',t.date,t.title,t.type||'',t.assignee,t.status,t.clientName||'',t.location||'',fmt2(t.amountOnDelivery),fmt2(t.deliveryCost)]);
+    filename='tasks_'+today()+'.csv';
+  }
+  const csv=[headers,...rows].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+  toast('✓ Exported '+filename);
+}
+
+function showExportMenu(){
+  const modal=document.getElementById('export-modal');
+  if(modal) modal.classList.add('open');
+}
+
+
+// ════════════════════════════════════════════════════════
+// EXPENSE CATEGORIES REPORT
+// ════════════════════════════════════════════════════════
+function openExpReport(){
+  const modal=document.getElementById('exp-report-modal');
+  if(!modal) return;
+  const mo=(document.getElementById('er-month')||{}).value||'all';
+  let exps=D.expenses||[];
+  if(mo!=='all') exps=exps.filter(e=>e.date&&e.date.startsWith(mo));
+  const total=exps.reduce((a,e)=>a+e.amount,0);
+  const bycat={};
+  exps.forEach(e=>{ bycat[e.cat]=(bycat[e.cat]||0)+e.amount; });
+  const sorted=Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+  const catColors=['#3C3489','#185FA5','#0F6E56','#C0392B','#E67E22','#8E44AD','#16A085','#D35400'];
+  document.getElementById('er-total').textContent='KES '+fmt(total);
+  document.getElementById('er-bars').innerHTML=sorted.map(([cat,amt],i)=>{
+    const pct=total?Math.round(amt/total*100):0;
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="font-weight:600">${cat}</span>
+        <span style="color:var(--text2)">KES ${fmt(amt)} <span style="color:var(--text3)">(${pct}%)</span></span>
+      </div>
+      <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${catColors[i%catColors.length]};border-radius:4px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  }).join('');
+  modal.classList.add('open');
+}
+
+
+function populateERMonths(){
+  const sel=document.getElementById('er-month');
+  if(!sel||sel.options.length>1) return;
+  const months=[...new Set((D.expenses||[]).map(e=>e.date?e.date.substring(0,7):'').filter(Boolean))].sort().reverse();
+  months.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; sel.appendChild(o); });
+}
+
+// ════════════════════════════════════════════════════════
+// STAFF PERFORMANCE
+// ════════════════════════════════════════════════════════
+function renderStaffPerf(){
+  const el=document.getElementById('pg-staff-perf');
+  if(!el||!el.classList.contains('on')) return;
+  const mo=(document.getElementById('sp-month')||{}).value||'all';
+  const users=D.users||[];
+  const tasks=D.tasks||[];
+  const getTasks=(name,status)=>tasks.filter(t=>{
+    const isAssigned=t.assignee===name||(t.assignees&&t.assignees.includes(name));
+    const inMonth=mo==='all'||((t.date||'').startsWith(mo)||(t.completedAt||'').startsWith(mo));
+    return isAssigned&&inMonth&&(status?t.status===status:true);
+  });
+
+  const staff=users.filter(u=>u.role!=='owner');
+  const tbody=document.getElementById('sp-tbody');
+  if(!tbody) return;
+
+  tbody.innerHTML=staff.map(u=>{
+    const all=getTasks(u.name);
+    const done=getTasks(u.name,'done');
+    const pending=getTasks(u.name,'pending');
+    const inprog=getTasks(u.name,'in-progress');
+    const rate=all.length?Math.round(done.length/all.length*100):0;
+    const costs=done.reduce((a,t)=>a+(t.deliveryCost||0),0);
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="av ${avC(u.role)}" style="width:30px;height:30px;font-size:11px;flex-shrink:0">${ini(u.name)}</div>
+        <div><div style="font-weight:600;font-size:12px">${u.name}</div><div style="font-size:10px;color:var(--text2)">${u.role}</div></div>
+      </div></td>
+      <td style="text-align:center;font-weight:700">${all.length}</td>
+      <td style="text-align:center;color:var(--green);font-weight:700">${done.length}</td>
+      <td style="text-align:center;color:var(--amber);font-weight:700">${inprog.length+pending.length}</td>
+      <td style="text-align:center">
+        <div style="font-weight:700;color:${rate>=80?'var(--green)':rate>=50?'var(--amber)':'var(--red)'}">${rate}%</div>
+        <div style="background:var(--bg3);border-radius:3px;height:4px;margin-top:3px;overflow:hidden"><div style="height:100%;width:${rate}%;background:${rate>=80?'var(--green)':rate>=50?'var(--amber)':'var(--red)'}"></div></div>
+      </td>
+      <td style="text-align:right;font-size:12px;color:var(--text2)">${costs?'KES '+fmt(costs):'—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Populate month selector
+  const sel=document.getElementById('sp-month');
+  if(sel&&sel.options.length<2){
+    const months=[...new Set(tasks.map(t=>t.date?t.date.substring(0,7):'').filter(Boolean))].sort().reverse();
+    months.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; sel.appendChild(o); });
+  }
+}
+
+function initStaffPerf(){
+  renderStaffPerf();
+}
+
+
+// ════════════════════════════════════════════════════════
+// RECURRING TASKS
+// ════════════════════════════════════════════════════════
+function checkRecurringTasks(){
+  if(!D.recurring||!D.recurring.length) return;
+  const tod=today();
+  let created=0;
+  D.recurring.forEach(rt=>{
+    if(!rt.active) return;
+    const lastDate=rt.lastCreated||'';
+    let shouldCreate=false;
+    if(rt.freq==='daily' && lastDate!==tod) shouldCreate=true;
+    if(rt.freq==='weekly'){
+      const daysSince=lastDate?Math.floor((new Date(tod)-new Date(lastDate))/(1000*60*60*24)):999;
+      if(daysSince>=7) shouldCreate=true;
+    }
+    if(rt.freq==='monthly'){
+      const thisMonth=tod.substring(0,7);
+      if(!lastDate||lastDate.substring(0,7)!==thisMonth) shouldCreate=true;
+    }
+    if(shouldCreate){
+      const task={
+        id:Date.now()+Math.random(),
+        ticketNo:nextTicketNo('task'),
+        type:rt.type||'other',
+        typeIcon:rt.typeIcon||'📋',
+        title:rt.title,
+        assignee:rt.assignee,
+        assignees:[rt.assignee],
+        date:tod,
+        priority:'normal',
+        status:'pending',
+        notes:'Auto-created (recurring: '+rt.freq+')',
+        createdBy:'System',
+        created_at:new Date().toISOString(),
+      };
+      D.tasks.unshift(task);
+      rt.lastCreated=tod;
+      auditLog('task',task.id,'created','['+task.ticketNo+'] Recurring task: '+task.title);
+      pushTask(task);
+      created++;
+    }
+  });
+  if(created){ saveD(); toast(created+' recurring task'+(created>1?'s':'')+' created today'); }
+}
+
+function openRecurringManager(){
+  const modal=document.getElementById('recurring-modal');
+  if(!modal) return;
+  renderRecurringList();
+  modal.classList.add('open');
+}
+
+function renderRecurringList(){
+  const list=document.getElementById('rec-list');
+  if(!list) return;
+  const recs=D.recurring||[];
+  list.innerHTML=recs.length?recs.map((rt,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg2);border-radius:var(--radius);margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700">${rt.typeIcon||'📋'} ${rt.title}</div>
+        <div style="font-size:10px;color:var(--text2)">${rt.freq} • Assigned to ${rt.assignee} ${rt.active?'<span style="color:var(--green)">● Active</span>':'<span style="color:var(--text3)">Paused</span>'}</div>
+      </div>
+      <button onclick="toggleRecurring(${i})" class="btn bsm" style="font-size:10px">${rt.active?'Pause':'Resume'}</button>
+      <button onclick="deleteRecurring(${i})" class="del">✕</button>
+    </div>`).join(''):'<div style="color:var(--text2);font-size:12px;text-align:center;padding:16px">No recurring tasks set up.</div>';
+}
+
+function saveRecurring(){
+  const title=document.getElementById('rec-title').value.trim();
+  const assignee=document.getElementById('rec-assignee').value;
+  const freq=document.getElementById('rec-freq').value;
+  const type=document.getElementById('rec-type').value;
+  if(!title||!assignee){ toast('Fill in title and assignee','warn'); return; }
+  if(!D.recurring) D.recurring=[];
+  D.recurring.push({title,assignee,freq,type,typeIcon:TASK_TYPE_META[type]?.icon||'📋',active:true,lastCreated:''});
+  saveD();
+  renderRecurringList();
+  document.getElementById('rec-title').value='';
+  toast('✓ Recurring task saved');
+}
+
+function toggleRecurring(i){ D.recurring[i].active=!D.recurring[i].active; saveD(); renderRecurringList(); }
+function deleteRecurring(i){ if(confirm('Delete this recurring task?')){ D.recurring.splice(i,1); saveD(); renderRecurringList(); } }
+
+
+function populateRecurringUsers(){
+  const sel=document.getElementById('rec-assignee');
+  if(!sel||sel.options.length) return;
+  D.users.forEach(u=>{ const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; sel.appendChild(o); });
+}
+
+// ════════════════════════════════════════════════════════
+// WHATSAPP ORDER INTAKE
+// ════════════════════════════════════════════════════════
+function openWAIntake(){
+  const modal=document.getElementById('wa-intake-modal');
+  if(!modal) return;
+  // Populate product list
+  const list=document.getElementById('wi-products');
+  list.innerHTML=(D.inventory||[]).map(i=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid var(--border);cursor:pointer;font-size:12px">
+      <input type="checkbox" value="${i.id}" data-name="${i.name}" data-price="${i.sell||0}" style="width:auto">
+      <span style="flex:1">${i.name}</span>
+      <span style="color:var(--text2)">KES ${fmt(i.sell||0)}</span>
+    </label>`).join('');
+  modal.classList.add('open');
+}
+
+function sendWAIntakeOrder(){
+  const name=document.getElementById('wi-name').value.trim();
+  const phone=document.getElementById('wi-phone').value.trim();
+  const notes=document.getElementById('wi-notes').value.trim();
+  const selected=[...document.querySelectorAll('#wi-products input:checked')];
+  if(!selected.length){ toast('Select at least one product','warn'); return; }
+  const items=selected.map(cb=>cb.dataset.name+' (KES '+fmt(cb.dataset.price)+')');
+  const total=selected.reduce((a,cb)=>a+parseFloat(cb.dataset.price||0),0);
+
+  const msg=`*New Order — ${currentCo.name}*\n\n*Customer:* ${name||'Walk-in'}\n*Phone:* ${phone||'—'}\n\n*Items ordered:*\n${items.map(i=>'• '+i).join('\n')}\n\n*Estimated total:* KES ${fmt(total)}\n\n${notes?'*Notes:* '+notes+'\n\n':''}Please confirm your order and we will be in touch shortly.`;
+
+  // Also create a draft task
+  if(name){
+    const task={
+      id:Date.now(), ticketNo:nextTicketNo('task'), type:'dispatch',
+      typeIcon:'🚚', title:'Order: '+items[0]+(items.length>1?' + '+(items.length-1)+' more':''),
+      assignee:D.users[1]?.name||D.users[0].name,
+      assignees:[D.users[1]?.name||D.users[0].name],
+      date:today(), priority:'normal', status:'pending',
+      clientName:name, clientPhone:phone,
+      items:items.join(', '), notes:notes,
+      amountOnDelivery:total, createdBy:currentUser.name,
+      created_at:new Date().toISOString(),
+    };
+    D.tasks.unshift(task);
+    auditLog('task',task.id,'created','['+task.ticketNo+'] Order intake: '+task.title+' for '+name);
+    saveD(); pushTask(task);
+    toast('✓ Task created for this order');
+  }
+
+  const waUrl='https://wa.me/?text='+encodeURIComponent(msg);
+  window.open(waUrl,'_blank');
+  document.getElementById('wa-intake-modal').classList.remove('open');
+}
+
+
+// ════════════════════════════════════════════════════════
+// SUPPLIER PAYMENT TRACKER
+// ════════════════════════════════════════════════════════
+function openSupPayments(supId){
+  const sup=(D.suppliers||[]).find(s=>s.id==supId);
+  if(!sup) return;
+  const modal=document.getElementById('sup-payment-modal');
+  if(!modal) return;
+  document.getElementById('spm-name').textContent=sup.name;
+  document.getElementById('spm-sup-id').value=supId;
+  renderSupPayments(supId);
+  modal.classList.add('open');
+}
+
+function renderSupPayments(supId){
+  const sup=(D.suppliers||[]).find(s=>s.id==supId);
+  if(!sup) return;
+  const payments=sup.payments||[];
+  const totalOwed=sup.balance||0;
+  const totalPaid=payments.reduce((a,p)=>a+p.amount,0);
+  const outstanding=Math.max(0,totalOwed-totalPaid);
+  document.getElementById('spm-stats').innerHTML=`
+    <div class="mc"><div class="mc-l">Total owed</div><div class="mc-v r">KES ${fmt(totalOwed)}</div></div>
+    <div class="mc"><div class="mc-l">Total paid</div><div class="mc-v g">KES ${fmt(totalPaid)}</div></div>
+    <div class="mc"><div class="mc-l">Outstanding</div><div class="mc-v b">KES ${fmt(outstanding)}</div></div>`;
+  document.getElementById('spm-history').innerHTML=payments.length?
+    payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border);font-size:12px">
+      <div><div style="font-weight:600">${p.date}</div><div style="color:var(--text2)">${p.method||'M-Pesa'}${p.ref?' • '+p.ref:''}</div></div>
+      <div style="font-weight:700;color:var(--green)">KES ${fmt(p.amount)}</div>
+    </div>`).join(''):'<div style="color:var(--text2);font-size:12px;padding:8px 0">No payments recorded yet.</div>';
+}
+
+function addSupPayment(){
+  const supId=parseInt(document.getElementById('spm-sup-id').value);
+  const sup=(D.suppliers||[]).find(s=>s.id==supId);
+  if(!sup) return;
+  const amt=parseFloat(document.getElementById('spm-amount').value)||0;
+  const method=document.getElementById('spm-method').value;
+  const ref=document.getElementById('spm-ref').value.trim();
+  if(!amt){ toast('Enter payment amount','warn'); return; }
+  if(!sup.payments) sup.payments=[];
+  sup.payments.unshift({date:today(),amount:amt,method,ref});
+  auditLog('supplier',supId,'payment','Payment to '+sup.name+': KES '+fmt(amt)+' via '+method);
+  saveD(); pushSup(sup);
+  renderSupPayments(supId);
+  document.getElementById('spm-amount').value='';
+  toast('✓ Payment recorded');
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
@@ -2361,14 +2999,14 @@ async function pushUser(u){
 // ════════════════════════════════════════════════════════════════════
 async function syncNow(showFeedback){
   if(!currentCo||!currentUser) return;
-  const _syncCoId=currentCo.id; // capture at start — guard against company switch mid-sync
   const ss=document.getElementById('sync-status');
   if(ss) ss.textContent='Syncing...';
   try{
     const h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
     const co=currentCo.id;
     const base=SUPA_URL+'/rest/v1/';
-    // Fetch deleted_records first — any ID here must be removed from all devices
+
+    // Fetch deleted records first
     const deletedRows=await fetch(base+'deleted_records?company_id=eq.'+co+'&select=record_id,table_name',{headers:h})
       .then(r=>r.ok?r.json():[]).catch(()=>[]);
     const _serverDel={};
@@ -2376,7 +3014,6 @@ async function syncNow(showFeedback){
       if(!_serverDel[row.table_name]) _serverDel[row.table_name]=new Set();
       _serverDel[row.table_name].add(String(row.record_id));
     });
-    // Merge with local deletedIds blacklist
     const _localDel=D.deletedIds||{};
     const isDeleted=(table,id)=>{
       const sid=String(id);
@@ -2384,6 +3021,8 @@ async function syncNow(showFeedback){
       if(_serverDel[table]&&_serverDel[table].has(sid)) return true;
       return false;
     };
+
+    // Fetch all data in parallel
     const [sales,expenses,inventory,customers,suppliers,tasks,users,activityRows]=await Promise.all([
       fetch(base+'sales?company_id=eq.'+co+'&order=created_at.desc&limit=2000',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
       fetch(base+'expenses?company_id=eq.'+co+'&order=created_at.desc&limit=2000',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
@@ -2395,95 +3034,44 @@ async function syncNow(showFeedback){
       fetch(base+'activity_log?company_id=eq.'+co+'&order=created_at.desc&limit=500',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
     ]);
 
-    // MERGE strategy:
-    // - New records from Supabase → add to local
-    // - Local-only records → push to Supabase
-    // - Records on BOTH → merge: keep local data but update status/completion from Supabase
-    // - Deleted records → remove from everywhere
-    function mergeIn(supaRows, localRows, mapFn, table, pushFn){
-      const localMap=new Map((localRows||[]).map(r=>[String(r.id),r]));
-      const supaMap=new Map((supaRows||[]).map(r=>[String(r.id),r]));
+    // Apply Supabase data — direct assignment, filtered by deleted blacklist
+    if(sales.length)     D.sales     = sales.map(mapSale).filter(r=>!isDeleted('sales',r.id));
+    if(expenses.length)  D.expenses  = expenses.map(mapExp).filter(r=>!isDeleted('expenses',r.id));
+    if(inventory.length) D.inventory = inventory.map(mapItem).filter(r=>!isDeleted('inventory',r.id));
+    if(customers.length) D.customers = customers.filter(r=>!isDeleted('customers',r.id));
+    if(suppliers.length) D.suppliers = suppliers.filter(r=>!isDeleted('suppliers',r.id));
+    if(tasks.length)     D.tasks     = tasks.map(mapTask).filter(r=>!isDeleted('tasks',r.id));
+    if(users.length)     D.users     = users.map(mapUser);
 
-      const result=[];
+    // Push any local-only records to Supabase (offline entries)
+    const sIds=new Set(sales.map(r=>String(r.id)));
+    const eIds=new Set(expenses.map(r=>String(r.id)));
+    const iIds=new Set(inventory.map(r=>String(r.id)));
+    const cuIds=new Set(customers.map(r=>String(r.id)));
+    const suIds=new Set(suppliers.map(r=>String(r.id)));
+    const tIds=new Set(tasks.map(r=>String(r.id)));
+    (D.sales||[]).forEach(r=>{if(!sIds.has(String(r.id))&&!isDeleted('sales',r.id))pushSale(r);});
+    (D.expenses||[]).forEach(r=>{if(!eIds.has(String(r.id))&&!isDeleted('expenses',r.id))pushExp(r);});
+    (D.inventory||[]).forEach(r=>{if(!iIds.has(String(r.id))&&!isDeleted('inventory',r.id))pushItem(r);});
+    (D.customers||[]).forEach(r=>{if(!cuIds.has(String(r.id))&&!isDeleted('customers',r.id))pushCust(r);});
+    (D.suppliers||[]).forEach(r=>{if(!suIds.has(String(r.id))&&!isDeleted('suppliers',r.id))pushSup(r);});
+    (D.tasks||[]).forEach(r=>{if(!tIds.has(String(r.id))&&!isDeleted('tasks',r.id))pushTask(r);});
 
-      // Process local records
-      (localRows||[]).forEach(local=>{
-        const sid=String(local.id);
-        if(isDeleted(table,local.id)) return; // deleted — skip
-        const supaRow=supaMap.get(sid);
-        if(supaRow){
-          // Exists in both — merge status fields from Supabase into local
-          const merged=mapFn(supaRow);
-          // Keep local edits for data fields, take Supabase for status fields
-          if(table==='tasks'){
-            // Always trust Supabase for task status/completion
-            local.status=merged.status||local.status;
-            local.completedAt=merged.completedAt||local.completedAt;
-            local.completionNote=merged.completionNote||local.completionNote;
-            local.amountCollected=merged.amountCollected??local.amountCollected;
-            local.deliveryCost=merged.deliveryCost??local.deliveryCost;
-            local.deliveryCostExpensed=merged.deliveryCostExpensed??local.deliveryCostExpensed;
-            local.convertedToSale=merged.convertedToSale??local.convertedToSale;
-          }
-          if(table==='sales'){
-            // Always trust Supabase for payment status
-            local.paymentStatus=merged.paymentStatus||local.paymentStatus;
-            local.paidAmount=merged.paidAmount??local.paidAmount;
-          }
-          result.push(local);
-        } else {
-          // Local only — push to Supabase
-          pushFn(local);
-          result.push(local);
-        }
-      });
-
-      // Add new records from Supabase not in local
-      supaMap.forEach((supaRow,sid)=>{
-        if(!localMap.has(sid)&&!isDeleted(table,supaRow.id)){
-          result.push(mapFn(supaRow));
-        }
-      });
-
-      return result;
-    }
-
-    // For empty local tables, always take whatever Supabase has (full replace)
-    if(sales.length||D.sales.length) D.sales = mergeIn(sales,     D.sales||[],     mapSale, 'sales',     pushSale);
-    if(expenses.length||D.expenses.length) D.expenses = mergeIn(expenses,  D.expenses||[],  mapExp,  'expenses',  pushExp);
-    if(inventory.length||D.inventory.length) D.inventory = mergeIn(inventory, D.inventory||[], mapItem, 'inventory', pushItem);
-    if(customers.length||D.customers.length) D.customers = mergeIn(customers, D.customers||[], r=>r,    'customers', pushCust);
-    if(suppliers.length||D.suppliers.length) D.suppliers = mergeIn(suppliers, D.suppliers||[], r=>r,    'suppliers', pushSup);
-    if(tasks.length||D.tasks.length) D.tasks = mergeIn(tasks,     D.tasks||[],     mapTask, 'tasks',     pushTask);
-    // Users: trust Supabase for passwords only
-    if(users.length) users.forEach(row=>{const u=D.users.find(x=>x.id===row.id);if(u){u.password=row.password||u.password;u.phone=row.phone||u.phone;}else D.users.push(mapUser(row));});
-
-    // Merge activity_log from all devices
+    // Merge activity log
     if(activityRows&&activityRows.length){
       const localAuditIds=new Set((D.auditLog||[]).map(l=>String(l.id)));
-      const newLogs=activityRows
-        .filter(r=>!localAuditIds.has(String(r.id)))
-        .map(r=>({
-          id:r.id,
-          entity:r.entity,
-          entityId:r.entity_id,
-          ticketNo:r.ticket_no||'',
-          action:r.action,
-          details:r.details,
-          by:r.by_user,
-          at:r.created_at,
-        }));
-      D.auditLog=[...(D.auditLog||[]),...newLogs]
-        .sort((a,b)=>new Date(b.at)-new Date(a.at))
-        .slice(0,500);
+      const newLogs=activityRows.filter(r=>!localAuditIds.has(String(r.id))).map(r=>({
+        id:r.id,entity:r.entity,entityId:r.entity_id,ticketNo:r.ticket_no||'',
+        action:r.action,details:r.details,by:r.by_user,at:r.created_at,
+      }));
+      D.auditLog=[...(D.auditLog||[]),...newLogs].sort((a,b)=>new Date(b.at)-new Date(a.at)).slice(0,500);
     }
 
-    // Local-only push handled by mergeIn above
-
-    // Sort all data by date desc after every sync
+    // Sort data
     D.sales=[...D.sales].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     D.expenses=[...D.expenses].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     D.tasks=[...D.tasks].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
     saveD();
     if(ss){ss.textContent='✓ Synced';setTimeout(()=>{if(ss)ss.textContent='';},2500);}
     if(showFeedback) toast('✓ Data synced','success');
@@ -2590,6 +3178,7 @@ function doLogin(user){
   }
   syncNow(false);
   startAutoSync();
+  setTimeout(checkRecurringTasks, 3000);
   setTimeout(checkHealth, 2000);
   if(currentUser.role==='delivery'){goPage('tasks');}
   else{goPage('dashboard');checkDue();}
