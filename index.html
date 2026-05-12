@@ -1995,6 +1995,10 @@ function openTicketReview(taskId){
   const canConvert=(task.type==='dispatch'||task.type==='collection')&&!task.convertedToSale;
   document.getElementById('tr-convert-btn').style.display=canConvert&&currentUser.role!=='delivery'?'inline-flex':'none';
 
+  // Clear form fields
+  document.getElementById('wi-name').value='';
+  document.getElementById('wi-phone').value='';
+  document.getElementById('wi-notes').value='';
   modal.classList.add('open');
 }
 
