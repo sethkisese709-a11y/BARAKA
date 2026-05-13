@@ -1338,15 +1338,20 @@ function addSale(){
   deductStock(items);
   logA('sale',items.map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')+' '+fmt(totSale));
   pev.s=null; document.getElementById('s-ev-p').innerHTML='';
+  // Clear all items permanently
   document.getElementById('s-items').innerHTML='';
   document.getElementById('s-items-total').style.display='none';
-  auditLog('sale',D.sales[0].id,'created','Sale recorded: '+fmt(D.sales[0].amount)+' — '+(D.sales[0].custName||'Walk-in')+' via '+(D.sales[0].channel||'—'));
-  auditLog('sale',D.sales[0].id,'created','['+D.sales[0].ticketNo+'] Sale: '+fmt(D.sales[0].amount)+' — '+(D.sales[0].custName||'Walk-in')+' via '+(D.sales[0].channel||'—'));
-  saveD(); pushSale(D.sales[0]); popMonths(); renderSales();
+  // Reset all form fields
   ['s-notes','s-ref','s-addr'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('s-ps').value='paid'; togPart('s');
-  pushSale(D.sales[0]);
-  toast('Sale saved ✓');
+  document.getElementById('s-cust').value='';
+  document.getElementById('s-ch').value=document.getElementById('s-ch').options[0].value;
+  document.getElementById('s-date').value=today();
+  // Add one fresh empty row ready for next sale
+  addSaleItemRow();
+  auditLog('sale',D.sales[0].id,'created','['+D.sales[0].ticketNo+'] Sale: '+fmt(D.sales[0].amount)+' — '+(D.sales[0].custName||'Walk-in')+' via '+(D.sales[0].channel||'—'));
+  saveD(); pushSale(D.sales[0]); popMonths(); renderSales();
+  toast('✓ Sale saved — form reset');
 }
 function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay);   rows=[...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td style="font-family:monospace;font-size:10px;font-weight:700;color:var(--text2)">${r.ticketNo||'—'}</td><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})" title="Edit payment">✎</button><button class="del" onclick="openReceipt(${r.id})" title="Receipt" style="background:var(--bg2);color:var(--text)">🧾</button><button class="del" onclick="shareReceiptViaWA(${r.id})" title="WhatsApp receipt" style="background:#d4f5df;color:#1a7a3c">💬</button>${r.paymentStatus!=='paid'?`<button class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)">💵</button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
@@ -2592,6 +2597,11 @@ function confirmConvert(){
   t.convertedToSale=true;t.saleId=sale.id;
   logA('sale','Delivery converted: '+custName+' '+fmt(amt));
   saveD();pushSale(sale);updateTask(t);
+  // Reset convert modal fields for next use
+  ['conv-amt','conv-cost','conv-pa','conv-ref'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('conv-ps').value='paid';
+  document.getElementById('conv-cust').value='';
+  convTaskId=null;
   document.getElementById('m-convert').classList.remove('open');
   renderAccounts();
   toast('✓ Sale created for '+custName+'!');
