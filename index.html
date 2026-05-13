@@ -2341,8 +2341,9 @@ function initRealtime(){
       table: table,
       filter: 'company_id=eq.'+currentCo.id
     }, (payload) => {
-      console.log('Realtime:', table, payload.eventType);
-      syncNow(false);
+      // Debounce: avoid firing multiple times in quick succession
+      clearTimeout(window._rtDebounce);
+      window._rtDebounce = setTimeout(()=>syncNow(false), 600);
     });
   });
 
@@ -3903,17 +3904,20 @@ async function deleteTask(taskId){
 async function delR(type,id){
   if(!can('del')){alert('Owners and managers only.');return;}
   if(!confirm('Delete this record?'))return;
+  // Get record info BEFORE removing it
+  const _arr=type==='bundles'?D.bundles:(D[type]||[]);
+  const _rec=_arr.find(r=>String(r.id)==String(id));
+  const _tick=_rec?.ticketNo||'';
+  const _name=_rec?.name||_rec?.title||_rec?.custName||'';
   // Record deletion FIRST so sync never restores it
   if(!D.deletedIds) D.deletedIds={};
   D.deletedIds[type+'_'+id]=1;
   if(type==='bundles') D.bundles=D.bundles.filter(r=>r.id!=id); else if(D[type]) D[type]=D[type].filter(r=>r.id!=id);
-  saveD();toast('Deleted');
+  auditLog(type,id,'deleted',(_tick?'['+_tick+'] ':'')+type+' deleted by '+currentUser.name+(_name?' — '+_name:''));
+  saveD();
   const tbl={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];
-  const _arr=type==='bundles'?D.bundles:(D[type]||[]);
-  const _rec=_arr.find(r=>String(r.id)==String(id));
-  const _tick=_rec?.ticketNo||'';
-  auditLog(type,id,'deleted',(_tick?'['+_tick+'] ':'')+type+' deleted by '+currentUser.name);
   if(tbl) sbDel(tbl,id);
+  toast('🗑 '+(_tick||type)+' deleted','info',2500);
   if(type==='sales')renderSales();
   else if(type==='expenses')renderExpenses();
   else if(type==='inventory'){renderInv();popAll();}
