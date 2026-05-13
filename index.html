@@ -170,6 +170,222 @@ tr:hover td{background:var(--bg2)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}.pulse{animation:pulse 1.5s infinite}
 @media(max-width:600px){.co-grid,.fg,.fg3{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr);border:none;gap:8px}.mc{border:1px solid var(--border);border-radius:var(--radius-lg);border-right:1px solid var(--border)}.co-card,.lcard{padding:1.5rem 1.1rem}#co-screen,#login-screen{padding:.65rem}.main{padding:.75rem .85rem 3rem}.nav{padding:.4rem .75rem}.topbar{padding:.55rem .85rem}.modal{padding:1.25rem 1rem}}
 @media(min-width:768px){.main{padding:1.25rem 1.75rem 3rem}.metrics{grid-template-columns:repeat(4,1fr)}}
+
+
+/* ── OPTION 5: Active UI Enhancements ──────────────────────────────────────── */
+
+/* Smooth page load fade */
+body { animation: bodyFadeIn .35s ease; }
+@keyframes bodyFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+/* Modal slide up animation */
+.modal-bg.open .modal {
+  animation: slideUp .28s cubic-bezier(.32,1.2,.42,1) both;
+}
+@keyframes slideUp {
+  from { transform:translateY(40px); opacity:0; }
+  to   { transform:translateY(0);    opacity:1; }
+}
+
+/* Card hover lift */
+.card {
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+.card:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,.09);
+  transform: translateY(-1px);
+}
+
+/* Metric card glow on hover */
+.mc {
+  transition: all .18s ease;
+  cursor: default;
+}
+.mc:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+
+/* Button press effect */
+.btn, .swbtn, .nb, .del {
+  transition: all .15s cubic-bezier(.32,1.2,.42,1) !important;
+  position: relative;
+  overflow: hidden;
+}
+.btn:active, .swbtn:active, .del:active {
+  transform: scale(.95) !important;
+}
+.btn:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 2px 10px rgba(0,0,0,.1);
+}
+
+/* Nav button active pulse */
+.nb.active {
+  animation: navPulse .3s cubic-bezier(.32,1.4,.42,1) both;
+}
+@keyframes navPulse {
+  0%   { transform:scale(1) }
+  50%  { transform:scale(1.07) }
+  100% { transform:scale(1) }
+}
+
+/* Ripple effect on buttons */
+.btn::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:rgba(255,255,255,.15);
+  border-radius:inherit;
+  opacity:0;
+  transition:opacity .3s;
+}
+.btn:active::after { opacity:1; }
+
+/* Quick product card pop */
+.qcard {
+  transition: all .18s cubic-bezier(.32,1.2,.42,1) !important;
+}
+.qcard:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12) !important;
+  border-color: var(--black) !important;
+}
+.qcard:active {
+  transform: scale(.96) !important;
+}
+
+/* Task card hover */
+.task-card {
+  transition: all .18s ease;
+}
+.task-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  transform: translateX(3px);
+}
+
+/* Table row hover */
+tbody tr {
+  transition: background .12s ease;
+  cursor: default;
+}
+tbody tr:hover {
+  background: var(--bg2) !important;
+}
+
+/* Number count-up animation for metric values */
+.mc-v {
+  transition: all .3s ease;
+}
+
+/* Health dot pulse when connected */
+#health-dot[style*='#25D366'] {
+  animation: healthPulse 2.5s ease-in-out infinite;
+}
+@keyframes healthPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(37,211,102,.4); }
+  50%      { box-shadow: 0 0 0 5px rgba(37,211,102,0); }
+}
+
+/* Toast slide in */
+#_toast {
+  animation: toastIn .3s cubic-bezier(.32,1.2,.42,1) both !important;
+}
+@keyframes toastIn {
+  from { transform:translateX(120%); opacity:0; }
+  to   { transform:translateX(0);    opacity:1; }
+}
+
+/* Input focus glow */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--black) !important;
+  box-shadow: 0 0 0 3px rgba(60,52,137,.12);
+  transition: all .18s ease;
+}
+
+/* Search bar glow */
+#global-search-input:focus {
+  width: 180px !important;
+  background: rgba(255,255,255,.18) !important;
+  transition: all .25s ease !important;
+}
+
+/* Topbar icon buttons modern hover */
+.swbtn {
+  border-radius: 8px !important;
+  transition: all .15s ease !important;
+}
+.swbtn:hover {
+  background: rgba(255,255,255,.15) !important;
+  transform: scale(1.1);
+}
+
+/* Badge pop */
+.badge {
+  transition: all .15s ease;
+}
+
+/* Skeleton loading shimmer for empty states */
+@keyframes shimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+/* Page transition */
+.page.on {
+  animation: pageFade .22s ease both;
+}
+@keyframes pageFade {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:none; }
+}
+
+/* Urgent task pulse */
+.task-card.urgent:not(.done) {
+  animation: urgentPulse 2s ease-in-out infinite;
+}
+@keyframes urgentPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,.2); }
+  50%      { box-shadow: 0 0 0 6px rgba(229,57,53,0); }
+}
+
+/* Sync button spin on click */
+#sync-btn.syncing {
+  animation: spin .7s linear infinite;
+}
+@keyframes spin {
+  from { transform:rotate(0deg); }
+  to   { transform:rotate(360deg); }
+}
+
+/* Low stock alert shake */
+#low-stock-alert-bar {
+  animation: alertShake .4s ease both;
+}
+@keyframes alertShake {
+  0%,100% { transform:translateX(0); }
+  25%     { transform:translateX(-4px); }
+  75%     { transform:translateX(4px); }
+}
+
+/* Stat card number animation */
+@keyframes countUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:none; }
+}
+.mc-v { animation: countUp .4s ease both; }
+
+#notif-badge { animation: badgePop .3s cubic-bezier(.32,1.4,.42,1) both; }
+@keyframes badgePop {
+  from { transform:scale(0); }
+  to   { transform:scale(1); }
+}
+#notif-panel { animation: dropDown .22s cubic-bezier(.32,1.1,.42,1) both; }
+@keyframes dropDown {
+  from { opacity:0; transform:translateY(-8px); }
+  to   { opacity:1; transform:none; }
+}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -235,10 +451,10 @@ tr:hover td{background:var(--bg2)}
       <div class="av" id="top-av" style="margin-left:6px"></div>
       <div><div style="font-size:12px;font-weight:600;color:var(--text)" id="top-name"></div><span class="badge" id="top-role"></span></div>
     </div>
-    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.45);margin-right:4px;letter-spacing:.04em;cursor:pointer" onclick="syncNow(true)" title="Tap to sync"></span><span id="health-dot" title="Supabase connection" style="width:7px;height:7px;border-radius:50%;background:#666;display:inline-block;margin-right:4px;flex-shrink:0"></span><button class="swbtn" onclick="showExportMenu()" title="Export data" style="font-size:12px;padding:4px 7px;margin-right:4px">⬇</button><button class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><div style="position:relative;margin-right:4px">
+    <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.45);margin-right:4px;letter-spacing:.04em;cursor:pointer" onclick="syncNow(true)" title="Tap to sync"></span><span id="health-dot" title="Supabase connection" style="width:7px;height:7px;border-radius:50%;background:#666;display:inline-block;margin-right:4px;flex-shrink:0"></span><button class="swbtn" onclick="showExportMenu()" title="Export data" style="font-size:13px;padding:4px 7px;margin-right:4px">📥</button><button class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><div style="position:relative;margin-right:4px">
     <input id="global-search-input" type="text" placeholder="🔍 Search…" oninput="globalSearch(this.value)" onfocus="document.getElementById('search-results-drop').style.display='block'" onblur="setTimeout(()=>{document.getElementById('search-results-drop').style.display='none'},200)" style="font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;width:130px;outline:none" autocomplete="off">
     <div id="search-results-drop" style="display:none;position:absolute;top:110%;right:0;width:320px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:9999;max-height:380px;overflow-y:auto"></div>
-  </div><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌙</button><button class="swbtn" onclick="lockOut()">🔒 Lock</button>
+  </div><button class="swbtn" onclick="toggleDark()" id="dark-btn">🌓</button><button class="swbtn" id="notif-btn" onclick="toggleNotifPanel()" title="Activity" style="position:relative">🔔<span id="notif-badge" style="display:none;position:absolute;top:1px;right:1px;width:7px;height:7px;background:#e53935;border-radius:50%"></span></button><button class="swbtn" onclick="lockOut()">🔐 Lock</button>
   </div>
   <div id="due-alerts"></div>
   <div class="nav" id="main-nav"></div>
@@ -246,6 +462,7 @@ tr:hover td{background:var(--bg2)}
   <!-- DASHBOARD -->
   <div id="pg-dashboard" class="page on">
     <div id="sub-banner"></div>
+    <div id="dash-greeting" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem;padding-top:.25rem"></div>
     <div id="low-stock-alert-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);margin-bottom:12px;font-size:12px;color:#7a5c00"></div>
     <div class="dash-header">
       <div class="dash-title" id="dash-period-label">This month</div>
@@ -389,7 +606,7 @@ tr:hover td{background:var(--bg2)}
       <div style="margin-top:.75rem">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:12px;font-weight:600;color:var(--text)">Items sold</div>
-          <button class="btn bsm" onclick="addSaleItemRow()" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple)">+ Add item</button>
+          <button class="btn bsm" onclick="addSaleItemRow()" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple)">➕ Add item</button>
         </div>
         <div id="s-items"></div>
         <div id="s-items-total" style="display:none;padding:.6rem .85rem;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);margin-top:8px"></div>
@@ -644,7 +861,7 @@ tr:hover td{background:var(--bg2)}
   <!-- MARK DONE MODAL -->
   <div class="modal-bg" id="done-modal" onclick="if(event.target===this)this.classList.remove('open')">
     <div class="modal">
-      <button class="mc-close" onclick="document.getElementById('done-modal').classList.remove('open')">✕</button>
+      <button class="mc-close" onclick="document.getElementById('done-modal').classList.remove('open')">🗑</button>
       <div style="text-align:center;margin-bottom:1.1rem">
         <div style="font-size:48px;margin-bottom:.5rem">✅</div>
         <div class="ct" style="margin-bottom:4px">Mark task as done</div>
@@ -997,6 +1214,13 @@ function updateMonthNav(){ const months=getSortedMonths(); const isAll=dashMonth
 async function switchSub(id){ currentCo=companies.find(c=>c.id===id); let saved=loadD(id); D=saved||defD(id); ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; }); document.getElementById('top-dot').style.background=currentCo.color; document.getElementById('top-co').textContent=currentCo.name; popAll(); renderDash(); checkDue(); }
 
 function renderDash(){
+  // Time-based greeting
+  const _greetEl=document.getElementById('dash-greeting');
+  if(_greetEl&&currentUser){
+    const _hr=new Date().getHours();
+    const _gr=_hr<12?'Good morning ☀️':_hr<17?'Good afternoon 🌤️':'Good evening 🌙';
+    _greetEl.textContent=_gr+', '+currentUser.name.split(' ')[0]+'!';
+  }
   // Low stock alert
   const lowItems=(D.inventory||[]).filter(i=>(i.qty||0)<=(i.low||2)&&i.qty>=0);
   const alertBar=document.getElementById('low-stock-alert-bar');
@@ -1354,7 +1578,7 @@ function addSale(){
   toast('✓ Sale saved — form reset');
 }
 function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay);   rows=[...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td style="font-family:monospace;font-size:10px;font-weight:700;color:var(--text2)">${r.ticketNo||'—'}</td><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})" title="Edit payment">✎</button><button class="del" onclick="openReceipt(${r.id})" title="Receipt" style="background:var(--bg2);color:var(--text)">🧾</button><button class="del" onclick="shareReceiptViaWA(${r.id})" title="WhatsApp receipt" style="background:#d4f5df;color:#1a7a3c">💬</button>${r.paymentStatus!=='paid'?`<button class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)">💵</button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
+  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td style="font-family:monospace;font-size:10px;font-weight:700;color:var(--text2)">${r.ticketNo||'—'}</td><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button class="del" onclick="openPU(${r.id})" title="Edit payment">✏️</button><button class="del" onclick="openReceipt(${r.id})" title="Receipt" style="background:var(--bg2);color:var(--text)">🧾</button><button class="del" onclick="shareReceiptViaWA(${r.id})" title="WhatsApp receipt" style="background:#d4f5df;color:#1a7a3c">💬</button>${r.paymentStatus!=='paid'?`<button class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)">💵</button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button class="del" onclick="delR('sales',${r.id})">✕</button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="14" class="empty">No sales recorded yet.</td></tr>`; }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
 function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; auditLog('sale',s.id,'payment_updated','Status → '+psL(s.paymentStatus)+' | paid '+fmt(s.paidAmount||0)+' of '+fmt(s.amount)); logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); pushSale(s); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); toast('✓ Payment updated'); }
 
@@ -1487,12 +1711,12 @@ function addCust(){ const name=document.getElementById('c-name').value.trim(); i
 function bulkImport(){ const lines=document.getElementById('bulk-in').value.trim().split('\n').filter(l=>l.trim()); let count=0; lines.forEach(line=>{ const p=line.split(',').map(x=>x.trim()); const name=p[0]; if(!name) return; const chs=['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in']; const ch=p[2]&&chs.find(c=>c.toLowerCase()===p[2].toLowerCase())||'WhatsApp'; D.customers.push({id:Date.now()+Math.random(),name,phone:p[1]||'',channel:ch,loc:p[3]||'',type:'Individual',notes:''}); count++; }); saveD(); popAll(); document.getElementById('bulk-res').textContent=count+' customers imported!'; document.getElementById('bulk-in').value=''; }
 function renderCust(){ const q=(document.getElementById('c-search').value||'').toLowerCase(); const cf=(document.getElementById('c-chf')||{}).value||'all'; let list=D.customers; if(q) list=list.filter(c=>c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)); if(cf!=='all') list=list.filter(c=>c.channel===cf);   list=[...list].sort((a,b)=>b.id-a.id);
   document.getElementById('c-tbody').innerHTML=ist.length?list.map(c=>{ const spent=D.sales.filter(s=>s.custId==c.id).reduce((s,r)=>s+r.amount,0); const out=D.sales.filter(s=>s.custId==c.id&&s.paymentStatus!=='paid').reduce((s,r)=>s+(r.amount-(r.paidAmount||0)),0); const last=D.sales.filter(s=>s.custId==c.id).map(s=>s.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${c.name}</td><td>${c.phone||'—'}</td><td><span class="badge ${chC(c.channel)}">${c.channel||'—'}</span></td><td>${c.loc||'—'}</td><td><span class="badge bg">${c.type}</span></td><td style="color:var(--green);font-weight:500">${spent?fmt(spent):'—'}</td><td style="color:${out>0?'var(--red)':'var(--text2)'};font-weight:${out>0?500:400}">${out>0?fmt(out):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="delR('customers',${c.id})">✕</button>`:''}
-        <button class="del" onclick="openCustHistory(${c.id})" title="Purchase history" style="background:var(--bg2);color:var(--text)">📋</button></td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No customers yet.</td></tr>'; }
+        <button class="del" onclick="openCustHistory(${c.id})" title="Purchase history" style="background:var(--bg2);color:var(--text)">📊</button></td></tr>`; }).join(''):'<tr><td colspan="9" class="empty">No customers yet.</td></tr>'; }
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
 function addSup(){ const name=document.getElementById('sup-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.suppliers.push({id:Date.now(),ticketNo:nextTicketNo('supplier'),name,contact:document.getElementById('sup-contact').value,phone:document.getElementById('sup-phone').value,cat:document.getElementById('sup-cat').value,terms:document.getElementById('sup-terms').value,notes:document.getElementById('sup-notes').value}); logA('supplier','Added: '+name); pushSup(D.suppliers[D.suppliers.length-1]); saveD(); renderSup(); popAll(); ['sup-name','sup-contact','sup-phone','sup-notes'].forEach(id=>document.getElementById(id).value=''); }
 function renderSup(){   const _sortedSup=[...D.suppliers].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  document.getElementById('sup-tbody').innerHTML=_sortedSup.length?_sortedSup.map(s=>{ const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0); const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${s.name}</td><td>${s.contact||'—'}</td><td>${s.phone||'—'}</td><td><span class="badge bw">${s.cat}</span></td><td>${s.terms}</td><td style="color:var(--amber);font-weight:500">${paid?fmt(paid):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="openSupPayments(${s.id})" title="Track payments" style="background:var(--bg2);color:var(--text)">💳</button><button class="del" onclick="delR('suppliers',${s.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="8" class="empty">No suppliers yet.</td></tr>'; }
+  document.getElementById('sup-tbody').innerHTML=_sortedSup.length?_sortedSup.map(s=>{ const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0); const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${s.name}</td><td>${s.contact||'—'}</td><td>${s.phone||'—'}</td><td><span class="badge bw">${s.cat}</span></td><td>${s.terms}</td><td style="color:var(--amber);font-weight:500">${paid?fmt(paid):'—'}</td><td>${last}</td><td>${can('del')?`<button class="del" onclick="openSupPayments(${s.id})" title="Track payments" style="background:var(--bg2);color:var(--text)">💰</button><button class="del" onclick="delR('suppliers',${s.id})">✕</button>`:''}</td></tr>`; }).join(''):'<tr><td colspan="8" class="empty">No suppliers yet.</td></tr>'; }
 
 // ── Team ──────────────────────────────────────────────────────────────────────
 function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.map(u=>{ const s=D.sales.filter(x=>x.by===u.name); const e=D.expenses.filter(x=>x.by===u.name).length; const rv=s.reduce((t,x)=>t+x.amount,0); const pnl=s.reduce((t,x)=>t+(x.pnl||0),0); return`<tr><td style="display:flex;align-items:center;gap:7px"><div class="av ${avC(u.role)}" style="width:27px;height:27px;font-size:10px">${ini(u.name)}</div>${u.name}</td><td><span class="badge ${rcC(u.role)}">${u.role}</span></td><td>${s.length}</td><td>${e}</td><td style="color:var(--green);font-weight:500">${rv?fmt(rv):'—'}</td><td class="${pnl>0?'pnl-pos':'pnl-neg'}">${pnl?fmt(pnl):'—'}</td></tr>`; }).join(''); renderPwMgmt(); document.getElementById('team-act').innerHTML=D.activity.slice(0,25).map(a=>`<div class="arow"><span><span class="badge bp" style="margin-right:5px">${a.user}</span>${a.desc}</span><span style="color:var(--text2);font-size:11px">${a.date}</span></div>`).join('')||'<div class="empty">No activity yet.</div>';
@@ -1684,7 +1908,7 @@ function createTask(){
   document.getElementById('task-date').value=today();
   renderTasksMetrics(); renderTasks();
   const btn=document.querySelector('#task-create-card .btn[onclick="createTask()"]');
-  if(btn){const o=btn.innerHTML;btn.innerHTML='✓ Task assigned!';setTimeout(()=>btn.innerHTML=o,1500);}
+  if(btn){const o=btn.innerHTML;btn.innerHTML='✅ Task assigned!';setTimeout(()=>btn.innerHTML=o,1500);}
   setTimeout(()=>openWAModal(task),600);
 }
 
@@ -1922,6 +2146,7 @@ async function checkHealth(){
 // ── Audit trail: log a change ─────────────────────────────────────────────────
 function auditLog(entity, entityId, action, details){
   if(!D.auditLog) D.auditLog=[];
+  showNotifBadge();
   D.auditLog.unshift({
     id:Date.now(),
     entity,      // 'task','sale','expense','inventory','customer','supplier'
@@ -3292,6 +3517,66 @@ function addSupPayment(){
   toast('✓ Payment recorded');
 }
 
+
+// ── Count-up animation ───────────────────────────────────────────────────────
+function countUp(el, target, prefix='', suffix='', duration=700){
+  if(!el||isNaN(target)) return;
+  const start=Date.now();
+  const from=0;
+  const step=()=>{
+    const elapsed=Date.now()-start;
+    const progress=Math.min(elapsed/duration,1);
+    const eased=1-Math.pow(1-progress,3);
+    const val=Math.round(from+(target-from)*eased);
+    el.textContent=prefix+val.toLocaleString()+suffix;
+    if(progress<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+function toggleNotifPanel(){
+  const panel=document.getElementById('notif-panel');
+  const badge=document.getElementById('notif-badge');
+  if(!panel) return;
+  const isOpen=panel.style.display!=='none';
+  panel.style.display=isOpen?'none':'block';
+  if(!isOpen){
+    if(badge) badge.style.display='none';
+    renderNotifList();
+    // Close when clicking outside
+    setTimeout(()=>{
+      document.addEventListener('click', function _close(e){
+        if(!panel.contains(e.target)&&e.target.id!=='notif-btn'){
+          panel.style.display='none';
+          document.removeEventListener('click',_close);
+        }
+      });
+    },100);
+  }
+}
+
+function renderNotifList(){
+  const list=document.getElementById('notif-list');
+  if(!list) return;
+  const logs=(D.auditLog||[]).slice(0,15);
+  const fdt=d=>{try{const now=new Date();const dt=new Date(d);const diff=Math.floor((now-dt)/60000);return diff<1?'Just now':diff<60?diff+'m ago':diff<1440?Math.floor(diff/60)+'h ago':Math.floor(diff/1440)+'d ago';}catch(e){return '';}};
+  const icons={task:'📋',sale:'💰',expense:'💸',inventory:'📦',customer:'👤',supplier:'🏭',payment:'💳'};
+  list.innerHTML=logs.length?logs.map(l=>`
+    <div style="display:flex;gap:10px;padding:10px 14px;border-bottom:.5px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+      <div style="font-size:18px;flex-shrink:0;width:24px;text-align:center">${icons[l.entity]||'📌'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.details||l.action}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">${l.by||''} · ${fdt(l.at)}</div>
+      </div>
+    </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--text2)">No activity yet</div>';
+}
+
+function showNotifBadge(){
+  const badge=document.getElementById('notif-badge');
+  if(badge) badge.style.display='block';
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
@@ -3376,7 +3661,7 @@ async function sbDel(table,id){
 // ── Row mappers ────────────────────────────────────────────────────
 function mapSale(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,items:r.items||[],amount:r.amount||0,cost:r.cost||0,pnl:r.pnl||0,paidAmount:r.paid_amount||0,paymentStatus:r.payment_status||'paid',custName:r.cust_name||'Walk-in',custId:r.cust_id||'',channel:r.channel||'',payment:r.payment||'M-Pesa',ref:r.ref||'',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapExp(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,amount:r.amount||0,cat:r.cat||'Other',supId:r.sup_id||'',supName:'',vendor:r.vendor||'',ref:r.ref||'',paymethod:r.paymethod||'M-Pesa',notes:r.notes||'',by:r.by_user||'',evidence:null};}
-function mapTask(r){return{id:r.id,ticketNo:r.ticket_no||'',title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false};}
+function mapTask(r){return{id:r.id,ticketNo:r.ticket_no||'',title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false,convertedToSale:r.converted_to_sale||false,saleId:r.sale_id||null};}
 function mapUser(r){return{id:r.id,name:r.name,role:r.role,password:r.password||'',phone:r.phone||''};}
 
 // ── Push functions ─────────────────────────────────────────────────
@@ -3386,8 +3671,8 @@ function mapItem(r){return{id:r.id,ticketNo:r.ticket_no||'',name:r.name,cat:r.ca
 function pushItem(i){sbUpsert('inventory',{id:i.id,company_id:currentCo.id,ticket_no:i.ticketNo||'',name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:i.created_at||new Date().toISOString()});}
 function pushCust(cu){sbUpsert('customers',{id:cu.id,company_id:currentCo.id,name:cu.name,phone:cu.phone||'',channel:cu.channel||'',loc:cu.loc||'',type:cu.type||'Individual',notes:cu.notes||'',created_at:new Date().toISOString()});}
 function pushSup(s){sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()});}
-function pushTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString()});}
-function updateTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,assignees:t.assignees,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:t.deliveryCostExpensed||false});}
+function pushTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString(),converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
+function updateTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,assignees:t.assignees,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:t.deliveryCostExpensed||false,converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
 async function pushUser(u){
   const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({password:u.password||'',phone:u.phone||''})});
   if(r.ok){const rows=await r.json();if(rows&&rows.length)return true;}
@@ -3403,7 +3688,9 @@ async function pushUser(u){
 async function syncNow(showFeedback){
   if(!currentCo||!currentUser) return;
   const ss=document.getElementById('sync-status');
-  if(ss) ss.textContent='Syncing...';
+  if(ss) ss.textContent='';
+  const _syncBtn=document.getElementById('sync-btn');
+  if(_syncBtn) _syncBtn.classList.add('syncing');
   try{
     const h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
     const co=currentCo.id;
@@ -3476,13 +3763,15 @@ async function syncNow(showFeedback){
     D.tasks=[...D.tasks].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 
     saveD();
-    if(ss){ss.textContent='✓ Synced';setTimeout(()=>{if(ss)ss.textContent='';},2500);}
+    if(ss){ss.textContent='✓ Synced';setTimeout(()=>{if(ss)ss.textContent='';},2000);}
+    const _sb=document.getElementById('sync-btn'); if(_sb) _sb.classList.remove('syncing');
     if(showFeedback) toast('✓ Data synced','success');
     checkHealth();
     refreshCurrentPage();
   }catch(e){
     console.warn('syncNow error:',e);
     if(ss){ss.textContent='⚠ Offline';setTimeout(()=>{if(ss)ss.textContent='';},3000);}
+    const _sb2=document.getElementById('sync-btn'); if(_sb2) _sb2.classList.remove('syncing');
   }
 }
 
@@ -4045,7 +4334,7 @@ async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;c
       <div class="fl"><label>Reference / Order no. (optional)</label><input type="text" id="wi-ref" placeholder="e.g. ORD-001 or client ref"></div>
       <div class="fl ff"><label>Notes</label><textarea id="wi-notes" rows="2" placeholder="Colour preference, special instructions, etc."></textarea></div>
     </div>
-    <button class="btn" onclick="sendWAIntakeOrder()" style="background:#25D366;color:#fff;border-color:#25D366;width:100%">💬 Send via WhatsApp + Create task</button>
+    <button class="btn" onclick="sendWAIntakeOrder()" style="background:#25D366;color:#fff;border-color:#25D366;width:100%">💬 Send on WhatsApp + Create task</button>
   </div>
 </div>
 
@@ -4068,6 +4357,15 @@ async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;c
     <div class="ct" style="margin-bottom:.5rem">Payment history</div>
     <div id="spm-history"></div>
   </div>
+</div>
+
+<!-- ═══ NOTIFICATION PANEL ════════════════════════════════════════════════════ -->
+<div id="notif-panel" style="display:none;position:fixed;top:56px;right:12px;width:300px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:9000;max-height:380px;overflow-y:auto">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)">
+    <div style="font-weight:800;font-size:13px">Recent activity</div>
+    <button onclick="document.getElementById('notif-panel').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
+  </div>
+  <div id="notif-list" style="padding:8px 0"></div>
 </div>
 </body>
 </html>
