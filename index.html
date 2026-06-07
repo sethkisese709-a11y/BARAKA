@@ -684,10 +684,14 @@ input:focus, select:focus, textarea:focus {
   <!-- DASHBOARD -->
   <div id="pg-dashboard" class="page on">
     <div id="sub-banner"></div>
+    <div id="staff-checkin" style="display:none;background:var(--bg2);border-radius:var(--radius);padding:10px 14px;margin-bottom:.75rem;border:1px solid var(--border)"></div>
+    <div id="low-stock-alert-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);margin-bottom:12px;font-size:12px;color:#7a5c00"></div>
+    <div id="exp-budget-alerts" style="display:none;padding:8px 12px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);font-size:11px;margin-bottom:.75rem"></div>
     <div id="dash-greeting" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem;padding-top:.25rem"></div>
     <div id="low-stock-alert-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);margin-bottom:12px;font-size:12px;color:#7a5c00"></div>
     <div class="dash-header">
       <div class="dash-title" id="dash-period-label">This month</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem"><button class="btn bsm" onclick="openTargetsModal()" style="font-size:10px">🎯 Targets</button><button class="btn bsm" onclick="openExpBudgetModal()" style="font-size:10px">💰 Budgets</button></div>
       <div class="month-nav">
         <button class="mnav-btn" onclick="dashNavMonth(-1)">&#8592;</button>
         <span class="mnav-label" id="mnav-label"></span>
@@ -695,6 +699,7 @@ input:focus, select:focus, textarea:focus {
         <button class="mnav-all" id="mnav-all-btn" onclick="dashSetAll()">All time</button>
       </div>
     </div>
+    <div class="card" id="dash-targets" style="margin-bottom:.75rem;padding:.85rem 1rem"></div>
     <div class="metrics" id="dash-m"></div>
 
     <!-- Drill-down panel -->
@@ -1115,6 +1120,7 @@ input:focus, select:focus, textarea:focus {
 
   <!-- P&L -->
   <div id="pg-pl" class="page">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:.75rem"><button class="btn bsm" onclick="document.getElementById('profit-product-modal').classList.add('open');renderProfitPerProduct()" style="font-size:11px">📊 Profit/product</button><button class="btn bsm" onclick="printMonthlyReport()" style="background:var(--black);color:#fff;border-color:var(--black);font-size:11px">🖨 Print report</button></div>
     <div class="frow"><select id="pl-mo" onchange="renderPL()"></select></div>
     <div class="metrics" id="pl-m"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:.9rem">
@@ -1253,7 +1259,7 @@ function defD(coId){
     {id:3,name:'Staff 1',role:'staff',password:pw?'Baraka@staff1':''},
     {id:4,name:'Staff 2',role:'delivery',password:pw?'Baraka@staff2':''}
   ],
-  recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{},auditLog:[]
+  recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{},auditLog:[],monthlyTargets:{},expBudgets:{}
 }; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1436,6 +1442,24 @@ function updateMonthNav(){ const months=getSortedMonths(); const isAll=dashMonth
 async function switchSub(id){ currentCo=companies.find(c=>c.id===id); let saved=loadD(id); D=saved||defD(id); ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; }); document.getElementById('top-dot').style.background=currentCo.color; document.getElementById('top-co').textContent=currentCo.name; popAll(); renderDash(); checkDue(); }
 
 function renderDash(){
+  try{renderStaffCheckin();}catch(e){}
+  try{checkExpBudgetAlerts();}catch(e){}
+  try{renderTargetBars();}catch(e){}
+  // Low stock alert
+  const _li=(D.inventory||[]).filter(i=>(i.qty||0)<=(i.low||2)&&i.qty>=0);
+  const _ab=document.getElementById('low-stock-alert-bar');
+  if(_ab){
+    if(_li.length){
+      _ab.style.display='flex';
+      const _ls_items=_li.slice(0,3).map(function(i){return i.name+' ('+i.qty+')';}).join(', ')+(_li.length>3?' +'+(_li.length-3)+' more':'');
+      _ab.innerHTML='<span>⚠️</span><span style="flex:1"><strong>'+_li.length+' low stock: </strong>'+_ls_items+' </span>';
+      const _lsb=document.createElement('button');
+      _lsb.textContent='View →';
+      _lsb.style='background:none;border:1px solid rgba(0,0,0,.2);border-radius:4px;cursor:pointer;padding:2px 8px;font-size:11px';
+      _lsb.onclick=function(){goPage('inventory');};
+      _ab.appendChild(_lsb);
+    }else{_ab.style.display='none';}
+  }
   // Time-based greeting
   const _greetEl=document.getElementById('dash-greeting');
   if(_greetEl&&currentUser){
@@ -1443,17 +1467,7 @@ function renderDash(){
     const _gr=_hr<12?'Good morning ☀️':_hr<17?'Good afternoon 🌤️':'Good evening 🌙';
     _greetEl.textContent=_gr+', '+currentUser.name.split(' ')[0]+'!';
   }
-  // Low stock alert
-  const lowItems=(D.inventory||[]).filter(i=>(i.qty||0)<=(i.low||2)&&i.qty>=0);
-  const alertBar=document.getElementById('low-stock-alert-bar');
-  if(alertBar){
-    if(lowItems.length){
-      alertBar.style.display='flex';
-      alertBar.innerHTML=`<span style="font-size:13px">⚠️</span><span style="flex:1"><strong>${lowItems.length} item${lowItems.length>1?'s':''} low on stock:</strong> ${lowItems.slice(0,4).map(i=>i.name+' ('+i.qty+' left)').join(', ')}${lowItems.length>4?' + '+(lowItems.length-4)+' more':''}</span><button onclick="goPage('inventory')" style="background:none;border:1px solid rgba(0,0,0,0.2);border-radius:4px;cursor:pointer;padding:2px 8px;font-size:11px;font-weight:700">View →</button>`;
-    } else {
-      alertBar.style.display='none';
-    }
-  }
+
   updateMonthNav();
   const isAll=dashMonth==='all';
   const mS=filterByDash(D.sales); const mE=filterByDash(D.expenses);
@@ -2231,6 +2245,7 @@ function renderTasks(){
               </select>`:''}
               ${isOwner||currentUser.role==='manager'?`<button class="del" onclick="deleteTask(${t.id})" title="Delete">🗑</button>`:''}
               <button class="btn bsm" onclick="openTicketReview(${t.id})" title="View ticket" style="padding:3px 8px;font-size:10px">🎫</button>
+    <button class="btn bsm" onclick="openTaskComments(${t.id})" title="Comments" style="padding:3px 8px;font-size:10px;background:var(--bg2);color:var(--text)">💬${t.comments&&t.comments.length?`<span style="font-size:9px;color:var(--blue)"> ${t.comments.length}</span>`:''}</button>
             </div>
           </div>
 
@@ -3800,6 +3815,275 @@ function showNotifBadge(){
   if(badge) badge.style.display='block';
 }
 
+
+
+// ── Monthly Targets ──────────────────────────────────────────────────────────
+function openTargetsModal(){
+  const modal=document.getElementById('targets-modal');
+  if(!modal) return;
+  const tM=today().substring(0,7);
+  const t=(D.monthlyTargets||{})[tM]||{};
+  document.getElementById('tgt-revenue').value=t.revenue||'';
+  document.getElementById('tgt-expenses').value=t.expenses||'';
+  document.getElementById('tgt-profit').value=t.profit||'';
+  modal.classList.add('open');
+}
+function saveTargets(){
+  const tM=today().substring(0,7);
+  if(!D.monthlyTargets) D.monthlyTargets={};
+  D.monthlyTargets[tM]={
+    revenue:parseFloat(document.getElementById('tgt-revenue').value)||0,
+    expenses:parseFloat(document.getElementById('tgt-expenses').value)||0,
+    profit:parseFloat(document.getElementById('tgt-profit').value)||0,
+  };
+  saveD();
+  document.getElementById('targets-modal').classList.remove('open');
+  renderDash();
+  toast('✓ Targets saved');
+}
+function renderTargetBars(){
+  const el=document.getElementById('dash-targets');
+  if(!el) return;
+  const tM=today().substring(0,7);
+  const targets=(D.monthlyTargets||{})[tM];
+  if(!targets||(!targets.revenue&&!targets.expenses&&!targets.profit)){
+    el.innerHTML='<div style="font-size:11px;color:var(--text3);cursor:pointer" onclick="openTargetsModal()">📎 Set monthly targets →</div>';
+    return;
+  }
+  const sales=(D.sales||[]).filter(s=>s.date&&s.date.startsWith(tM));
+  const exps=(D.expenses||[]).filter(e=>e.date&&e.date.startsWith(tM));
+  const rev=sales.reduce((a,s)=>a+s.amount,0);
+  const exp=exps.reduce((a,e)=>a+e.amount,0);
+  const pnl=rev-exp;
+  function bar(label,val,target,color){
+    if(!target) return '';
+    const pct=Math.min(100,Math.round(val/target*100));
+    const over=val>target;
+    return '<div style="margin-bottom:.6rem">'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">'+
+      '<span style="font-weight:600">'+label+'</span>'+
+      '<span style="color:var(--text2)">KES '+fmt(val)+' / '+fmt(target)+' <span style="font-weight:700;color:'+(over?'var(--green)':pct>=80?'var(--amber)':'var(--red)')+'">'+pct+'%</span></span>'+
+      '</div><div style="background:var(--bg3);border-radius:4px;height:7px;overflow:hidden">'+
+      '<div style="height:100%;width:'+pct+'%;background:'+color+';border-radius:4px;transition:width .6s ease"></div>'+
+      '</div></div>';
+  }
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">'+
+    '<div style="font-size:12px;font-weight:700">This month\'s targets</div>'+
+    '<button onclick="openTargetsModal()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text2);font-family:inherit">✏️ Edit</button>'+
+    '</div>'+
+    bar('Revenue',rev,targets.revenue,'var(--green)')+
+    bar('Expenses',exp,targets.expenses,'var(--red)')+
+    bar('Net profit',pnl,targets.profit,'var(--blue)');
+}
+
+// ── Profit per product ────────────────────────────────────────────────────────
+function renderProfitPerProduct(){
+  const el=document.getElementById('profit-product-bars');
+  if(!el) return;
+  const mo=document.getElementById('pp-month')?document.getElementById('pp-month').value:'all';
+  let sales=D.sales||[];
+  if(mo!=='all') sales=sales.filter(s=>s.date&&s.date.startsWith(mo));
+  const map={};
+  sales.forEach(s=>{
+    (s.items||[]).forEach(i=>{
+      if(!i.name) return;
+      if(!map[i.name]) map[i.name]={name:i.name,revenue:0,cost:0,qty:0};
+      map[i.name].revenue+=(i.price||0)*(i.qty||1);
+      map[i.name].cost+=(i.cost||0)*(i.qty||1);
+      map[i.name].qty+=(i.qty||1);
+    });
+  });
+  const items=Object.values(map).map(p=>({...p,profit:p.revenue-p.cost,margin:p.revenue?Math.round((p.revenue-p.cost)/p.revenue*100):0})).sort((a,b)=>b.profit-a.profit).slice(0,10);
+  if(!items.length){el.innerHTML='<div class="empty">No sales data yet.</div>';return;}
+  const maxP=Math.max(...items.map(i=>i.profit),1);
+  el.innerHTML=items.map(i=>
+    '<div style="margin-bottom:.75rem">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:3px">'+
+    '<span style="font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:8px">'+i.name+'</span>'+
+    '<span style="flex-shrink:0;text-align:right"><span style="font-weight:700;color:var(--green)">KES '+fmt(i.profit)+'</span>'+
+    '<span style="color:var(--text3);font-size:10px;margin-left:4px">'+i.margin+'% margin</span></span></div>'+
+    '<div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">'+
+    '<div style="height:100%;width:'+Math.round(i.profit/maxP*100)+'%;background:var(--green);border-radius:4px;transition:width .5s ease"></div>'+
+    '</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Rev: KES '+fmt(i.revenue)+' · Cost: KES '+fmt(i.cost)+' · Qty: '+i.qty+'</div></div>'
+  ).join('');
+  const sel=document.getElementById('pp-month');
+  if(sel&&sel.options.length<2){
+    const months=[...new Set((D.sales||[]).map(s=>s.date?s.date.substring(0,7):'').filter(Boolean))].sort().reverse();
+    months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
+  }
+}
+
+// ── Expense budget alerts ─────────────────────────────────────────────────────
+const EXP_BUDGET_CATS=['Transport / delivery','Marketing','Labour / wages','Raw materials / wood','Utilities','Rent','Equipment','Office supplies','Other'];
+function openExpBudgetModal(){
+  const modal=document.getElementById('exp-budget-modal');
+  if(!modal) return;
+  const tM=today().substring(0,7);
+  const budgets=(D.expBudgets||{})[tM]||{};
+  document.getElementById('exp-budget-list').innerHTML=EXP_BUDGET_CATS.map(cat=>
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:.6rem">'+
+    '<label style="flex:1;font-size:12px;font-weight:600">'+cat+'</label>'+
+    '<input type="number" id="bgt_'+cat.replace(/[^a-zA-Z0-9]/g,'_')+'" value="'+(budgets[cat]||'')+'" placeholder="KES limit" style="width:120px;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2)">'+
+    '</div>'
+  ).join('');
+  modal.classList.add('open');
+}
+function saveExpBudgets(){
+  const tM=today().substring(0,7);
+  if(!D.expBudgets) D.expBudgets={};
+  D.expBudgets[tM]={};
+  EXP_BUDGET_CATS.forEach(cat=>{
+    const el=document.getElementById('bgt_'+cat.replace(/[^a-zA-Z0-9]/g,'_'));
+    const val=parseFloat(el?el.value:0)||0;
+    if(val) D.expBudgets[tM][cat]=val;
+  });
+  saveD();
+  document.getElementById('exp-budget-modal').classList.remove('open');
+  checkExpBudgetAlerts();
+  toast('✓ Budgets saved');
+}
+function checkExpBudgetAlerts(){
+  const alertEl=document.getElementById('exp-budget-alerts');
+  if(!alertEl) return;
+  const tM=today().substring(0,7);
+  const budgets=(D.expBudgets||{})[tM];
+  if(!budgets){alertEl.style.display='none';return;}
+  const spent={};
+  (D.expenses||[]).filter(e=>e.date&&e.date.startsWith(tM)).forEach(e=>{spent[e.cat]=(spent[e.cat]||0)+e.amount;});
+  const alerts=Object.entries(budgets).filter(([cat,limit])=>{
+    const pct=spent[cat]?spent[cat]/limit*100:0; return pct>=80;
+  }).map(([cat,limit])=>{
+    const s=spent[cat]||0; const pct=Math.round(s/limit*100);
+    return (pct>=100?'🔴':'🟡')+' '+cat+': '+pct+'% ('+fmt(s)+'/'+fmt(limit)+')';
+  });
+  if(alerts.length){alertEl.style.display='block';alertEl.innerHTML='<strong style="font-size:11px">⚠ Budget alerts: </strong>'+alerts.join(' · ');}
+  else alertEl.style.display='none';
+}
+
+// ── Task comments ─────────────────────────────────────────────────────────────
+let _commentTaskId=null;
+function openTaskComments(taskId){
+  const task=(D.tasks||[]).find(t=>t.id===taskId);
+  if(!task) return;
+  _commentTaskId=taskId;
+  const modal=document.getElementById('task-comments-modal');
+  if(!modal) return;
+  document.getElementById('tc-title').textContent=(task.ticketNo||'')+' — '+task.title;
+  renderTaskCommentsList(task);
+  modal.classList.add('open');
+}
+function renderTaskCommentsList(task){
+  const list=document.getElementById('tc-list');
+  if(!list) return;
+  const comments=task.comments||[];
+  const fdt=d=>{try{return new Date(d).toLocaleString('en-KE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return d;}};
+  list.innerHTML=comments.length?comments.map(cm=>
+    '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:.5px solid var(--border)">'+
+    '<div class="av '+avC(cm.role||'staff')+'" style="width:28px;height:28px;font-size:10px;flex-shrink:0">'+ini(cm.by)+'</div>'+
+    '<div style="flex:1"><div style="font-size:11px;font-weight:700">'+cm.by+' <span style="color:var(--text3);font-weight:400">'+fdt(cm.at)+'</span></div>'+
+    '<div style="font-size:12px;color:var(--text);margin-top:2px;line-height:1.5">'+cm.text+'</div></div></div>'
+  ).join(''):'<div style="color:var(--text2);font-size:12px;padding:8px 0">No comments yet. Be the first to add one below.</div>';
+}
+function addTaskComment(){
+  const task=(D.tasks||[]).find(t=>t.id===_commentTaskId);
+  if(!task) return;
+  const text=document.getElementById('tc-input').value.trim();
+  if(!text){toast('Type a comment first','warn');return;}
+  if(!task.comments) task.comments=[];
+  task.comments.push({id:Date.now(),by:currentUser.name,role:currentUser.role,text,at:new Date().toISOString()});
+  document.getElementById('tc-input').value='';
+  auditLog('task',task.id,'comment_added','['+(task.ticketNo||'')+'] '+currentUser.name+': '+text.substring(0,60));
+  saveD(); updateTask(task);
+  renderTaskCommentsList(task);
+  toast('✓ Comment added');
+}
+
+// ── Staff daily check-in ──────────────────────────────────────────────────────
+function renderStaffCheckin(){
+  const el=document.getElementById('staff-checkin');
+  if(!el||!currentUser){if(el)el.style.display='none';return;}
+  const isDelivery=currentUser.role==='delivery';
+  const isStaff=currentUser.role==='staff';
+  if(!isDelivery&&!isStaff){el.style.display='none';return;}
+  const tod=today();
+  const myTasks=(D.tasks||[]).filter(t=>(t.assignee===currentUser.name||(t.assignees&&t.assignees.includes(currentUser.name)))&&t.date===tod);
+  const done=myTasks.filter(t=>t.status==='done').length;
+  const pending=myTasks.filter(t=>t.status==='pending'||t.status==='in-progress').length;
+  const total=myTasks.length;
+  const hr=new Date().getHours();
+  const gr=hr<12?'Good morning ☀️':hr<17?'Good afternoon 🌤️':'Good evening 🌙';
+  el.style.display='block';
+  el.innerHTML='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
+    '<div style="flex:1"><div style="font-weight:800;font-size:14px">'+gr+', '+currentUser.name.split(' ')[0]+'!</div>'+
+    '<div style="font-size:12px;color:var(--text2);margin-top:2px">'+(total===0?'No tasks for you today — enjoy!':
+    'Today: <strong>'+total+'</strong> task'+(total>1?'s':'')+' · <span style="color:var(--green)">'+done+' done</span> · <span style="color:var(--amber)">'+pending+' pending</span>')+'</div></div>'+
+    (pending>0?'<button class="btn bsm" onclick="goPage(\'tasks\')" style="flex-shrink:0">View tasks →</button>':'')+
+    '</div>';
+}
+
+// ── Delivery map link ─────────────────────────────────────────────────────────
+function openMaps(location){
+  if(!location){toast('No location set for this task','warn');return;}
+  const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(location+', Kenya');
+  const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+// ── Printable monthly report ──────────────────────────────────────────────────
+function printMonthlyReport(){
+  const mo=document.getElementById('pl-month')?document.getElementById('pl-month').value:today().substring(0,7);
+  const sales=(D.sales||[]).filter(s=>s.date&&s.date.startsWith(mo));
+  const exps=(D.expenses||[]).filter(e=>e.date&&e.date.startsWith(mo));
+  const revenue=sales.reduce((a,s)=>a+s.amount,0);
+  const costs=exps.reduce((a,e)=>a+e.amount,0);
+  const profit=revenue-costs;
+  const paid=sales.filter(s=>s.paymentStatus==='paid').reduce((a,s)=>a+s.amount,0);
+  const outstanding=sales.filter(s=>s.paymentStatus!=='paid').reduce((a,s)=>a+(s.amount-(s.paidAmount||0)),0);
+  const prodMap={};
+  sales.forEach(s=>(s.items||[]).forEach(i=>{if(!i.name)return;prodMap[i.name]=(prodMap[i.name]||0)+(i.price||0)*(i.qty||1);}));
+  const topProds=Object.entries(prodMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const custMap={};
+  sales.forEach(s=>{const k=s.custName||'Walk-in';custMap[k]=(custMap[k]||0)+s.amount;});
+  const topCusts=Object.entries(custMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const expMap={};
+  exps.forEach(e=>{expMap[e.cat]=(expMap[e.cat]||0)+e.amount;});
+  const expCats=Object.entries(expMap).sort((a,b)=>b[1]-a[1]);
+  const margin=revenue?Math.round(profit/revenue*100):0;
+
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report '+mo+'</title>'+
+    '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;color:#222;padding:30px;max-width:800px;margin:0 auto;font-size:13px}'+
+    'h1{font-size:22px;font-weight:900;color:#3C3489;margin-bottom:4px}h2{font-size:13px;font-weight:800;margin:18px 0 6px;color:#333;border-bottom:2px solid #eee;padding-bottom:4px}'+
+    '.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}.box{background:#f8f8f8;border-radius:8px;padding:12px}'+
+    '.box-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;font-weight:700}.box-value{font-size:18px;font-weight:900;margin-top:4px}'+
+    '.green{color:#0F6E56}.red{color:#C0392B}.blue{color:#185FA5}'+
+    'table{width:100%;border-collapse:collapse}th{text-align:left;font-size:10px;color:#888;padding:5px 8px;background:#f5f5f5}td{padding:5px 8px;border-bottom:1px solid #eee;font-size:12px}'+
+    '.footer{margin-top:30px;text-align:center;font-size:10px;color:#aaa}@media print{button{display:none}}</style></head><body>'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">'+
+    '<div><h1>'+currentCo.name+'</h1><div style="font-size:11px;color:#888">Monthly report · '+mo+'</div></div>'+
+    '<button onclick="window.print()" style="padding:8px 18px;background:#3C3489;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700">🖨 Print / PDF</button></div>'+
+    '<h2>Financial summary</h2>'+
+    '<div class="grid"><div class="box"><div class="box-label">Revenue</div><div class="box-value green">KES '+fmt(revenue)+'</div></div>'+
+    '<div class="box"><div class="box-label">Expenses</div><div class="box-value red">KES '+fmt(costs)+'</div></div>'+
+    '<div class="box"><div class="box-label">Net profit</div><div class="box-value blue">KES '+fmt(profit)+' ('+margin+'%)</div></div></div>'+
+    '<div class="grid"><div class="box"><div class="box-label">Collected</div><div class="box-value">'+fmt(paid)+'</div></div>'+
+    '<div class="box"><div class="box-label">Outstanding</div><div class="box-value red">'+fmt(outstanding)+'</div></div>'+
+    '<div class="box"><div class="box-label">Sales count</div><div class="box-value">'+sales.length+'</div></div></div>'+
+    '<h2>Top products by revenue</h2><table><thead><tr><th>Product</th><th>Revenue (KES)</th></tr></thead><tbody>'+
+    topProds.map(function(p){return '<tr><td>'+p[0]+'</td><td>'+fmt(p[1])+'</td></tr>';}).join('')+
+    '</tbody></table>'+
+    '<h2>Top customers</h2><table><thead><tr><th>Customer</th><th>Total (KES)</th></tr></thead><tbody>'+
+    topCusts.map(function(p){return '<tr><td>'+p[0]+'</td><td>'+fmt(p[1])+'</td></tr>';}).join('')+
+    '</tbody></table>'+
+    '<h2>Expenses by category</h2><table><thead><tr><th>Category</th><th>Amount (KES)</th><th>% of expenses</th></tr></thead><tbody>'+
+    expCats.map(function(p){return '<tr><td>'+p[0]+'</td><td>'+fmt(p[1])+'</td><td>'+(costs?Math.round(p[1]/costs*100):0)+'%</td></tr>';}).join('')+
+    '</tbody></table>'+
+    '<div class="footer">Generated by Baraka Enterprise Hub · '+new Date().toLocaleDateString('en-KE')+'</div></body></html>';
+
+  const win=window.open('','_blank','width=860,height=700');
+  win.document.write(html);
+  win.document.close();
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
@@ -4592,6 +4876,60 @@ async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;c
     <button onclick="document.getElementById('notif-panel').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
   </div>
   <div id="notif-list" style="padding:8px 0"></div>
+</div>
+
+
+<!-- ══ MONTHLY TARGETS MODAL ════════════════════════════════════════════════ -->
+<div class="modal-bg" id="targets-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:400px">
+    <button class="mc-close" onclick="document.getElementById('targets-modal').classList.remove('open')">✕</button>
+    <div class="ct">Monthly targets</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Set targets for this month. Progress bars appear on your dashboard.</p>
+    <div class="fg" style="margin-bottom:1rem">
+      <div class="fl"><label>Revenue target (KES)</label><input type="number" id="tgt-revenue" placeholder="e.g. 600000"></div>
+      <div class="fl"><label>Expenses limit (KES)</label><input type="number" id="tgt-expenses" placeholder="e.g. 200000"></div>
+      <div class="fl"><label>Net profit target (KES)</label><input type="number" id="tgt-profit" placeholder="e.g. 400000"></div>
+    </div>
+    <button class="btn" onclick="saveTargets()" style="background:var(--black);color:#fff;border-color:var(--black);width:100%">💾 Save targets</button>
+  </div>
+</div>
+
+<!-- ══ EXPENSE BUDGET MODAL ══════════════════════════════════════════════════ -->
+<div class="modal-bg" id="exp-budget-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:440px">
+    <button class="mc-close" onclick="document.getElementById('exp-budget-modal').classList.remove('open')">✕</button>
+    <div class="ct">Expense budgets</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Set monthly spending limits per category. You'll be alerted at 80% and 100%.</p>
+    <div id="exp-budget-list" style="margin-bottom:1rem"></div>
+    <button class="btn" onclick="saveExpBudgets()" style="background:var(--black);color:#fff;border-color:var(--black);width:100%">💾 Save budgets</button>
+  </div>
+</div>
+
+<!-- ══ TASK COMMENTS MODAL ═══════════════════════════════════════════════════ -->
+<div class="modal-bg" id="task-comments-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:500px">
+    <button class="mc-close" onclick="document.getElementById('task-comments-modal').classList.remove('open')">✕</button>
+    <div style="font-size:13px;font-weight:800;margin-bottom:1rem" id="tc-title">Task comments</div>
+    <div id="tc-list" style="max-height:260px;overflow-y:auto;margin-bottom:1rem"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="tc-input" rows="2" placeholder="Add a comment…" style="flex:1;resize:none"></textarea>
+      <button class="btn" onclick="addTaskComment()" style="background:var(--black);color:#fff;border-color:var(--black);padding:.6rem 1rem;flex-shrink:0">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROFIT PER PRODUCT MODAL ══════════════════════════════════════════════ -->
+<div class="modal-bg" id="profit-product-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:520px">
+    <button class="mc-close" onclick="document.getElementById('profit-product-modal').classList.remove('open')">✕</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+      <div class="ct" style="margin-bottom:0">Profit per product</div>
+      <select id="pp-month" onchange="renderProfitPerProduct()" style="font-size:11px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <option value="all">All time</option>
+      </select>
+    </div>
+    <div id="profit-product-bars"></div>
+  </div>
 </div>
 </body>
 </html>
