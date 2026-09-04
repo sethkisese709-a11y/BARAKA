@@ -32,18 +32,19 @@ DOCTYPE html>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#fff;--bg2:#f7f7f7;--bg3:#eee;
-  --text:#111;--text2:#666;--text3:#aaa;
-  --border:rgba(0,0,0,0.10);--border2:rgba(0,0,0,0.22);
-  --radius:2px;--radius-lg:4px;
-  --black:#111;--black2:#222;--black3:#333;
-  --green:#1a5c2a;--green-bg:#e8f4eb;
-  --red:#8c1c1c;--red-bg:#fae8e8;
-  --blue:#1c3c8c;--blue-bg:#e6ebf8;
-  --amber:#7a4c10;--amber-bg:#faf0dc;
-  --purple:#3c2c8c;--purple-bg:#eeebfb;
+  --bg:#ffffff;--bg2:#F7F9FB;--bg3:#F0F3F7;
+  --text:#1D2129;--text2:#5B6472;--text3:#8B93A1;
+  --border:#E8ECF2;--border2:#DCE2EA;
+  --radius:12px;--radius-lg:18px;
+  --black:#1D2129;--black2:#2A2F38;--black3:#3A404A;
+  --green:#0F766E;--green-bg:#E7F6F2;
+  --red:#B45309;--red-bg:#FDF0E3;
+  --blue:#1D6FA5;--blue-bg:#E4F1F9;
+  --amber:#B45309;--amber-bg:#FDF0E3;
+  --purple:#5B45C7;--purple-bg:#EEEBFE;
+  --topbar:#1D2129;
 }
-body.dark{--bg:#111;--bg2:#1a1a1a;--bg3:#222;--text:#f0f0f0;--text2:#888;--text3:#555;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.18)}
+body.dark{--bg:#141821;--bg2:#1B212C;--bg3:#222937;--text:#EDF1F6;--text2:#95A0B2;--text3:#6B7688;--border:#252D3A;--border2:#333C4B;--topbar:#0F131A;--green:#3FBFA8;--green-bg:#12302C;--red:#E0913F;--red-bg:#332512;--blue:#5AA9DC;--blue-bg:#13293A;--amber:#E0913F;--amber-bg:#332512;--purple:#9B87F5;--purple-bg:#231D3D;--black:#EDF1F6}
 body.dark .co-card,body.dark .lcard,body.dark .card,body.dark .modal{background:var(--bg2);border-color:var(--border2)}
 body.dark input,body.dark select,body.dark textarea{background:var(--bg3);color:var(--text);border-color:var(--border2)}
 body.dark .btn{background:var(--bg3);color:var(--text);border-color:var(--border2)}
@@ -608,8 +609,308 @@ input:focus, select:focus, textarea:focus {
   #global-search-input { width:70px!important; }
   .swbtn { padding:4px 5px!important; }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   DAYLIGHT — visual language
+   Colour per area of the business, open spacing, rounded shapes,
+   sentence case instead of tracked-out capitals.
+══════════════════════════════════════════════════════════════════════ */
+
+body{
+  font-family:Figtree,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  letter-spacing:-.005em;
+}
+
+/* Topbar ─────────────────────────────────────────────────────────── */
+.topbar{background:var(--topbar)!important;border-bottom:none}
+.swbtn{border-radius:10px!important;background:rgba(255,255,255,.09)!important;
+  border:none!important;color:#fff!important}
+.swbtn:hover{background:rgba(255,255,255,.18)!important}
+
+/* Nav — rounded pills, sentence case ─────────────────────────────── */
+.nav{background:var(--bg)!important;border-bottom:1px solid var(--border)!important;
+  padding:.55rem .75rem!important}
+.nb{
+  text-transform:none!important;
+  letter-spacing:-.005em!important;
+  font-size:13px!important;
+  font-weight:600!important;
+  padding:8px 14px!important;
+  border-radius:999px!important;
+  color:var(--text2)!important;
+  border:none!important;
+}
+.nb:hover{background:var(--bg3)!important;color:var(--text)!important}
+.nb.active{background:var(--text)!important;color:var(--bg)!important}
+
+/* Cards ──────────────────────────────────────────────────────────── */
+.card{
+  border-radius:var(--radius-lg)!important;
+  border:1px solid var(--border)!important;
+  padding:1.35rem 1.4rem!important;
+  margin-bottom:1rem!important;
+  box-shadow:none!important;
+}
+.card:hover{transform:none!important;box-shadow:none!important}
+
+/* Section headings — sentence case, readable ─────────────────────── */
+.ct{
+  text-transform:none!important;
+  letter-spacing:-.015em!important;
+  font-size:15px!important;
+  font-weight:700!important;
+  color:var(--text)!important;
+  margin-bottom:1rem!important;
+}
+
+/* Metric cards — one colour per part of the business ─────────────── */
+.metrics{
+  gap:10px!important;
+  border:none!important;
+  border-radius:0!important;
+  overflow:visible!important;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr))!important;
+}
+.mc{
+  background:var(--bg3)!important;
+  border:none!important;
+  border-radius:16px!important;
+  padding:15px 16px!important;
+}
+.mc:hover{transform:none!important;box-shadow:none!important}
+.mc:has(.mc-v.g){background:var(--green-bg)!important}
+.mc:has(.mc-v.r){background:var(--red-bg)!important}
+.mc:has(.mc-v.a){background:var(--amber-bg)!important}
+.mc:has(.mc-v.p){background:var(--purple-bg)!important}
+.mc:has(.mc-v.b){background:var(--blue-bg)!important}
+.mc-l{
+  text-transform:none!important;
+  letter-spacing:-.005em!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  color:var(--text2)!important;
+  margin-bottom:6px!important;
+}
+.mc-v{font-size:23px!important;font-weight:800!important;letter-spacing:-.03em!important}
+.mc-v.g{color:var(--green)!important}
+.mc-v.r{color:var(--red)!important}
+.mc-v.a{color:var(--amber)!important}
+.mc-v.p{color:var(--purple)!important}
+.mc-v.b{color:var(--blue)!important}
+
+/* Buttons — pill shaped ──────────────────────────────────────────── */
+.btn{
+  border-radius:999px!important;
+  font-weight:600!important;
+  letter-spacing:-.005em!important;
+  text-transform:none!important;
+  padding:9px 18px!important;
+  font-size:13px!important;
+  border:1px solid var(--border2)!important;
+  background:var(--bg)!important;
+  color:var(--text)!important;
+}
+.btn:hover{background:var(--bg3)!important;filter:none!important;box-shadow:none!important}
+.bsm{padding:6px 13px!important;font-size:12px!important}
+.login-btn{
+  border-radius:999px!important;
+  text-transform:none!important;
+  letter-spacing:-.01em!important;
+  font-size:15px!important;
+  font-weight:700!important;
+  padding:14px!important;
+}
+.del{border-radius:9px!important;border:1px solid var(--border)!important;
+  background:var(--bg)!important}
+
+/* Badges — soft pills ───────────────────────────────────────────── */
+.badge{
+  border-radius:999px!important;
+  text-transform:none!important;
+  letter-spacing:-.005em!important;
+  font-size:11px!important;
+  font-weight:600!important;
+  padding:4px 10px!important;
+}
+
+/* Tables — airier, sentence-case headers ─────────────────────────── */
+table{font-size:13px!important}
+th{
+  text-transform:none!important;
+  letter-spacing:-.005em!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  background:var(--bg)!important;
+  color:var(--text2)!important;
+  border-bottom:1px solid var(--border)!important;
+  padding:.65rem .75rem!important;
+}
+td{
+  background:var(--bg)!important;
+  border-bottom:1px solid var(--border)!important;
+  padding:.7rem .75rem!important;
+}
+tbody tr:hover td{background:var(--bg2)!important}
+
+/* Inputs ─────────────────────────────────────────────────────────── */
+input,select,textarea{
+  border-radius:10px!important;
+  border:1px solid var(--border2)!important;
+  background:var(--bg)!important;
+  padding:.6rem .75rem!important;
+  font-family:inherit!important;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--green)!important;
+  box-shadow:0 0 0 3px var(--green-bg)!important;
+}
+label{font-size:12px!important;font-weight:600!important;color:var(--text2)!important;
+  text-transform:none!important;letter-spacing:-.005em!important}
+
+/* Product cards ──────────────────────────────────────────────────── */
+.qcard{border-radius:14px!important;padding:15px 12px!important;
+  border:1px solid var(--border)!important}
+.qcard:hover{border-color:var(--green)!important;background:var(--green-bg)!important;
+  transform:none!important;box-shadow:none!important}
+
+/* Modals — bottom sheet with a handle ────────────────────────────── */
+.modal{
+  background:var(--bg)!important;
+  border:none!important;
+  border-radius:22px 22px 0 0!important;
+  padding:1.6rem 1.5rem 2rem!important;
+}
+.modal::before{
+  content:'';display:block;width:38px;height:4px;border-radius:99px;
+  background:var(--border2);margin:-.6rem auto 1.1rem;
+}
+.mc-close{border-radius:999px!important}
+
+/* Company chooser ────────────────────────────────────────────────── */
+.co-btn{border-radius:14px!important;padding:16px!important;
+  border:1px solid var(--border)!important}
+.co-btn:hover{background:var(--bg2)!important;border-color:var(--text3)!important}
+
+/* Toast ──────────────────────────────────────────────────────────── */
+#_toast{border-radius:14px!important;font-weight:600!important;
+  letter-spacing:-.01em!important;padding:12px 18px!important}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   MOBILE — rebuilt for one-handed use on a phone
+══════════════════════════════════════════════════════════════════════ */
+@media(max-width:760px){
+
+  body{font-size:15px}
+  .main{padding:.75rem .85rem calc(76px + env(safe-area-inset-bottom))!important}
+
+  /* Topbar: compact, safe-area aware */
+  .topbar{
+    padding:.5rem .8rem!important;
+    padding-top:calc(.5rem + env(safe-area-inset-top))!important;
+    position:sticky;top:0;z-index:600;
+  }
+  .co-tname,#top-role,#health-dot{display:none!important}
+  #top-av{width:30px!important;height:30px!important;font-size:11px!important}
+  #top-name{font-size:12px!important;font-weight:600!important}
+  .swbtn{padding:7px 9px!important;font-size:15px!important}
+  #global-search-input{width:80px!important;font-size:13px!important}
+  #global-search-input:focus{width:150px!important}
+
+  /* Top nav scrolls; bottom bar handles the main jumps */
+  .nav{
+    position:sticky;top:52px;z-index:590;
+    overflow-x:auto;white-space:nowrap;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+    padding:.5rem .7rem!important;gap:6px;
+  }
+  .nav::-webkit-scrollbar{display:none}
+  .nb{font-size:13px!important;padding:8px 15px!important;flex-shrink:0}
+
+  /* Metric cards: two up, big numbers */
+  .metrics{grid-template-columns:1fr 1fr!important;gap:9px!important}
+  .mc{padding:14px!important;border-radius:15px!important}
+  .mc-v{font-size:21px!important}
+  .mc-l{font-size:11.5px!important}
+
+  .card{padding:1.1rem 1rem!important;border-radius:16px!important}
+  .ct{font-size:15px!important}
+
+  /* Tables scroll with a fade at the edge so it's obvious */
+  .tbl-wrap{
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    margin:0 -1rem;padding:0 1rem;
+    -webkit-mask-image:linear-gradient(to right,#000 92%,transparent 100%);
+    mask-image:linear-gradient(to right,#000 92%,transparent 100%);
+  }
+  .tbl-wrap table{min-width:560px}
+  th,td{padding:.7rem .6rem!important;font-size:12.5px!important}
+
+  /* Every form one column, 16px inputs so iOS never zooms */
+  .fg,.fg3{grid-template-columns:1fr!important;gap:.7rem!important}
+  input,select,textarea{font-size:16px!important;padding:.75rem .85rem!important}
+
+  /* Thumb-sized controls */
+  .btn{padding:11px 18px!important;font-size:14px!important;min-height:44px}
+  .bsm{padding:8px 14px!important;font-size:12.5px!important;min-height:36px}
+  .del{min-width:38px;min-height:38px;font-size:15px!important}
+
+  /* Modals fill the screen from the bottom */
+  .modal-bg{align-items:flex-end!important}
+  .modal{
+    max-width:100%!important;width:100%!important;
+    max-height:92vh;overflow-y:auto;
+    padding:1.4rem 1.1rem calc(1.6rem + env(safe-area-inset-bottom))!important;
+    border-radius:22px 22px 0 0!important;
+  }
+
+  .qcard{padding:16px 10px!important;min-height:78px}
+
+  /* Panels that float */
+  #notif-panel,#search-results-drop{
+    position:fixed!important;left:10px!important;right:10px!important;
+    width:auto!important;top:60px!important;max-height:70vh;
+  }
+  #_toast{left:12px!important;right:12px!important;bottom:calc(74px + env(safe-area-inset-bottom))!important;
+    text-align:center}
+
+  /* No hover behaviour on touch */
+  .card:hover,.mc:hover,.qcard:hover,.btn:hover,.nb:hover{
+    transform:none!important;box-shadow:none!important;filter:none!important}
+}
+
+/* Bottom tab bar — mobile only ───────────────────────────────────── */
+#mobile-tabs{display:none}
+@media(max-width:760px){
+  #mobile-tabs{
+    display:flex;
+    position:fixed;left:0;right:0;bottom:0;z-index:700;
+    background:var(--bg);
+    border-top:1px solid var(--border);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    justify-content:space-around;
+  }
+  #mobile-tabs button{
+    flex:1;background:none;border:none;cursor:pointer;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:6px 2px;border-radius:12px;color:var(--text3);
+    font-size:10.5px;font-weight:600;letter-spacing:-.005em;min-height:48px;
+  }
+  #mobile-tabs button i{font-style:normal;font-size:19px;line-height:1}
+  #mobile-tabs button.on{color:var(--green)}
+  #mobile-tabs button:active{background:var(--bg3)}
+}
+@media(max-width:380px){
+  .metrics{grid-template-columns:1fr!important}
+  #mobile-tabs button{font-size:9.5px}
+}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 <!-- iOS Install Banner (shown only in Safari, not standalone) -->
@@ -4472,6 +4773,59 @@ function sendWhatsApp(){if(!_waTask)return;const url=_waTask._phone?'https://wa.
 
 async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;const ph=prompt('WhatsApp for '+u.name,u.phone||'');if(ph===null)return;u.phone=ph.trim();saveD();renderPwMgmt();pushUser(u).then(()=>toast('✓ Number saved on all devices'));}
 
+
+// ── Bottom tab bar (phones) ─────────────────────────────────────────────────
+function buildMobileTabs(){
+  const bar=document.getElementById('mobile-tabs');
+  if(!bar) return;
+  // Hidden until someone is logged in
+  const app=document.getElementById('main-app');
+  if(!app||app.style.display==='none'){ bar.style.visibility='hidden'; return; }
+  bar.style.visibility='visible';
+  bar.querySelectorAll('button').forEach(function(b){
+    const pg=b.dataset.pg;
+    if(pg==='__more'){ b.style.display=''; return; }
+    // Reuse the nav's own permission logic: a tab shows only if that page exists for this role
+    b.style.display=document.getElementById('nb-'+pg)?'':'none';
+  });
+}
+
+function syncMobileTabs(pg){
+  const bar=document.getElementById('mobile-tabs');
+  if(!bar) return;
+  bar.querySelectorAll('button').forEach(function(b){
+    b.classList.toggle('on', b.dataset.pg===pg);
+  });
+}
+
+document.addEventListener('click', function(e){
+  const btn=e.target.closest('#mobile-tabs button');
+  if(!btn) return;
+  const pg=btn.dataset.pg;
+  if(pg==='__more'){
+    window.scrollTo({top:0,behavior:'smooth'});
+    const nav=document.getElementById('main-nav');
+    if(nav){
+      nav.scrollTo({left:nav.scrollWidth,behavior:'smooth'});
+      setTimeout(function(){ nav.scrollTo({left:0,behavior:'smooth'}); },900);
+    }
+    return;
+  }
+  goPage(pg);
+});
+
+// Keep the bar in step with whatever page is open
+(function(){
+  if(typeof goPage!=='function') return;
+  const _goPage=goPage;
+  goPage=function(pg){
+    _goPage(pg);
+    try{ buildMobileTabs(); syncMobileTabs(pg); window.scrollTo({top:0}); }catch(e){}
+  };
+})();
+
+setInterval(function(){ try{ buildMobileTabs(); }catch(e){} }, 1500);
+setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }catch(e){} }, 700);
 </script>
 
 
@@ -4931,6 +5285,14 @@ async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;c
     <div id="profit-product-bars"></div>
   </div>
 </div>
+
+<!-- Bottom tab bar (phones only) -->
+<nav id="mobile-tabs" aria-label="Main">
+  <button type="button" data-pg="dashboard"><i>◉</i><span>Home</span></button>
+  <button type="button" data-pg="quick"><i>+</i><span>Sell</span></button>
+  <button type="button" data-pg="tasks"><i>☑</i><span>Tasks</span></button>
+  <button type="button" data-pg="pl"><i>◴</i><span>Money</span></button>
+  <button type="button" data-pg="__more"><i>≡</i><span>More</span></button>
+</nav>
 </body>
 </html>
-<
