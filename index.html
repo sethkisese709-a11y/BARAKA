@@ -906,6 +906,24 @@ label{font-size:12px!important;font-weight:600!important;color:var(--text2)!impo
   #mobile-tabs button{font-size:9.5px}
 }
 
+
+
+/* ── Overflow fix: chart wrappers and inline two-column grids ──────────── */
+.chw{position:relative;width:100%;min-width:0;height:230px}
+.chw canvas{display:block;max-width:100%!important}
+canvas,img,svg,video{max-width:100%}
+.card,.metrics,.mc{min-width:0}
+
+@media(max-width:760px){
+  html,body{overflow-x:hidden;max-width:100vw}
+  .main,.page,#main-app{overflow-x:hidden}
+  /* any inline two-column grid collapses to one column on phones */
+  [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
+  .chw{height:190px}
+  .tbl-wrap{margin:0 -1rem;padding:0 1rem;max-width:calc(100% + 2rem)}
+}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
