@@ -1856,15 +1856,24 @@ function addMember(){
   logA('team','Added: '+name+' ('+role+')');
   saveD(); renderTeam();
   document.getElementById('nm-name').value=''; document.getElementById('nm-pw').value=''; document.getElementById('nm-str').style.width='0';
+  try{ toast('\u2713 Team member added'); }catch(e){}
 }
 
 function removeMember(uid){
   if(uid===currentUser.id){ alert('You cannot remove yourself.'); return; }
   const u=D.users.find(x=>x.id===uid);
-  if(!confirm('Remove '+u.name+'?')) return;
+  if(!u) return;
+  if(!confirm('Remove '+u.name+' from the team? They will no longer be able to log in.')) return;
+  // Blacklist first so no sync can bring them back, on this or any device
+  if(!D.deletedIds) D.deletedIds={};
+  D.deletedIds['users_'+uid]=1;
   D.users=D.users.filter(x=>x.id!==uid);
   logA('team','Removed: '+u.name);
+  try{ auditLog('team',uid,'removed',u.name+' removed from team by '+currentUser.name); }catch(e){}
   saveD(); renderTeam();
+  // Delete from Supabase and record it in deleted_records
+  sbDel('users',uid).then(function(){ toast('\u2713 '+u.name+' removed on all devices'); })
+                    .catch(function(){ toast('Removed here \u2014 will sync when online','info'); });
 }
 
 // ── Nav & Pages ───────────────────────────────────────────────────────────────
@@ -2418,6 +2427,7 @@ function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.m
   if(_rc) _rc.style.display=currentUser.role==='owner'?'block':'none';
   const _rn=document.getElementById('reset-co-name');
   if(_rn&&currentCo) _rn.textContent=currentCo.name;
+  try{ toast('\u2713 Customer saved'); }catch(e){}
 }
 
 // ── Recurring (basic) ─────────────────────────────────────────────────────────
@@ -4692,7 +4702,11 @@ async function syncNow(showFeedback){
     if(customers.length) D.customers = customers.filter(r=>!isDeleted('customers',r.id));
     if(suppliers.length) D.suppliers = suppliers.filter(r=>!isDeleted('suppliers',r.id));
     if(tasks.length)     D.tasks     = tasks.map(mapTask).filter(r=>!isDeleted('tasks',r.id));
-    if(users.length)     D.users     = users.map(mapUser);
+    if(users.length){
+      const _du=D.deletedIds||{};
+      const _kept=users.filter(function(r){ return !_du['users_'+String(r.id)] && !isDeleted('users',r.id); }).map(mapUser);
+      if(_kept.length) D.users=_kept;
+    }
 
     // Push any local-only records to Supabase (offline entries)
     const sIds=new Set(sales.map(r=>String(r.id)));
@@ -4837,15 +4851,22 @@ function doLogin(user){
   else{goPage('dashboard');checkDue();}
 }
 
-function saveNewPw(uid){
-  const u=D.users.find(x=>x.id===uid);if(!u)return;
-  const pw=document.getElementById('newpw-val').value;
-  const pw2=document.getElementById('newpw-val2').value;
-  if(pw.length<4){alert('Min 4 characters.');return;}
-  if(pw!==pw2){alert('Passwords do not match.');return;}
-  u.password=pw;saveD();renderPwMgmt();
+function saveNewPw(){
+  const uid=setPwTargetId;
+  const u=D.users.find(x=>x.id===uid);
+  const err=document.getElementById('setpw-error');
+  if(!u){ if(err) err.textContent='User not found.'; return; }
+  const pw=document.getElementById('setpw-new').value;
+  const pw2=document.getElementById('setpw-confirm').value;
+  if(pw.length<4){ if(err) err.textContent='Password must be at least 4 characters.'; return; }
+  if(pw!==pw2){ if(err) err.textContent='The two passwords do not match.'; return; }
+  if(err) err.textContent='';
+  u.password=pw;
+  saveD(); renderPwMgmt();
+  try{ auditLog('team',uid,'password_changed','Password changed for '+u.name+' by '+currentUser.name); }catch(e){}
   document.getElementById('setpw-modal').classList.remove('open');
-  pushUser(u).then(()=>toast('✓ Password updated on all devices!'));
+  pushUser(u).then(function(){ toast('\u2713 Password updated for '+u.name); })
+             .catch(function(){ toast('Saved here \u2014 will sync when online','info'); });
 }
 
 async function deleteTask(taskId){
