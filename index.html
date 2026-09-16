@@ -1,13 +1,5 @@
 
-function applyDark(){
-  const dark=localStorage.getItem('baraka_dark')==='1';
-  if(dark) document.body.classList.add('dark');
-  const k=document.querySelector('#dark-btn .knob');
-  if(k) k.innerHTML=icon(dark?'moon':'sun',15);
-}
-<!</body
-
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -5099,6 +5091,13 @@ function toggleDark(){
   const k=document.querySelector('#dark-btn .knob');
   if(k) k.innerHTML=icon(dark?'moon':'sun',15);
 }
+function applyDark(){
+  const dark=localStorage.getItem('baraka_dark')==='1';
+  if(dark) document.body.classList.add('dark');
+  const k=document.querySelector('#dark-btn .knob');
+  if(k) k.innerHTML=icon(dark?'moon':'sun',15);
+}
+
 
 // WA notification
 let _waTask=null;
