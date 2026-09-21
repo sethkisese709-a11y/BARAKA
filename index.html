@@ -1928,7 +1928,7 @@ function pickUser(uid){
   loginTargetUser=D.users.find(u=>u.id===uid);
   document.getElementById('step-pick').style.display='none';
   document.getElementById('step-pw').style.display='block';
-  document.getElementById('pw-header-user').innerHTML=`<div class="av ${avC(loginTargetUser.role)}">${ini(loginTargetUser.name)}</div><div><div style="font-size:13px;font-weight:600;color:var(--text)">${loginTargetUser.name}</div><div style="font-size:11px;color:var(--text2)">${loginTargetUser.role}</div></div>`;
+  document.getElementById('pw-header-user').innerHTML=`<div class="av ${avC(loginTargetUser.role)}">${ini(loginTargetUser.name)}</div><div><div style="font-size:13px;font-weight:600;color:var(--text)">${loginTargetUser.name}</div><div style="font-size:11px;color:var(--text2)">${loginTargetUser.category||roleToCat(loginTargetUser.role)}</div></div>`;
   document.getElementById('pw-input').value='';
   document.getElementById('pw-error').textContent='';
   setTimeout(()=>document.getElementById('pw-input').focus(),100);
@@ -4959,6 +4959,25 @@ async function syncNow(showFeedback){
       if(_kept.length) D.users=_kept;
     }
     try{ensureCategories();}catch(e){}
+    try{
+      if(currentUser){
+        const fresh=D.users.find(function(x){return x.id===currentUser.id;});
+        if(fresh){
+          const changed=fresh.role!==currentUser.role;
+          currentUser=fresh;
+          if(changed){
+            buildNav();
+            const rb=document.getElementById('top-role'); if(rb){rb.textContent=fresh.category||roleToCat(fresh.role);rb.className='badge '+rcC(fresh.role);}
+            const av=document.getElementById('top-av'); if(av) av.className='av '+avC(fresh.role);
+            const onPage=(document.querySelector('.page.on')||{}).id||'';
+            if(!document.getElementById('nb-'+onPage.replace('pg-',''))){
+              const first=document.querySelector('#main-nav .nb'); if(first) goPage(first.id.replace('nb-',''));
+            }
+            try{ toast('Your access was updated: '+(fresh.category||roleToCat(fresh.role)),'info',3500); }catch(e){}
+          }
+        }
+      }
+    }catch(e){}
 
     // Push any local-only records to Supabase (offline entries)
     const sIds=new Set(sales.map(r=>String(r.id)));
@@ -5003,14 +5022,21 @@ async function syncNow(showFeedback){
 }
 
 async function pushUser(u){
+  const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+  const url=SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id;
+  let saved=false;
+  // Core fields first — these columns always exist, so the role change always lands
   try{
-    const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,
-      {method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-       body:JSON.stringify({name:u.name,role:u.role,category:u.category||'',password:u.password||'',phone:u.phone||''})});
-    if(r.ok){const rows=await r.json(); if(rows&&rows.length) return true;}
+    const r=await fetch(url,{method:'PATCH',headers:H,
+      body:JSON.stringify({name:u.name,role:u.role,password:u.password||'',phone:u.phone||''})});
+    if(r.ok){ const rows=await r.json(); saved=!!(rows&&rows.length); }
   }catch(e){}
-  try{ await sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,category:u.category||'',password:u.password||'',phone:u.phone||''}); }catch(e){}
-  return true;
+  if(!saved){
+    try{ await sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,password:u.password||'',phone:u.phone||''}); saved=true; }catch(e){}
+  }
+  // Category separately and optionally — if the column is missing this simply fails quietly
+  try{ await fetch(url,{method:'PATCH',headers:H,body:JSON.stringify({category:u.category||''})}); }catch(e){}
+  return saved;
 }
 
 let _syncTimer=null;
@@ -5050,7 +5076,7 @@ function showPickStep(){
   fetch(SUPA_URL+'/rest/v1/users?company_id=eq.'+currentCo.id+'&order=id.asc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
     .then(r=>r.ok?r.json():[]).then(rows=>{
       if(rows.length){
-        rows.forEach(row=>{const u=D.users.find(x=>x.id===row.id);if(u){u.password=row.password||u.password;u.phone=row.phone||u.phone;}});
+        rows.forEach(row=>{const u=D.users.find(x=>x.id===row.id);if(u){u.password=row.password||u.password;u.phone=row.phone||u.phone;if(row.role){u.role=row.role;u.category=row.category||roleToCat(row.role);}}});
         saveD();renderUserList();
       }
     }).catch(()=>{});
@@ -5060,7 +5086,7 @@ function renderUserList(){
   el.innerHTML=D.users.map(u=>`
     <button type="button" class="usel-btn" onclick="pickUser(${u.id})">
       <div class="av ${avC(u.role)}">${ini(u.name)}</div>
-      <div style="flex:1"><div class="uname">${u.name}</div><div class="urole">${u.role.charAt(0).toUpperCase()+u.role.slice(1)}</div></div>
+      <div style="flex:1"><div class="uname">${u.name}</div><div class="urole">${u.category||roleToCat(u.role)}</div></div>
       <div style="font-size:10px;padding:2px 8px;border-radius:3px;font-weight:500;${u.password?'background:var(--green-bg);color:var(--green)':'background:var(--red-bg);color:var(--red)'}">${u.password?'Password set':'No password'}</div>
     </button>`).join('');
 }
@@ -5070,7 +5096,7 @@ async function tryLogin(){
   // Get latest password from Supabase
   try{
     const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+loginTargetUser.id+'&company_id=eq.'+currentCo.id,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
-    if(r.ok){const rows=await r.json();if(rows.length){loginTargetUser.password=rows[0].password||loginTargetUser.password;const u=D.users.find(x=>x.id===loginTargetUser.id);if(u)u.password=loginTargetUser.password;saveD();}}
+    if(r.ok){const rows=await r.json();if(rows.length){const row=rows[0];loginTargetUser.password=row.password||loginTargetUser.password;if(row.role){loginTargetUser.role=row.role;loginTargetUser.category=row.category||roleToCat(row.role);}const u=D.users.find(x=>x.id===loginTargetUser.id);if(u){u.password=loginTargetUser.password;u.role=loginTargetUser.role;u.category=loginTargetUser.category;}saveD();}}
   }catch(e){}
   if(!loginTargetUser.password){document.getElementById('pw-error').textContent='No password set. Ask owner.';return;}
   if(entered!==loginTargetUser.password){document.getElementById('pw-error').textContent='Wrong password. Try again.';document.getElementById('pw-input').value='';return;}
@@ -5087,7 +5113,7 @@ function doLogin(user){
   document.getElementById('top-name').textContent=currentUser.name;
   document.getElementById('top-av').textContent=ini(currentUser.name);
   document.getElementById('top-av').className='av '+avC(currentUser.role);
-  const rb=document.getElementById('top-role');rb.textContent=currentUser.role;rb.className='badge '+rcC(currentUser.role);
+  const rb=document.getElementById('top-role');rb.textContent=currentUser.category||roleToCat(currentUser.role);rb.className='badge '+rcC(currentUser.role);
   dashMonth=tM();
   buildNav();setDates();popAll();
   // Push any locally-deleted IDs to Supabase deleted_records on login
