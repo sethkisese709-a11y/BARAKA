@@ -5516,7 +5516,8 @@ function toast(msg,type,dur){
   if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;transition:opacity .25s';document.body.appendChild(t);}
   const col={success:'background:var(--black);color:#fff',error:'background:var(--red);color:#fff',info:'background:var(--blue);color:#fff',warn:'background:var(--amber);color:#fff'}[type||'success']||'background:var(--black);color:#fff';
   t.innerHTML=`<div style="${col};padding:10px 20px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.18)">${msg}</div>`;
-  t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},dur||2800);
+  const displayDuration=Math.min(Math.max(Number(dur)||2800,0),5000);
+  t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},displayDuration);
 }
 
 
