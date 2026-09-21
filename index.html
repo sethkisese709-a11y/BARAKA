@@ -5454,7 +5454,6 @@ function saveNewPw(){
   saveD(); renderPwMgmt();
   try{ auditLog('team',uid,'password_changed','Password changed for '+u.name+' by '+currentUser.name); }catch(e){}
   document.getElementById('setpw-modal').classList.remove('open');
-  toast('Saving password\u2026','info',1500);
   patchUser(u,{password:pw}).then(function(res){
     if(res.ok) toast('\u2713 Password updated for '+u.name+' on all devices');
     else toast('Saved on this device only ('+res.reason+'). Retrying on next sync.','warn',7000);
