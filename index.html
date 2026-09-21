@@ -1201,6 +1201,9 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
 .co-btn{box-shadow:var(--shadow-sm);transition:transform .16s,box-shadow .16s}
 .co-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 
+.cat-sel{font:inherit;font-size:12px;font-weight:600;padding:5px 8px;border-radius:8px;
+  border:1px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer}
+.cat-sel:disabled{opacity:.6;cursor:not-allowed}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1567,7 +1570,7 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
 
   <!-- TEAM & PASSWORD MANAGEMENT -->
   <div id="pg-team" class="page">
-    <div class="card"><div class="ct">Team performance</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Sales</th><th>Expenses</th><th>Revenue</th><th>PNL contributed</th></tr></thead><tbody id="team-tbody"></tbody></table></div></div>
+    <div class="card"><div class="ct">Team performance</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Category</th><th>Sales</th><th>Expenses</th><th>Revenue</th><th>PNL contributed</th></tr></thead><tbody id="team-tbody"></tbody></table></div></div>
     <div class="card" id="pw-mgmt-card">
       <div class="ct">Password management <span style="font-size:11px;color:var(--text2);font-weight:400">(owner &amp; manager)</span></div>
       <div id="pw-mgmt-list"></div>
@@ -1575,7 +1578,7 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
         <div class="section-label" style="font-weight:600">Add new team member</div>
         <div class="fg">
           <div class="fl"><label>Full name</label><input type="text" id="nm-name" placeholder="e.g. John Kamau"></div>
-          <div class="fl"><label>Role</label><select id="nm-role"><option value="staff">Staff</option><option value="delivery">Delivery</option><option value="manager">Manager</option><option value="owner">Owner</option></select></div>
+          <div class="fl"><label>Category</label><select id="nm-cat" onchange="updateCatHint()"><option value="Executive">Executive — full access</option><option value="Manager">Manager — runs operations</option><option value="Staff" selected>Staff — accounts &amp; records</option><option value="Delivery">Delivery — own tasks only</option></select><div id="nm-cat-hint" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
           <div class="fl ff">
             <label>Password</label>
             <div class="pw-input-wrap">
@@ -1880,7 +1883,7 @@ function pwStrength(pw){ let s=0; if(pw.length>=6) s++; if(pw.length>=10) s++; i
 function showStrength(inputId,barId){ const pw=document.getElementById(inputId).value; const s=pwStrength(pw); const bar=document.getElementById(barId); const widths=['0%','25%','45%','65%','85%','100%']; const colors=['transparent','#E24B4A','#E24B4A','#BA7517','#1D9E75','#3B6D11']; bar.style.width=widths[s]; bar.style.background=colors[s]; }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-function init(){ applyDark(); initSupabaseClient(); const sc=loadCos(); companies=sc||DEF_COS; renderCoScreen(); }
+function init(){ applyDark(); try{ensureCategories();}catch(e){} initSupabaseClient(); const sc=loadCos(); companies=sc||DEF_COS; renderCoScreen(); }
 
 function renderCoScreen(){
   document.getElementById('co-screen').style.display='block';
@@ -1986,15 +1989,24 @@ function openSetPw(uid){
 
 function addMember(){
   const name=document.getElementById('nm-name').value.trim();
-  const role=document.getElementById('nm-role').value;
+  const cat=document.getElementById('nm-cat').value;
+  const role=catToRole(cat);
   const pw=document.getElementById('nm-pw').value;
   if(!name){ alert('Enter a name.'); return; }
   if(!pw||pw.length<4){ alert('Password must be at least 4 characters.'); return; }
-  D.users.push({id:Date.now(),name,role,password:pw});
-  logA('team','Added: '+name+' ('+role+')');
-  saveD(); renderTeam();
-  document.getElementById('nm-name').value=''; document.getElementById('nm-pw').value=''; document.getElementById('nm-str').style.width='0';
-  try{ toast('\u2713 Team member added'); }catch(e){}
+  const u={id:Date.now(),name,category:cat,role,password:pw};
+  D.users.push(u);
+  logA('team','Added: '+name+' ('+cat+')');
+  try{ auditLog('team',u.id,'added',name+' added as '+cat+' by '+currentUser.name); }catch(e){}
+  saveD(); pushUser&&pushUser(u); renderTeam();
+  document.getElementById('nm-name').value=''; document.getElementById('nm-pw').value='';
+  const st=document.getElementById('nm-str'); if(st) st.style.width='0';
+  try{ toast('\u2713 '+name+' added as '+cat); }catch(e){}
+}
+function updateCatHint(){
+  const cat=document.getElementById('nm-cat').value;
+  const h=document.getElementById('nm-cat-hint');
+  if(h&&CATEGORIES[cat]) h.textContent=CATEGORIES[cat].desc;
 }
 
 function removeMember(uid){
@@ -2063,6 +2075,39 @@ function emptyState(iconName,title,hint,cols){
     '<div class="empty"><i class="empty-ic" data-ic="'+iconName+'" data-sz="30"></i>'+
     '<div class="empty-t">'+title+'</div>'+
     (hint?'<div class="empty-h">'+hint+'</div>':'')+'</div></td></tr>';
+}
+
+
+// ── Personnel categories (user-facing) → role (permission engine) ───────────
+const CATEGORIES = {
+  Executive:{role:'owner',  icon:'star',  desc:'Full access to everything'},
+  Manager:  {role:'manager',icon:'users', desc:'Runs operations, assigns tasks'},
+  Staff:    {role:'staff',  icon:'user',  desc:'Accounts and records'},
+  Delivery: {role:'delivery',icon:'truck',desc:'Own delivery tasks only'}
+};
+function catToRole(cat){ return (CATEGORIES[cat]||{}).role || 'staff'; }
+function roleToCat(role){
+  for(const k in CATEGORIES){ if(CATEGORIES[k].role===role) return k; }
+  return 'Staff';
+}
+// Any user missing a category gets one derived from their existing role
+function ensureCategories(){
+  if(typeof D==='undefined'||!D||!D.users) return false;
+  const fixed=[];
+  D.users.forEach(function(u){
+    let ch=false;
+    if(!u.category){ u.category=roleToCat(u.role); ch=true; }
+    const r=catToRole(u.category);
+    if(u.role!==r){ u.role=r; ch=true; }
+    if(ch) fixed.push(u);
+  });
+  if(fixed.length){
+    try{ saveD(); }catch(e){}
+    if(typeof currentCo!=='undefined'&&currentCo&&typeof pushUser==='function'){
+      fixed.forEach(function(u){ try{ pushUser(u); }catch(e){} });
+    }
+  }
+  return fixed.length>0;
 }
 
 function paintIcons(root){(root||document).querySelectorAll('i[data-ic]:not([data-done])').forEach(function(el){var n=el.getAttribute('data-ic');var s=el.getAttribute('data-sz');if(ICONS[n]){el.innerHTML=icon(n,s?+s:18);el.setAttribute('data-done','1');}});}
@@ -2600,12 +2645,47 @@ function renderSup(){   const _sortedSup=[...D.suppliers].sort((a,b)=>(a.name||'
   document.getElementById('sup-tbody').innerHTML=_sortedSup.length?_sortedSup.map(s=>{ const paid=D.expenses.filter(e=>e.supId==s.id).reduce((t,e)=>t+e.amount,0); const last=D.expenses.filter(e=>e.supId==s.id).map(e=>e.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${s.name}</td><td>${s.contact||'—'}</td><td>${s.phone||'—'}</td><td><span class="badge bw">${s.cat}</span></td><td>${s.terms}</td><td style="color:var(--amber);font-weight:500">${paid?fmt(paid):'—'}</td><td>${last}</td><td>${can('del')?`<button type="button" class="del" onclick="openSupPayments(${s.id})" title="Track payments" style="background:var(--bg2);color:var(--text)"><i data-ic="coins"></i></button><button type="button" class="del warn" onclick="delR('suppliers',${s.id})"><i data-ic="x"></i></button>`:''}</td></tr>`; }).join(''):`${emptyState('truck','No suppliers yet','Add suppliers to track what you owe',8)}`; }
 
 // ── Team ──────────────────────────────────────────────────────────────────────
-function renderTeam(){ document.getElementById('team-tbody').innerHTML=D.users.map(u=>{ const s=D.sales.filter(x=>x.by===u.name); const e=D.expenses.filter(x=>x.by===u.name).length; const rv=s.reduce((t,x)=>t+x.amount,0); const pnl=s.reduce((t,x)=>t+(x.pnl||0),0); return`<tr><td style="display:flex;align-items:center;gap:7px"><div class="av ${avC(u.role)}" style="width:27px;height:27px;font-size:10px">${ini(u.name)}</div>${u.name}</td><td><span class="badge ${rcC(u.role)}">${u.role}</span></td><td>${s.length}</td><td>${e}</td><td style="color:var(--green);font-weight:500">${rv?fmt(rv):'—'}</td><td class="${pnl>0?'pnl-pos':'pnl-neg'}">${pnl?fmt(pnl):'—'}</td></tr>`; }).join(''); renderPwMgmt(); document.getElementById('team-act').innerHTML=D.activity.slice(0,25).map(a=>`<div class="arow"><span><span class="badge bp" style="margin-right:5px">${a.user}</span>${a.desc}</span><span style="color:var(--text2);font-size:11px">${a.date}</span></div>`).join('')||'<div class="empty">No activity yet.</div>';
+function renderTeam(){
+  const isExec = currentUser.role==='owner' || currentUser.role==='manager';
+  document.getElementById('team-tbody').innerHTML=D.users.map(function(u){
+    const s=D.sales.filter(function(x){return x.by===u.name;});
+    const e=D.expenses.filter(function(x){return x.by===u.name;}).length;
+    const rv=s.reduce(function(t,x){return t+x.amount;},0);
+    const pnl=s.reduce(function(t,x){return t+(x.pnl||0);},0);
+    const cat=u.category||roleToCat(u.role);
+    const catCell = isExec
+      ? '<select onchange="changeCategory('+u.id+',this.value)" class="cat-sel" '
+        + (u.id===currentUser.id?'title="You cannot change your own category" disabled':'')+'>'
+        + Object.keys(CATEGORIES).map(function(k){return '<option value="'+k+'"'+(k===cat?' selected':'')+'>'+k+'</option>';}).join('')
+        + '</select>'
+      : '<span class="badge '+rcC(u.role)+'">'+cat+'</span>';
+    return '<tr>'
+      + '<td style="display:flex;align-items:center;gap:7px"><div class="av '+avC(u.role)+'" style="width:27px;height:27px;font-size:10px">'+ini(u.name)+'</div>'+u.name+'</td>'
+      + '<td>'+catCell+'</td>'
+      + '<td>'+s.length+'</td><td>'+e+'</td>'
+      + '<td style="color:var(--green);font-weight:500">'+(rv?fmt(rv):'\u2014')+'</td>'
+      + '<td class="'+(pnl>0?'pnl-pos':'pnl-neg')+'">'+(pnl?fmt(pnl):'\u2014')+'</td>'
+      + '</tr>';
+  }).join('');
+  renderPwMgmt();
+  document.getElementById('team-act').innerHTML=D.activity.slice(0,25).map(function(a){return '<div class="arow"><span><span class="badge bp" style="margin-right:5px">'+a.user+'</span>'+a.desc+'</span><span style="color:var(--text2);font-size:11px">'+a.date+'</span></div>';}).join('')||'<div class="empty">No activity yet.</div>';
   const _rc=document.getElementById('reset-data-card');
   if(_rc) _rc.style.display=currentUser.role==='owner'?'block':'none';
   const _rn=document.getElementById('reset-co-name');
   if(_rn&&currentCo) _rn.textContent=currentCo.name;
-  try{ toast('\u2713 Customer saved'); }catch(e){}
+  try{ paintIcons(document); }catch(e){}
+}
+
+function changeCategory(uid,cat){
+  const u=D.users.find(function(x){return x.id===uid;});
+  if(!u) return;
+  if(uid===currentUser.id){ alert('You cannot change your own category.'); renderTeam(); return; }
+  const oldCat=u.category||roleToCat(u.role);
+  u.category=cat; u.role=catToRole(cat);
+  logA('team','Category: '+u.name+' \u2192 '+cat);
+  try{ auditLog('team',uid,'category_changed',u.name+': '+oldCat+' \u2192 '+cat+' by '+currentUser.name); }catch(e){}
+  saveD(); pushUser&&pushUser(u); renderTeam();
+  try{ toast('\u2713 '+u.name+' is now '+cat); }catch(e){}
 }
 
 // ── Recurring (basic) ─────────────────────────────────────────────────────────
@@ -4811,7 +4891,7 @@ async function sbDel(table,id){
 function mapSale(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,items:r.items||[],amount:r.amount||0,cost:r.cost||0,pnl:r.pnl||0,paidAmount:r.paid_amount||0,paymentStatus:r.payment_status||'paid',custName:r.cust_name||'Walk-in',custId:r.cust_id||'',channel:r.channel||'',payment:r.payment||'M-Pesa',ref:r.ref||'',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapExp(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,amount:r.amount||0,cat:r.cat||'Other',supId:r.sup_id||'',supName:'',vendor:r.vendor||'',ref:r.ref||'',paymethod:r.paymethod||'M-Pesa',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapTask(r){return{id:r.id,ticketNo:r.ticket_no||'',title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false,convertedToSale:r.converted_to_sale||false,saleId:r.sale_id||null};}
-function mapUser(r){return{id:r.id,name:r.name,role:r.role,password:r.password||'',phone:r.phone||''};}
+function mapUser(r){return{id:r.id,name:r.name,role:r.role,category:r.category||roleToCat(r.role),password:r.password||'',phone:r.phone||''};}
 
 // ── Push functions ─────────────────────────────────────────────────
 function pushSale(s){sbUpsert('sales',{id:s.id,company_id:currentCo.id,ticket_no:s.ticketNo||'',date:s.date,items:s.items,amount:s.amount,cost:s.cost||0,pnl:s.pnl||0,paid_amount:s.paidAmount||0,payment_status:s.paymentStatus||'paid',cust_name:s.custName||'Walk-in',cust_id:s.custId||null,channel:s.channel||'',payment:s.payment||'',ref:s.ref||'',notes:s.notes||'',by_user:s.by||'',created_at:new Date().toISOString()});}
@@ -4822,13 +4902,6 @@ function pushCust(cu){sbUpsert('customers',{id:cu.id,company_id:currentCo.id,nam
 function pushSup(s){sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()});}
 function pushTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString(),converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
 function updateTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,assignees:t.assignees,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:t.deliveryCostExpensed||false,converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
-async function pushUser(u){
-  const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,{method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({password:u.password||'',phone:u.phone||''})});
-  if(r.ok){const rows=await r.json();if(rows&&rows.length)return true;}
-  await sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,password:u.password||'',phone:u.phone||''});
-  return true;
-}
-
 // ════════════════════════════════════════════════════════════════════
 // SYNC — Supabase is the single source of truth.
 // Pull fresh on login. Pull fresh every 30s. Pull fresh on demand.
@@ -4885,6 +4958,7 @@ async function syncNow(showFeedback){
       const _kept=users.filter(function(r){ return !_du['users_'+String(r.id)] && !isDeleted('users',r.id); }).map(mapUser);
       if(_kept.length) D.users=_kept;
     }
+    try{ensureCategories();}catch(e){}
 
     // Push any local-only records to Supabase (offline entries)
     const sIds=new Set(sales.map(r=>String(r.id)));
@@ -4926,6 +5000,17 @@ async function syncNow(showFeedback){
     if(ss){ss.textContent='⚠ Offline';setTimeout(()=>{if(ss)ss.textContent='';},3000);}
     const _sb2=document.getElementById('sync-btn'); if(_sb2) _sb2.classList.remove('syncing');
   }
+}
+
+async function pushUser(u){
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,
+      {method:'PATCH',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+       body:JSON.stringify({name:u.name,role:u.role,category:u.category||'',password:u.password||'',phone:u.phone||''})});
+    if(r.ok){const rows=await r.json(); if(rows&&rows.length) return true;}
+  }catch(e){}
+  try{ await sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,category:u.category||'',password:u.password||'',phone:u.phone||''}); }catch(e){}
+  return true;
 }
 
 let _syncTimer=null;
@@ -4993,6 +5078,7 @@ async function tryLogin(){
 }
 
 function doLogin(user){
+  try{ensureCategories();}catch(e){}
   currentUser=user;
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
