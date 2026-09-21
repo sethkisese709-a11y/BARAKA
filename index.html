@@ -2104,7 +2104,7 @@ function ensureCategories(){
   if(fixed.length){
     try{ saveD(); }catch(e){}
     if(typeof currentCo!=='undefined'&&currentCo&&typeof pushUser==='function'){
-      fixed.forEach(function(u){ try{ pushUser(u); }catch(e){} });
+      fixed.forEach(function(u){ try{ patchUser(u,{role:u.role}).then(function(){patchUserCategory(u);}); }catch(e){} });
     }
   }
   return fixed.length>0;
@@ -2684,8 +2684,12 @@ function changeCategory(uid,cat){
   u.category=cat; u.role=catToRole(cat);
   logA('team','Category: '+u.name+' \u2192 '+cat);
   try{ auditLog('team',uid,'category_changed',u.name+': '+oldCat+' \u2192 '+cat+' by '+currentUser.name); }catch(e){}
-  saveD(); pushUser&&pushUser(u); renderTeam();
-  try{ toast('\u2713 '+u.name+' is now '+cat); }catch(e){}
+  saveD(); renderTeam();
+  patchUser(u,{role:u.role}).then(function(res){
+    patchUserCategory(u);
+    if(res.ok) toast('\u2713 '+u.name+' is now '+cat);
+    else toast(u.name+' changed on this device only ('+res.reason+'). Retrying on next sync.','warn',7000);
+  });
 }
 
 // ── Recurring (basic) ─────────────────────────────────────────────────────────
@@ -4956,8 +4960,11 @@ async function syncNow(showFeedback){
     if(users.length){
       const _du=D.deletedIds||{};
       const _kept=users.filter(function(r){ return !_du['users_'+String(r.id)] && !isDeleted('users',r.id); }).map(mapUser);
+      const _pend=D._pendingUser||{};
+      _kept.forEach(function(u){ if(_pend[u.id]) Object.assign(u,_pend[u.id]); });
       if(_kept.length) D.users=_kept;
     }
+    try{ Object.keys(D._pendingUser||{}).forEach(function(id){ const pu=D.users.find(function(x){return String(x.id)===String(id);}); if(pu) patchUser(pu,D._pendingUser[id]); else delete D._pendingUser[id]; }); }catch(e){}
     try{ensureCategories();}catch(e){}
     try{
       if(currentUser){
@@ -5037,6 +5044,44 @@ async function pushUser(u){
   // Category separately and optionally — if the column is missing this simply fails quietly
   try{ await fetch(url,{method:'PATCH',headers:H,body:JSON.stringify({category:u.category||''})}); }catch(e){}
   return saved;
+}
+
+// Save specific fields for one member, then read the cloud back to confirm.
+// While unconfirmed, the change is held as "pending" so a sync can't undo it.
+async function patchUser(u,fields){
+  if(!D._pendingUser) D._pendingUser={};
+  D._pendingUser[u.id]=Object.assign(D._pendingUser[u.id]||{},fields);
+  try{ saveD(); }catch(e){}
+  const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+  const url=SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id;
+  let reason='';
+  try{
+    const r=await fetch(url,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json','Prefer':'return=representation'},H),body:JSON.stringify(fields)});
+    if(!r.ok){ reason='Supabase '+r.status+' '+(await r.text().catch(function(){return '';})).slice(0,120); }
+    else{
+      const rows=await r.json().catch(function(){return [];});
+      if(!rows||!rows.length){ // member not in the cloud yet: create the full row
+        await sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,password:u.password||'',phone:u.phone||''});
+      }
+    }
+  }catch(e){ reason='no connection'; }
+  let ok=false;
+  try{
+    const g=await fetch(url,{headers:H});
+    if(g.ok){
+      const row=((await g.json())||[])[0];
+      ok=!!row&&Object.keys(fields).every(function(k){return String(row[k]==null?'':row[k])===String(fields[k]==null?'':fields[k]);});
+      if(!ok&&!reason) reason=row?'the cloud did not accept the change':'member not found in the cloud';
+    } else if(!reason){ reason='Supabase '+g.status; }
+  }catch(e){ if(!reason) reason='no connection'; }
+  if(ok){ delete D._pendingUser[u.id]; try{ saveD(); }catch(e){} }
+  return {ok:ok,reason:reason};
+}
+// Category column is optional: best effort, never blocks anything
+function patchUserCategory(u){
+  try{ fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,{method:'PATCH',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({category:u.category||''})}).catch(function(){}); }catch(e){}
 }
 
 let _syncTimer=null;
@@ -5155,8 +5200,11 @@ function saveNewPw(){
   saveD(); renderPwMgmt();
   try{ auditLog('team',uid,'password_changed','Password changed for '+u.name+' by '+currentUser.name); }catch(e){}
   document.getElementById('setpw-modal').classList.remove('open');
-  pushUser(u).then(function(){ toast('\u2713 Password updated for '+u.name); })
-             .catch(function(){ toast('Saved here \u2014 will sync when online','info'); });
+  toast('Saving password\u2026','info',1500);
+  patchUser(u,{password:pw}).then(function(res){
+    if(res.ok) toast('\u2713 Password updated for '+u.name+' on all devices');
+    else toast('Saved on this device only ('+res.reason+'). Retrying on next sync.','warn',7000);
+  });
 }
 
 async function deleteTask(taskId){
@@ -5209,6 +5257,14 @@ function applyDark(){
   const k=document.querySelector('#dark-btn .knob');
   if(k) k.innerHTML=icon(dark?'moon':'sun',15);
 }
+function toast(msg,type,dur){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;transition:opacity .25s';document.body.appendChild(t);}
+  const col={success:'background:var(--black);color:#fff',error:'background:var(--red);color:#fff',info:'background:var(--blue);color:#fff',warn:'background:var(--amber);color:#fff'}[type||'success']||'background:var(--black);color:#fff';
+  t.innerHTML=`<div style="${col};padding:10px 20px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.18)">${msg}</div>`;
+  t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},dur||2800);
+}
+
 
 
 // WA notification
@@ -5237,7 +5293,7 @@ function openWAModal(task){
 }
 function sendWhatsApp(){if(!_waTask)return;const url=_waTask._phone?'https://wa.me/'+_waTask._phone.replace(/^0/,'254')+'?text='+encodeURIComponent(_waTask._msg):'https://wa.me/?text='+encodeURIComponent(_waTask._msg);window.open(url,'_blank');document.getElementById('wa-modal').classList.remove('open');}
 
-async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;const ph=prompt('WhatsApp for '+u.name,u.phone||'');if(ph===null)return;u.phone=ph.trim();saveD();renderPwMgmt();pushUser(u).then(()=>toast('✓ Number saved on all devices'));}
+async function editPhone(uid){const u=D.users.find(x=>x.id===uid);if(!u)return;const ph=prompt('WhatsApp for '+u.name,u.phone||'');if(ph===null)return;u.phone=ph.trim();saveD();renderPwMgmt();patchUser(u,{phone:u.phone}).then(function(res){toast(res.ok?'✓ Number saved on all devices':'Saved on this device only ('+res.reason+')',res.ok?'success':'warn',res.ok?2800:6000);});}
 
 
 
