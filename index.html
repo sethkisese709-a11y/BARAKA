@@ -1204,6 +1204,59 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
 .cat-sel{font:inherit;font-size:12px;font-weight:600;padding:5px 8px;border-radius:8px;
   border:1px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer}
 .cat-sel:disabled{opacity:.6;cursor:not-allowed}
+
+/* ── Delivery → sale / rider fee queues ───────────────────────────────── */
+#ops-queue{border-color:var(--green)!important;box-shadow:0 0 0 3px var(--green-bg),var(--shadow-sm)!important}
+.q-head{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:.35rem}
+.q-count{font-size:11.5px;font-weight:700;color:var(--green);background:var(--green-bg);padding:3px 9px;border-radius:999px}
+.q-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border)}
+.q-row:first-of-type{border-top:none}
+.q-main{min-width:0;flex:1}
+.q-title{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+.q-tk{font-size:11px;font-weight:600;color:var(--text3);margin-left:4px}
+.q-sub{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-side{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.q-amt{font-size:15px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.rf-side input.rf-amt{width:96px!important;padding:6px 9px!important;font-weight:700;text-align:right}
+.rf-side select.rf-method{width:auto!important;padding:6px 8px!important}
+.done-badge{width:54px;height:54px;border-radius:50%;margin:0 auto .6rem;display:flex;align-items:center;justify-content:center;background:var(--green-bg);color:var(--green)}
+.done-sec{font-size:12px;font-weight:700;color:var(--green);margin:.4rem 0 .5rem}
+.hint{font-size:11.5px;color:var(--text2);margin-top:5px}
+.opt{font-weight:400;color:var(--text3)}
+.form-err{color:var(--red);font-size:12.5px;font-weight:600;min-height:1em;margin:.2rem 0 .6rem}
+.cv-items{margin:.55rem 0 .2rem;border-top:1px dashed var(--border2);padding-top:.45rem}
+.cv-items div{display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0}
+.cv-items em{color:var(--amber);font-style:normal;font-size:11.5px}
+.cv-note{font-size:12.5px;margin-top:.45rem;padding:.5rem .65rem;border-radius:9px;background:var(--bg3)}
+@media(max-width:760px){
+  .q-row{flex-direction:column;align-items:stretch}
+  .q-side{justify-content:space-between;flex-wrap:wrap}
+  .rf-side input.rf-amt{flex:1;min-width:0}
+}
+
+.ba{background:var(--amber-bg);color:var(--amber)}
+
+/* Pop-ups sit above the phone tab bar, and the bar steps aside while one is open */
+.modal-bg{z-index:900!important}
+body:has(.modal-bg.open) #mobile-tabs{display:none!important}
+@media(max-width:760px){ .hide-m{display:none} }
+
+
+/* ── Button variants: must win over the base Daylight .btn rule (which uses !important) ── */
+.btn.primary{background:var(--text)!important;color:var(--bg)!important;border-color:var(--text)!important}
+.btn.primary:hover{background:var(--black2)!important;border-color:var(--black2)!important;color:var(--bg)!important}
+.btn.success{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+.btn.success:hover{background:var(--green)!important;color:#fff!important;filter:brightness(1.08)!important}
+.btn.danger{background:var(--red-bg)!important;color:var(--red)!important;border-color:transparent!important}
+.btn.danger:hover{background:var(--red)!important;color:#fff!important}
+.btn.wa{background:#25D366!important;color:#fff!important;border-color:#25D366!important}
+.btn.wa:hover{background:#1FB85A!important;border-color:#1FB85A!important;color:#fff!important}
+.btn.accent{background:var(--purple-bg)!important;color:var(--purple)!important;border-color:transparent!important}
+.btn.accent:hover{background:var(--purple)!important;color:#fff!important}
+.btn.ghost{background:transparent!important;border-color:transparent!important;box-shadow:none!important;color:var(--text2)!important}
+.btn.ghost:hover{background:var(--bg3)!important;color:var(--text)!important}
+body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1273,9 +1326,9 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
       <div><div style="font-size:12px;font-weight:600;color:var(--text)" id="top-name"></div><span class="badge" id="top-role"></span></div>
     </div>
     <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,0.45);margin-right:4px;letter-spacing:.04em;cursor:pointer" onclick="syncNow(true)" title="Tap to sync"></span><span id="health-dot" title="Supabase connection" style="width:7px;height:7px;border-radius:50%;background:#666;display:inline-block;margin-right:4px;flex-shrink:0"></span><button type="button" class="swbtn" onclick="showExportMenu()" title="Export data" style="padding:4px 8px;margin-right:4px"><i data-ic="download"></i></button><button type="button" class="swbtn" onclick="syncNow(true)" title="Sync now">⟳</button><div style="position:relative;margin-right:4px">
-    <input id="global-search-input" type="text" placeholder="🔍 Search…" oninput="globalSearch(this.value)" onfocus="document.getElementById('search-results-drop').style.display='block'" onblur="setTimeout(()=>{document.getElementById('search-results-drop').style.display='none'},200)" style="font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;width:130px;outline:none" autocomplete="off">
+    <input id="global-search-input" type="text" placeholder="Search…" oninput="globalSearch(this.value)" onfocus="document.getElementById('search-results-drop').style.display='block'" onblur="setTimeout(()=>{document.getElementById('search-results-drop').style.display='none'},200)" style="font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;width:130px;outline:none" autocomplete="off">
     <div id="search-results-drop" style="display:none;position:absolute;top:110%;right:0;width:320px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:9999;max-height:380px;overflow-y:auto"></div>
-  </div><button type="button" id="dark-btn" class="theme-tog" onclick="toggleDark()" title="Switch light / dark" aria-label="Switch light or dark theme"><span class="knob"><i data-ic="sun" data-sz="15"></i></span></button><button type="button" class="swbtn" id="notif-btn" onclick="toggleNotifPanel()" title="Activity" style="position:relative"><i data-ic="bell"></i><span id="notif-badge" style="display:none;position:absolute;top:1px;right:1px;width:7px;height:7px;background:#e53935;border-radius:50%"></span></button><button type="button" class="swbtn" onclick="lockOut()"><i data-ic="lock" data-sz="16"></i> Lock</button>
+  </div><button type="button" id="dark-btn" class="theme-tog" onclick="toggleDark()" title="Switch light / dark" aria-label="Switch light or dark theme"><span class="knob"><i data-ic="sun" data-sz="15"></i></span></button><button type="button" class="swbtn" id="notif-btn" onclick="toggleNotifPanel()" title="Activity" style="position:relative"><i data-ic="bell"></i><span id="notif-badge" style="display:none;position:absolute;top:1px;right:1px;width:7px;height:7px;background:#e53935;border-radius:50%"></span></button><button type="button" class="swbtn" onclick="lockOut()" aria-label="Lock" title="Lock"><i data-ic="lock" data-sz="16"></i><span class="hide-m"> Lock</span></button>
   </div>
   <div id="due-alerts"></div>
   <div class="nav" id="main-nav"></div>
@@ -1287,6 +1340,7 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
     <div id="low-stock-alert-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);margin-bottom:12px;font-size:12px;color:#7a5c00"></div>
     <div id="exp-budget-alerts" style="display:none;padding:8px 12px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);font-size:11px;margin-bottom:.75rem"></div>
     <div id="dash-greeting" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem;padding-top:.25rem"></div>
+    <div class="card" id="ops-queue" style="display:none"></div>
     <div id="low-stock-alert-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);margin-bottom:12px;font-size:12px;color:#7a5c00"></div>
     <div class="dash-header">
       <div class="dash-title" id="dash-period-label">This month</div>
@@ -1415,6 +1469,7 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
 
   <!-- SALES -->
   <div id="pg-sales" class="page">
+    <div class="card" id="sales-deliv-queue" style="display:none"></div>
     <div class="card">
       <div class="ct">Record a sale</div>
       <div class="fg">
@@ -1687,32 +1742,36 @@ body.dark .skel::after{background:linear-gradient(90deg,transparent,rgba(255,255
   <!-- MARK DONE MODAL -->
   <div class="modal-bg" id="done-modal" onclick="if(event.target===this)this.classList.remove('open')">
     <div class="modal">
-      <button type="button" class="mc-close" onclick="document.getElementById('done-modal').classList.remove('open')"><i data-ic="trash"></i></button>
+      <button type="button" class="mc-close" onclick="document.getElementById('done-modal').classList.remove('open')" aria-label="Close"><i data-ic="x"></i></button>
       <div style="text-align:center;margin-bottom:1.1rem">
-        <div style="font-size:48px;margin-bottom:.5rem">✅</div>
-        <div class="ct" style="margin-bottom:4px">Mark task as done</div>
-        <div style="font-size:12px;color:var(--text2)" id="done-task-title"></div>
+        <div class="done-badge"><i data-ic="check" data-sz="26"></i></div>
+        <div class="ct" style="margin-bottom:4px;justify-content:center">Mark task as done</div>
+        <div style="font-size:12.5px;color:var(--text2)" id="done-task-title"></div>
+      </div>
+      <div id="done-deliv" style="display:none">
+        <div class="done-sec">Payment from the client</div>
+        <div class="fg">
+          <div class="fl"><label>Amount collected (KES)</label><input type="number" id="done-amount" min="0" inputmode="numeric" placeholder="0"></div>
+          <div class="fl"><label>Client paid via</label>
+            <select id="done-collect-method" onchange="doneMethodChanged()">
+              <option>M-Pesa</option><option>Cash</option><option>Bank transfer</option><option value="none">Not paid yet</option>
+            </select></div>
+          <div class="fl ff" id="done-ref-row"><label>M-Pesa code <span class="opt">(optional)</span></label><input type="text" id="done-ref" autocapitalize="characters" placeholder="e.g. SJ47XK2P9Q"></div>
+        </div>
+        <div class="done-sec">Your delivery fee</div>
+        <div class="fg">
+          <div class="fl ff"><label>What you should be paid for this trip (KES)</label>
+            <input type="number" id="done-delivery-cost" min="0" inputmode="numeric" placeholder="e.g. 500">
+            <div class="hint">The office confirms this before it's paid. Enter 0 if there's no fee.</div></div>
+        </div>
       </div>
       <div class="fg">
-        <div class="fl ff">
-          <label>Completion note <span style="font-size:10px;color:var(--text2)">(optional)</span></label>
-          <textarea id="done-note" placeholder="e.g. Delivered and collected KES 15,000. Client received goods." style="min-height:70px"></textarea>
-        </div>
-        <div class="fl ff" id="done-payment-row" style="display:none">
-          <label>Amount collected on delivery (KES)</label>
-          <input type="number" id="done-amount" placeholder="e.g. 15000">
-        </div>
-        <div class="fl" id="done-delivery-cost-row" style="display:none">
-          <label>Your delivery cost (KES) <span style="font-size:10px;color:var(--text2)">fuel, transport etc.</span></label>
-          <input type="number" id="done-delivery-cost" placeholder="e.g. 500">
-        </div>
-        <div class="fl" id="done-delivery-method-row" style="display:none">
-          <label>Paid via</label>
-          <select id="done-delivery-method"><option>Cash</option><option>M-Pesa</option><option>Fuel card</option><option>Reimbursed</option></select>
-        </div>
+        <div class="fl ff"><label>Note <span class="opt">(optional)</span></label>
+          <textarea id="done-note" placeholder="e.g. Client received goods in good condition." style="min-height:64px"></textarea></div>
       </div>
+      <div id="done-error" class="form-err"></div>
       <div class="br">
-        <button type="button" class="btn success block" onclick="confirmDone()"><i data-ic="check" data-sz="15"></i> Confirm — Task done</button>
+        <button type="button" class="btn success block" onclick="confirmDone()"><i data-ic="check" data-sz="15"></i> Confirm — task done</button>
       </div>
     </div>
   </div>
@@ -2110,6 +2169,153 @@ function ensureCategories(){
   return fixed.length>0;
 }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// DELIVERY → SALE + RIDER FEE PIPELINE
+// Rider completes a delivery once; the sale and the fee then wait for the
+// office to confirm. Nothing is filed until a person confirms it.
+// ════════════════════════════════════════════════════════════════════════════
+function isDeliveryTask(t){ return !!t && (t.type==='dispatch'||t.type==='collection'||(t.amountOnDelivery||0)>0); }
+function canConfirmOps(){ return !!currentUser && ['owner','manager','staff'].indexOf(currentUser.role)>=0; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];}); }
+
+// "Office chair x2, Shoe rack x1" → matched against inventory for price and cost
+function parseTaskItems(t){
+  const raw=(t&&t.items)||''; if(!raw) return [];
+  return raw.split(/\s*,\s*/).filter(Boolean).map(function(part){
+    const m=part.match(/^(.*?)\s*[x×]\s*(\d+)\s*$/i);
+    const name=(m?m[1]:part).trim(), qty=m?parseInt(m[2],10):1;
+    const inv=(D.inventory||[]).find(function(i){return (i.name||'').trim().toLowerCase()===name.toLowerCase();});
+    return {name:name,qty:qty,found:!!inv,pid:inv?inv.id:'',price:inv?(inv.sell||0):0,cost:inv?(inv.cost||0):0};
+  });
+}
+
+// How the client paid travels inside the completion note, so it syncs through
+// columns Supabase already has: "… · Client paid via M-Pesa (QWE12ABC)"
+function parseCollect(t){
+  const n=(t&&t.completionNote)||'';
+  if(/Client has not paid yet/i.test(n)) return {method:'',ref:'',unpaid:true};
+  const m=n.match(/Client paid via ([A-Za-z\- ]+?)(?: \(([^)]+)\))?(?:\s*·|$)/);
+  return m?{method:m[1].trim(),ref:(m[2]||'').trim(),unpaid:false}:{method:'',ref:'',unpaid:false};
+}
+
+function pendingDeliverySales(){ return (D.tasks||[]).filter(function(t){return isDeliveryTask(t)&&t.status==='done'&&!t.convertedToSale;}); }
+function pendingRiderFees(){ return (D.tasks||[]).filter(function(t){return (t.deliveryCost||0)>0&&!t.deliveryCostExpensed;}); }
+
+function doneDate(t){ return (t.completedAt||'').substring(0,10)||t.date||today(); }
+function shortDate(d){ try{ const x=new Date(d+'T00:00'); if(isNaN(x)) return d; return x.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){ return d; } }
+
+// ── Shared list renderers (dashboard, Sales tab, Accounts tab) ──────────────
+function deliveryQueueHTML(limit){
+  const list=pendingDeliverySales(); if(!list.length) return '';
+  const rows=list.slice(0,limit||list.length).map(function(t){
+    const pc=parseCollect(t), exp=t.amountOnDelivery||0, got=t.amountCollected||0;
+    const status=pc.unpaid||got===0?'<span class="badge be">Unpaid</span>':(exp&&got<exp?'<span class="badge ba">Part paid</span>':'<span class="badge bi">Paid</span>');
+    return '<div class="q-row">'
+      +'<div class="q-main"><div class="q-title">'+esc(t.clientName||'Walk-in')+' <span class="q-tk">'+esc(t.ticketNo||'')+'</span></div>'
+      +'<div class="q-sub">'+esc(t.items||t.title)+'</div>'
+      +'<div class="q-sub">'+esc(t.assignee)+' · '+shortDate(doneDate(t))+(pc.method?' · '+esc(pc.method)+(pc.ref?' '+esc(pc.ref):''):'')+'</div></div>'
+      +'<div class="q-side"><div class="q-amt">'+fmt(got||exp)+'</div>'+status
+      +'<button type="button" class="btn bsm success" onclick="openConvertModal('+t.id+')"><i data-ic="check" data-sz="14"></i> Review</button></div>'
+      +'</div>';
+  }).join('');
+  const more=limit&&list.length>limit?'<button type="button" class="linkbtn" onclick="goPage(\'sales\')">See all '+list.length+'</button>':'';
+  return rows+more;
+}
+
+function riderFeesHTML(limit){
+  const list=pendingRiderFees(); if(!list.length) return '';
+  return list.slice(0,limit||list.length).map(function(t){
+    return '<div class="q-row rf-row" data-id="'+t.id+'">'
+      +'<div class="q-main"><div class="q-title">'+esc(t.assignee)+' <span class="q-tk">'+esc(t.ticketNo||'')+'</span></div>'
+      +'<div class="q-sub">'+esc(t.clientName?t.clientName+' · ':'')+esc(t.location||t.title)+' · '+shortDate(doneDate(t))+'</div>'
+      +'<div class="q-sub">Rider asked for '+fmt(t.deliveryCost)+'</div></div>'
+      +'<div class="q-side rf-side">'
+      +'<input type="number" class="rf-amt" min="0" value="'+(t.deliveryCost||0)+'" aria-label="Fee to pay">'
+      +'<select class="rf-method" aria-label="Pay rider by"><option>M-Pesa</option><option>Cash</option></select>'
+      +'<button type="button" class="btn bsm success" onclick="confirmRiderFee('+t.id+',this)"><i data-ic="check" data-sz="14"></i> Confirm</button>'
+      +'<button type="button" class="linkbtn" onclick="skipRiderFee('+t.id+')" title="No fee for this trip">No fee</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+// ── Owner / manager: "Waiting for you" on the dashboard ─────────────────────
+function renderOpsQueue(){
+  const el=document.getElementById('ops-queue'); if(!el) return;
+  const exec=currentUser&&(currentUser.role==='owner'||currentUser.role==='manager');
+  const nS=pendingDeliverySales().length, nF=pendingRiderFees().length;
+  if(!exec||(!nS&&!nF)){ el.style.display='none'; el.innerHTML=''; return; }
+  const feeTotal=pendingRiderFees().reduce(function(a,t){return a+(t.deliveryCost||0);},0);
+  el.style.display='block';
+  el.innerHTML='<div class="ct"><i class="ct-ic" data-ic="bell" data-sz="16"></i> Waiting for you</div>'
+    +(nS?'<div class="q-head"><span>Deliveries to confirm as sales</span><span class="q-count">'+nS+'</span></div>'+deliveryQueueHTML(4):'')
+    +(nF?'<div class="q-head" style="margin-top:'+(nS?'1.1rem':'0')+'"><span>Rider fees to confirm</span><span class="q-count">'+nF+' · '+fmt(feeTotal)+'</span></div>'
+      +riderFeesHTML(5)
+      +(nF>1?'<div style="display:flex;justify-content:flex-end;margin-top:.6rem"><button type="button" class="btn bsm" onclick="confirmAllRiderFees(this)"><i data-ic="check" data-sz="14"></i> Confirm all fees</button></div>':''):'');
+  try{ paintIcons(el); }catch(e){}
+}
+
+// ── Sales tab: full list of deliveries waiting to become sales ──────────────
+function renderSalesDeliveryQueue(){
+  const el=document.getElementById('sales-deliv-queue'); if(!el) return;
+  const n=pendingDeliverySales().length;
+  if(!canConfirmOps()||!n){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  el.innerHTML='<div class="ct"><i class="ct-ic" data-ic="truck" data-sz="16"></i> Completed deliveries to confirm <span class="q-count" style="margin-left:auto">'+n+'</span></div>'
+    +'<div style="font-size:12.5px;color:var(--text2);margin:-.5rem 0 .6rem">Filled in by the rider. Check the details, adjust anything, then confirm to record the sale.</div>'
+    +deliveryQueueHTML();
+  try{ paintIcons(el); }catch(e){}
+}
+
+function refreshOps(){
+  try{ renderOpsQueue(); }catch(e){}
+  try{ renderSalesDeliveryQueue(); }catch(e){}
+  try{ if(document.getElementById('pg-accounts')&&document.getElementById('pg-accounts').classList.contains('on')) renderAccounts(); }catch(e){}
+  try{ if(document.getElementById('pg-sales')&&document.getElementById('pg-sales').classList.contains('on')) renderSales(); }catch(e){}
+}
+
+// ── Rider fee → expense ─────────────────────────────────────────────────────
+function confirmRiderFee(taskId,btn,silent){
+  const t=(D.tasks||[]).find(function(x){return x.id===taskId;}); if(!t||t.deliveryCostExpensed) return false;
+  const row=btn&&btn.closest?btn.closest('.rf-row'):null;
+  const amt=row?parseFloat(row.querySelector('.rf-amt').value):t.deliveryCost;
+  const method=row?row.querySelector('.rf-method').value:'M-Pesa';
+  if(isNaN(amt)||amt<0){ toast('Enter a valid fee','warn'); return false; }
+  const asked=t.deliveryCost||0;
+  if(amt===0){ return skipRiderFee(taskId,silent); }
+  const exp={id:Date.now()+Math.floor(Math.random()*1000),ticketNo:nextTicketNo('expense'),date:doneDate(t),amount:amt,
+    cat:'Transport / delivery',vendor:t.assignee,ref:t.ticketNo||'',paymethod:method,
+    notes:'Rider fee: '+(t.title||'')+(t.clientName?' — '+t.clientName:'')+(amt!==asked?' (rider asked '+fmt(asked)+')':''),
+    by:currentUser.name,supId:'',supName:'',evidence:null};
+  D.expenses.unshift(exp);
+  t.deliveryCost=amt; t.deliveryMethod=method; t.deliveryCostExpensed=true; t.deliveryCostExpenseId=exp.id;
+  try{ auditLog('expense',exp.id,'created','['+exp.ticketNo+'] Rider fee '+fmt(amt)+' for '+t.assignee+' ('+(t.ticketNo||'')+')'+(amt!==asked?', adjusted from '+fmt(asked):'')); }catch(e){}
+  logA('expense','Rider fee: '+t.assignee+' '+fmt(amt));
+  saveD(); pushExp(exp); updateTask(t);
+  try{ popMonths(); }catch(e){}
+  if(!silent){ toast('\u2713 '+fmt(amt)+' for '+t.assignee+' added to expenses'); refreshOps(); }
+  return true;
+}
+function skipRiderFee(taskId,silent){
+  const t=(D.tasks||[]).find(function(x){return x.id===taskId;}); if(!t) return false;
+  if(!silent&&!confirm('Mark this trip as having no fee for '+t.assignee+'? Nothing will be added to expenses.')) return false;
+  const asked=t.deliveryCost||0;
+  t.deliveryCost=0; t.deliveryCostExpensed=true;
+  try{ auditLog('task',t.id,'fee_cleared','['+(t.ticketNo||'')+'] Rider fee cleared ('+t.assignee+' asked '+fmt(asked)+')'); }catch(e){}
+  saveD(); updateTask(t);
+  if(!silent){ toast('Fee cleared \u2014 nothing added to expenses','info'); refreshOps(); }
+  return true;
+}
+function confirmAllRiderFees(btn){
+  const rows=[].slice.call((btn&&btn.closest('#ops-queue,#acc-delivery-costs')||document).querySelectorAll('.rf-row'));
+  if(!rows.length) return;
+  const total=rows.reduce(function(a,r){return a+(parseFloat(r.querySelector('.rf-amt').value)||0);},0);
+  if(!confirm('Add '+rows.length+' rider fees totalling '+fmt(total)+' to expenses?')) return;
+  let n=0; rows.forEach(function(r){ if(confirmRiderFee(+r.dataset.id,r.querySelector('button'),true)) n++; });
+  toast('\u2713 '+n+' rider fee'+(n===1?'':'s')+' added to expenses ('+fmt(total)+')');
+  refreshOps();
+}
+
 function paintIcons(root){(root||document).querySelectorAll('i[data-ic]:not([data-done])').forEach(function(el){var n=el.getAttribute('data-ic');var s=el.getAttribute('data-sz');if(ICONS[n]){el.innerHTML=icon(n,s?+s:18);el.setAttribute('data-done','1');}});}
 var _paintObs=new MutationObserver(function(){paintIcons(document);});
 function startIconPainter(){paintIcons(document);try{_paintObs.observe(document.body,{childList:true,subtree:true});}catch(e){}}
@@ -2131,6 +2337,7 @@ function updateMonthNav(){ const months=getSortedMonths(); const isAll=dashMonth
 async function switchSub(id){ currentCo=companies.find(c=>c.id===id); let saved=loadD(id); D=saved||defD(id); ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; }); document.getElementById('top-dot').style.background=currentCo.color; document.getElementById('top-co').textContent=currentCo.name; popAll(); renderDash(); checkDue(); }
 
 function renderDash(){
+  try{renderOpsQueue();}catch(e){}
   try{renderStaffCheckin();}catch(e){}
   try{checkExpBudgetAlerts();}catch(e){}
   try{renderTargetBars();}catch(e){}
@@ -2504,7 +2711,7 @@ function addSale(){
   toast('✓ Sale saved — form reset');
 }
 function renderSales(){ const mo=(document.getElementById('sf-mo')||{}).value||'all'; const ps=(document.getElementById('sf-ps')||{}).value||'all'; const ch=(document.getElementById('sf-ch')||{}).value||'all'; const pay=(document.getElementById('sf-pay')||{}).value||'all'; let rows=D.sales; if(mo!=='all') rows=rows.filter(r=>r.date.startsWith(mo)); if(ps!=='all') rows=rows.filter(r=>r.paymentStatus===ps); if(ch!=='all') rows=rows.filter(r=>r.channel===ch); if(pay!=='all') rows=rows.filter(r=>r.payment===pay);   rows=[...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td style="font-family:monospace;font-size:10px;font-weight:700;color:var(--text2)">${r.ticketNo||'—'}</td><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button type="button" class="del" onclick="openPU(${r.id})" title="Edit payment"><i data-ic="edit"></i></button><button type="button" class="del" onclick="openReceipt(${r.id})" title="Receipt" style="background:var(--bg2);color:var(--text)"><i data-ic="receipt"></i></button><button type="button" class="del" onclick="shareReceiptViaWA(${r.id})" title="WhatsApp receipt" style="background:#d4f5df;color:#1a7a3c"><i data-ic="chat"></i></button>${r.paymentStatus!=='paid'?`<button type="button" class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)"><i data-ic="wallet"></i></button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button type="button" class="del warn" onclick="delR('sales',${r.id})"><i data-ic="x"></i></button>`:''}</td></tr>`; }).join(''):`${emptyState('receipt','No sales yet','Recorded sales will appear here',14)}`; }
+  document.getElementById('s-tbody').innerHTML=rows.length?rows.map(r=>{ const bal=r.amount-(r.paidAmount||0); const cls=r.paymentStatus==='overdue'?'overdue-row':r.paymentStatus==='pending'||r.paymentStatus==='partial'?'pending-row':''; return`<tr class="${cls}"><td style="font-family:monospace;font-size:10px;font-weight:700;color:var(--text2)">${r.ticketNo||'—'}</td><td>${r.date}</td><td style="max-width:130px;font-size:11px">${(r.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td style="color:var(--green);font-weight:600">${fmt(r.amount)}</td><td style="color:var(--text2)">${r.cost?fmt(r.cost):'—'}</td><td class="${(r.pnl||0)>0?'pnl-pos':'pnl-neg'}">${r.pnl?fmt(r.pnl):'—'}</td><td style="color:var(--blue);font-weight:500">${fmt(r.paidAmount||0)}</td><td style="color:${bal>0?'var(--red)':'var(--text2)'}">${bal>0?fmt(bal):'—'}</td><td><span class="badge ${psC(r.paymentStatus)}">${psL(r.paymentStatus)}</span>${can('del')?`<button type="button" class="del" onclick="openPU(${r.id})" title="Edit payment"><i data-ic="edit"></i></button><button type="button" class="del" onclick="openReceipt(${r.id})" title="Receipt" style="background:var(--bg2);color:var(--text)"><i data-ic="receipt"></i></button><button type="button" class="del" onclick="shareReceiptViaWA(${r.id})" title="WhatsApp receipt" style="background:#d4f5df;color:#1a7a3c"><i data-ic="chat"></i></button>${r.paymentStatus!=='paid'?`<button type="button" class="del" onclick="openMP(${r.id})" title="Record payment" style="color:var(--green)"><i data-ic="wallet"></i></button>`:''}`:''}</td><td style="font-size:11px">${r.custName||'—'}</td><td>${r.channel?`<span class="badge ${chC(r.channel)}">${r.channel}</span>`:'—'}</td><td><span class="badge bg">${r.payment||'—'}</span></td><td class="evref">${r.ref||'—'}</td><td><span class="badge bp">${r.by||'—'}</span></td><td>${can('del')?`<button type="button" class="del warn" onclick="delR('sales',${r.id})"><i data-ic="x"></i></button>`:''}</td></tr>`; }).join(''):`${emptyState('receipt','No sales yet','Recorded sales will appear here',14)}`;  try{renderSalesDeliveryQueue();}catch(e){} }
 function openPU(id){ puId=id; const s=D.sales.find(x=>x.id===id); document.getElementById('pu-st').value=s.paymentStatus||'paid'; document.getElementById('pu-pa').value=s.paidAmount||0; document.getElementById('pu-ref').value=s.ref||''; document.getElementById('pu-modal').classList.add('open'); }
 function confirmPU(){ const s=D.sales.find(x=>x.id===puId); if(!s) return; s.paymentStatus=document.getElementById('pu-st').value; s.paidAmount=s.paymentStatus==='paid'?s.amount:parseFloat(document.getElementById('pu-pa').value)||0; if(document.getElementById('pu-ref').value) s.ref=document.getElementById('pu-ref').value; auditLog('sale',s.id,'payment_updated','Status → '+psL(s.paymentStatus)+' | paid '+fmt(s.paidAmount||0)+' of '+fmt(s.amount)); logA('payment','Updated: '+psL(s.paymentStatus)+' '+fmt(s.amount)); saveD(); pushSale(s); renderSales(); renderDash(); document.getElementById('pu-modal').classList.remove('open'); toast('✓ Payment updated'); }
 
@@ -3028,40 +3235,64 @@ function openDoneModal(taskId){
   doneTaskId=taskId;
   const task=D.tasks.find(t=>t.id===taskId);
   if(!task) return;
-  document.getElementById('done-task-title').textContent=task.title;
+  const deliv=isDeliveryTask(task);
+  document.getElementById('done-task-title').textContent=(task.ticketNo?task.ticketNo+' · ':'')+task.title+(task.clientName?' — '+task.clientName:'');
+  document.getElementById('done-deliv').style.display=deliv?'block':'none';
   document.getElementById('done-note').value='';
+  document.getElementById('done-error').textContent='';
   document.getElementById('done-amount').value='';
-  // Show collect field only if there's an amount on delivery
-  document.getElementById('done-payment-row').style.display=task.amountOnDelivery>0?'flex':'none';
-  if(task.amountOnDelivery>0) document.getElementById('done-amount').placeholder='e.g. '+task.amountOnDelivery.toLocaleString();
-  const isDeliveryTask=task.type==='dispatch'||task.type==='collection';
-  document.getElementById('done-delivery-cost-row').style.display=isDeliveryTask?'flex':'none';
-  document.getElementById('done-delivery-method-row').style.display=isDeliveryTask?'flex':'none';
-  if(!isDeliveryTask){ 
-    const dcEl=document.getElementById('done-delivery-cost'); if(dcEl) dcEl.value='';
-  }
+  document.getElementById('done-amount').placeholder=task.amountOnDelivery?'Expected '+Number(task.amountOnDelivery).toLocaleString():'0';
+  document.getElementById('done-collect-method').value='M-Pesa';
+  document.getElementById('done-ref').value='';
+  document.getElementById('done-delivery-cost').value='';
+  doneMethodChanged();
   document.getElementById('done-modal').classList.add('open');
+  try{ paintIcons(document.getElementById('done-modal')); }catch(e){}
+}
+function doneMethodChanged(){
+  const m=document.getElementById('done-collect-method').value;
+  document.getElementById('done-ref-row').style.display=m==='M-Pesa'?'':'none';
+  const a=document.getElementById('done-amount');
+  if(m==='none'){ a.value='0'; a.disabled=true; } else { a.disabled=false; if(a.value==='0') a.value=''; }
 }
 function confirmDone(){
   if(!doneTaskId) return;
   const task=D.tasks.find(t=>t.id===doneTaskId); if(!task) return;
+  const err=document.getElementById('done-error');
+  const deliv=isDeliveryTask(task);
+  let note=document.getElementById('done-note').value.trim();
+  if(deliv){
+    const method=document.getElementById('done-collect-method').value;
+    const amtRaw=document.getElementById('done-amount').value.trim();
+    const feeRaw=document.getElementById('done-delivery-cost').value.trim();
+    if(method!=='none'&&amtRaw===''){ err.textContent='Enter the amount you collected from the client.'; document.getElementById('done-amount').focus(); return; }
+    if(feeRaw===''){ err.textContent='Enter your delivery fee (enter 0 if there is none).'; document.getElementById('done-delivery-cost').focus(); return; }
+    const amt=parseFloat(amtRaw)||0, fee=parseFloat(feeRaw)||0;
+    if(amt<0||fee<0){ err.textContent='Amounts cannot be negative.'; return; }
+    const ref=document.getElementById('done-ref').value.trim().toUpperCase();
+    task.amountCollected=method==='none'?0:amt;
+    task.deliveryCost=fee;
+    task.deliveryCostExpensed=fee===0;          // nothing to confirm when there is no fee
+    task.convertedToSale=false;
+    const payLine=method==='none'?'Client has not paid yet':'Client paid via '+method+(ref&&method==='M-Pesa'?' ('+ref+')':'');
+    note=note?note+' · '+payLine:payLine;
+  }
+  err.textContent='';
   task.status='done';
   task.completedAt=new Date().toISOString();
-  task.completionNote=document.getElementById('done-note').value.trim();
-  task.amountCollected=parseFloat(document.getElementById('done-amount').value)||0;
-  task.deliveryCost=parseFloat(document.getElementById('done-delivery-cost')?.value)||0;
-  task.deliveryMethod=document.getElementById('done-delivery-method')?.value||'Cash';
+  task.completionNote=note;
   task.statusHistory=task.statusHistory||[];
-  task.statusHistory.push({status:'done',by:currentUser.name,at:new Date().toISOString(),note:task.completionNote});
-  auditLog('task',task.id,'done','['+task.ticketNo+'] Done by '+currentUser.name+(task.completionNote?' — '+task.completionNote:''));
-  logA('task','Completed: '+task.title+(task.completionNote?' — '+task.completionNote:''));
+  task.statusHistory.push({status:'done',by:currentUser.name,at:task.completedAt,note:note});
+  auditLog('task',task.id,'done','['+task.ticketNo+'] Done by '+currentUser.name+(deliv?' — collected '+fmt(task.amountCollected)+', fee '+fmt(task.deliveryCost):'')+(note?' · '+note:''));
+  logA('task','Completed: '+task.title);
   saveD(); updateTask(task);
   document.getElementById('done-modal').classList.remove('open');
   renderTasksMetrics(); renderTasks();
-  toast('✓ Task marked done');
+  toast(deliv?'\u2713 Done \u2014 sent to the office to confirm':'\u2713 Task marked done');
   const myActive=(D.tasks||[]).filter(t=>(t.assignees||[t.assignee]).includes(currentUser.name)&&(t.status==='pending'||t.status==='in-progress')).length;
   const heading=document.getElementById('my-tasks-heading');
   if(heading) heading.textContent=myActive>0?`You have ${myActive} active task${myActive>1?'s':''}`:'All your tasks';
+  try{ refreshOps(); }catch(e){}
 }
 
 function ownerUpdateStatus(taskId, newStatus){
@@ -3629,34 +3860,15 @@ function renderAccounts(){
     <div class="mc"><div class="mc-l">Pending deliveries</div><div class="mc-v ${delivPending?'r':'g'}">${delivPending}</div></div>`;
 
   // Deliveries to convert
-  const toConvert=(D.tasks||[]).filter(t=>(t.type==='dispatch'||t.type==='collection')&&t.status==='done'&&!t.convertedToSale);
   const dEl=document.getElementById('acc-deliveries');
-  if(dEl) dEl.innerHTML=toConvert.length?toConvert.map(t=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:7px">
-      <div>
-        <div style="font-size:12px;font-weight:600">${t.typeIcon||'🚚'} ${t.title}</div>
-        <div style="font-size:11px;color:var(--text2)">${t.date} · ${t.assignee}${t.clientName?' · '+t.clientName:''}${t.amountOnDelivery?'<span style="color:var(--green);font-weight:600;margin-left:4px">'+fmt(t.amountOnDelivery)+'</span>':''}</div>
-        ${t.completionNote?`<div style="font-size:11px;color:var(--text2);font-style:italic">${t.completionNote}</div>`:''}
-        ${t.amountCollected?`<div style="font-size:11px;color:var(--green);font-weight:600">Collected: ${fmt(t.amountCollected)}</div>`:''}
-      </div>
-      ${currentUser.role==='staff'?`<button type="button" class="btn bsm primary" onclick="openConvertModal(${t.id})">+ Create sale</button>`:'<span class="badge bw">Pending</span>'}
-    </div>`).join(''):'<div class="empty">No pending deliveries.</div>';
+  if(dEl){ dEl.innerHTML=deliveryQueueHTML()||'<div class="empty"><i class="empty-ic" data-ic="check" data-sz="28"></i><div class="empty-t">All deliveries confirmed</div></div>'; }
 
-  // Delivery costs
+  // Rider fees
   const dcEl=document.getElementById('acc-delivery-costs');
   if(dcEl){
-    const pending=(D.tasks||[]).filter(t=>t.deliveryCost>0&&!t.deliveryCostExpensed);
-    if(!pending.length){dcEl.innerHTML='<div class="empty">No pending delivery costs.</div>';}
-    else{
-      dcEl.innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:.5rem"><span style="font-size:11px;font-weight:800;color:var(--amber)">Total: ${fmt(pending.reduce((s,t)=>s+(t.deliveryCost||0),0))}</span></div>`+
-        pending.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:7px">
-          <div><div style="font-size:12px;font-weight:600">${t.typeIcon||'🚚'} ${t.title}</div><div style="font-size:11px;color:var(--text2)">${t.date} · Rider: ${t.assignee}${t.deliveryMethod?' · '+t.deliveryMethod:''}</div></div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:14px;font-weight:800;color:var(--amber)">${fmt(t.deliveryCost)}</span>
-            ${currentUser.role==='staff'?`<button type="button" class="btn bsm primary" onclick="addDeliveryCostAsExpense(${t.id})">+ Add as expense</button>`:'<span class="badge bp">Pending</span>'}
-          </div>
-        </div>`).join('');
-    }
+    const n=pendingRiderFees().length;
+    dcEl.innerHTML=n?riderFeesHTML()+(n>1?'<div style="display:flex;justify-content:flex-end;margin-top:.6rem"><button type="button" class="btn bsm" onclick="confirmAllRiderFees(this)"><i data-ic="check" data-sz="14"></i> Confirm all fees</button></div>':'')
+      :'<div class="empty"><i class="empty-ic" data-ic="check" data-sz="28"></i><div class="empty-t">No rider fees waiting</div></div>';
   }
 
   // Outstanding payments
@@ -3758,14 +3970,29 @@ Kindly arrange payment. Thank you!`;
 function openConvertModal(taskId){
   convTaskId=taskId;
   const t=D.tasks.find(x=>x.id===taskId);if(!t)return;
-  document.getElementById('conv-task-info').innerHTML=`<div style="font-weight:600;margin-bottom:4px">${t.typeIcon||'🚚'} ${t.title}</div><div style="color:var(--text2);font-size:11px">${t.date} · ${t.assignee}</div>${t.clientName?`<div style="font-size:11px;margin-top:3px">Client: <strong>${t.clientName}</strong>${t.clientPhone?' · '+t.clientPhone:''}</div>`:''} ${t.location?`<div style="font-size:11px;color:var(--text2)">📍 ${t.location}</div>`:''}`;
+  const items=parseTaskItems(t), pc=parseCollect(t);
+  const exp=t.amountOnDelivery||0, got=t.amountCollected||0;
+  const itemTotal=items.reduce((a,i)=>a+i.price*i.qty,0), itemCost=items.reduce((a,i)=>a+i.cost*i.qty,0);
+  const saleAmt=exp||itemTotal||got;
+  const itemsHTML=items.length?'<div class="cv-items">'+items.map(i=>'<div><span>'+esc(i.name)+' \u00d7'+i.qty+'</span><span>'+(i.found?fmt(i.price*i.qty):'<em>not in inventory</em>')+'</span></div>').join('')+'</div>':'';
+  document.getElementById('conv-task-info').innerHTML=
+    '<div style="font-weight:700;margin-bottom:3px">'+esc(t.clientName||'Walk-in')+' <span class="q-tk">'+esc(t.ticketNo||'')+'</span></div>'
+    +'<div style="color:var(--text2);font-size:12px">'+(t.clientPhone?esc(t.clientPhone)+' · ':'')+(t.location?esc(t.location)+' · ':'')+'delivered '+shortDate(doneDate(t))+' by '+esc(t.assignee)+'</div>'
+    +itemsHTML
+    +'<div class="cv-note">Rider collected <strong>'+fmt(got)+'</strong>'+(pc.unpaid?' — client has not paid yet':pc.method?' via '+esc(pc.method)+(pc.ref?' ('+esc(pc.ref)+')':''):'')+(exp&&got!==exp?' · expected '+fmt(exp):'')+'</div>';
   document.getElementById('conv-cust').value=t.clientName||'';
-  document.getElementById('conv-amt').value=t.amountOnDelivery||t.amountCollected||'';
-  document.getElementById('conv-cost').value='';
-  document.getElementById('conv-ref').value='';
-  document.getElementById('conv-ps').value=t.amountCollected>0?'paid':'pending';
+  document.getElementById('conv-amt').value=saleAmt||'';
+  document.getElementById('conv-cost').value=itemCost||'';
+  document.getElementById('conv-ref').value=pc.ref||'';
+  const pay=document.getElementById('conv-pay');
+  if(pc.method&&[].some.call(pay.options,o=>o.value===pc.method)) pay.value=pc.method;
+  const ch=document.getElementById('conv-ch');
+  if(ch) ch.value=/^Order:/.test(t.title||'')?'WhatsApp':ch.value;
+  document.getElementById('conv-ps').value=got<=0?'pending':(saleAmt&&got<saleAmt?'partial':'paid');
   togConvPart();
+  const pa=document.getElementById('conv-pa'); if(pa) pa.value=got&&got<saleAmt?got:'';
   document.getElementById('m-convert').classList.add('open');
+  try{ paintIcons(document.getElementById('m-convert')); }catch(e){}
 }
 
 function togConvPart(){
@@ -3775,25 +4002,52 @@ function togConvPart(){
 
 function confirmConvert(){
   const t=D.tasks.find(x=>x.id===convTaskId);if(!t)return;
+  if(t.convertedToSale){ toast('This delivery was already recorded as a sale','info'); document.getElementById('m-convert').classList.remove('open'); return; }
   const amt=parseFloat(document.getElementById('conv-amt').value)||0;
   if(!amt){alert('Enter the sale amount.');return;}
   const cost=parseFloat(document.getElementById('conv-cost').value)||0;
   const ps=document.getElementById('conv-ps').value;
   const pa=ps==='paid'?amt:ps==='partial'?(parseFloat(document.getElementById('conv-pa').value)||0):0;
-  const custName=document.getElementById('conv-cust').value||t.clientName||'Walk-in';
-  const sale={id:Date.now(),ticketNo:nextTicketNo('sale'),date:t.date||today(),items:[{pid:'',name:t.items||t.title,qty:1,price:amt,cost,type:'item'}],amount:amt,cost,pnl:amt-cost,paidAmount:pa,paymentStatus:ps,custName,custId:'',channel:'Walk-in',payment:document.getElementById('conv-pay').value,ref:document.getElementById('conv-ref').value||'',notes:'From delivery: '+t.title,by:currentUser.name,evidence:null};
-  D.sales.unshift(sale); pushSale(sale);
-  t.convertedToSale=true;t.saleId=sale.id;
-  logA('sale','Delivery converted: '+custName+' '+fmt(amt));
-  saveD();pushSale(sale);updateTask(t);
-  // Reset convert modal fields for next use
+  const custName=(document.getElementById('conv-cust').value||t.clientName||'Walk-in').trim();
+  const channel=(document.getElementById('conv-ch')||{}).value||'WhatsApp';
+
+  // Line items: use the real products when the rider's list matches the confirmed totals
+  const parsed=parseTaskItems(t);
+  const pSum=parsed.reduce((a,i)=>a+i.price*i.qty,0), pCost=parsed.reduce((a,i)=>a+i.cost*i.qty,0);
+  const items=(parsed.length&&parsed.every(i=>i.found)&&pSum===amt&&pCost===cost)
+    ? parsed.map(i=>({pid:i.pid,name:i.name,qty:i.qty,price:i.price,cost:i.cost,type:'item'}))
+    : [{pid:'',name:t.items||t.title,qty:1,price:amt,cost,type:'item'}];
+
+  // Link the client to a customer record, creating one the first time
+  let custId='';
+  if(custName&&custName!=='Walk-in'){
+    const digits=s=>String(s||'').replace(/\D/g,'').slice(-9);
+    let cu=(D.customers||[]).find(x=>t.clientPhone&&digits(x.phone)&&digits(x.phone)===digits(t.clientPhone))
+         ||(D.customers||[]).find(x=>(x.name||'').trim().toLowerCase()===custName.toLowerCase());
+    if(!cu){
+      cu={id:Date.now()+7,ticketNo:nextTicketNo('customer'),name:custName,phone:t.clientPhone||'',channel,loc:t.location||'',type:'Individual',notes:'Added from delivery '+(t.ticketNo||'')};
+      D.customers.push(cu); pushCust(cu);
+      try{ auditLog('customer',cu.id,'created','['+cu.ticketNo+'] '+custName+' added from delivery '+(t.ticketNo||'')); }catch(e){}
+    }
+    custId=cu.id;
+  }
+
+  const sale={id:Date.now(),ticketNo:nextTicketNo('sale'),date:doneDate(t),items,amount:amt,cost,pnl:amt-cost,paidAmount:pa,paymentStatus:ps,
+    custName,custId,channel,payment:document.getElementById('conv-pay').value,ref:document.getElementById('conv-ref').value||'',
+    notes:'From delivery '+(t.ticketNo||'')+' by '+t.assignee,by:currentUser.name,evidence:null};
+  D.sales.unshift(sale);
+  t.convertedToSale=true; t.saleId=sale.id;
+  logA('sale','Delivery confirmed: '+custName+' '+fmt(amt));
+  try{ auditLog('sale',sale.id,'created','['+sale.ticketNo+'] From delivery '+(t.ticketNo||'')+' — '+custName+' '+fmt(amt)+' confirmed by '+currentUser.name); }catch(e){}
+  saveD(); pushSale(sale); updateTask(t);
   ['conv-amt','conv-cost','conv-pa','conv-ref'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('conv-ps').value='paid';
   document.getElementById('conv-cust').value='';
   convTaskId=null;
   document.getElementById('m-convert').classList.remove('open');
-  renderAccounts();
-  toast('✓ Sale created for '+custName+'!');
+  try{ popMonths(); popAll(); }catch(e){}
+  toast('\u2713 Sale '+sale.ticketNo+' recorded for '+custName);
+  refreshOps();
 }
 
 function saveQuickExpense(){
@@ -4090,7 +4344,7 @@ function openCustHistory(custId){
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:13px;font-weight:700;color:var(--green)">KES ${fmt(s.amount)}</div>
-        <span class="badge ${s.paymentStatus==='paid'?'bg':'br'}" style="font-size:9px">${s.paymentStatus==='paid'?'Paid':'Outstanding'}</span>
+        <span class="badge ${s.paymentStatus==='paid'?'bi':'be'}" style="font-size:9px">${s.paymentStatus==='paid'?'Paid':'Outstanding'}</span>
       </div>
       <button type="button" class="del" onclick="openReceipt(${s.id})" title="Receipt"><i data-ic="receipt"></i></button>
     </div>`).join(''):'<div style="color:var(--text2);font-size:12px;padding:12px 0">No purchases recorded yet.</div>';
@@ -5439,7 +5693,7 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
 <div class="modal-bg" id="m-convert" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:460px">
     <button type="button" class="mc-close" onclick="document.getElementById('m-convert').classList.remove('open')"><i data-ic="x"></i></button>
-    <div class="ct">Convert delivery to sale</div>
+    <div class="ct">Confirm delivery sale</div>
     <div id="conv-task-info" style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;margin-bottom:1rem;font-size:12px;border:1px solid var(--border)"></div>
     <div class="fg">
       <div class="fl ff"><label>Customer name</label><input type="text" id="conv-cust"></div>
@@ -5451,7 +5705,7 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
       <div class="fl"><label>M-Pesa / Ref</label><input type="text" id="conv-ref"></div>
       <div class="fl"><label>Channel</label><select id="conv-ch"><option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Website</option><option>Phone call</option><option>Walk-in</option></select></div>
     </div>
-    <div class="br"><button type="button" class="btn primary block" onclick="confirmConvert()"><i data-ic="check" data-sz="15"></i> Create sale record</button></div>
+    <div class="br"><button type="button" class="btn success block" onclick="confirmConvert()"><i data-ic="check" data-sz="15"></i> Confirm and record sale</button></div>
   </div>
 </div>
 
