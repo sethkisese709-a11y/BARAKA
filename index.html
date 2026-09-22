@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1280,46 +1281,28 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
       <button type="button" class="co-btn" onclick="selectCo('tk')"><div class="co-dot" style="background:#185FA5"></div><div class="co-name">TK Furnitures</div><div class="co-desc">Subsidiary</div></button>
       <button type="button" class="co-btn" onclick="selectCo('luxecraft')"><div class="co-dot" style="background:#0F6E56"></div><div class="co-name">Luxecraft Furnitures</div><div class="co-desc">Subsidiary</div></button>
     </div>
-    <div class="section-divider">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="section-label">Add subsidiary</div><button type="button" class="linkbtn" onclick="clearCompanyCache()"><i data-ic="refresh" data-sz="13"></i> Clear cache</button></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:end">
-        <input type="text" id="new-co-name" placeholder="Company name">
-        <input type="text" id="new-co-desc" placeholder="Description">
-        <button type="button" class="btn" onclick="addCompany()">Add</button>
-      </div>
-    </div>
+    <button type="button" class="linkbtn" onclick="lockOut()">Sign out</button>
   </div>
 </div>
 
 <!-- LOGIN -->
 <div id="login-screen" style="display:none">
-  <div class="lcard">
-    <span class="lback" onclick="backToCo()">← Back</span>
-    <div style="text-align:center;margin-bottom:.85rem"><img src="data:image/png;base64,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" style="width:72px;height:72px;object-fit:contain;border-radius:8px"></div>
-<div class="lco-name" id="l-co-name"></div>
-    <div class="lco-sub">Select your name then enter your password</div>
-    <div id="step-pick">
-      <div class="usel-list" id="usel-list"></div>
-    </div>
-    <div class="pw-step" id="step-pw">
-      <div class="pw-header" id="pw-header-user"></div>
-      <div class="pw-label">Password</div>
-      <div class="pw-input-wrap">
-        <input type="password" id="pw-input" placeholder="Enter your password" onkeydown="if(event.key==='Enter')tryLogin()">
-        <button type="button" class="pw-toggle" onclick="togglePwVis('pw-input',this)">Show</button>
-      </div>
-      <div class="pw-error" id="pw-error"></div>
-      <div class="br" style="margin-top:.9rem">
-        <button type="button" class="btn block" onclick="tryLogin()">Log in</button>
-      </div>
-      <span class="pw-back-link" onclick="backToPickUser()">← Choose a different user</span>
-    </div>
-  </div>
+ <div class="lcard">
+  <div class="lco-name" id="l-co-name">Baraka Enterprise Hub</div>
+  <p class="lco-sub">Sign in with your personal account</p>
+  <form onsubmit="event.preventDefault();tryLogin()">
+   <div class="fl"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="username" required></div>
+   <div class="fl"><label for="pw-input">Password</label><div class="pw-input-wrap"><input id="pw-input" type="password" autocomplete="current-password" required><button type="button" class="pw-toggle" onclick="togglePwVis('pw-input',this)">Show</button></div></div>
+   <div id="pw-error" class="pw-error" role="status" aria-live="polite"></div>
+   <button id="auth-login-button" class="btn primary block" type="submit">Sign in</button>
+  </form>
+  <button type="button" class="linkbtn" style="margin-top:16px" onclick="authResetPassword()">Forgot password?</button>
+ </div>
 </div>
 
 <!-- MAIN APP -->
 <div id="main-app" style="display:none">
-  <div class="topbar">
+  <div class="topbar"><button type="button" class="btn bsm" onclick="openSetPw()">My password</button>
     <div class="tbL">
       <div class="co-tag"><div class="co-tdot" id="top-dot"></div><div class="co-tname" id="top-co"></div></div>
       <div class="av" id="top-av" style="margin-left:6px"></div>
@@ -1627,7 +1610,7 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
   <div id="pg-team" class="page">
     <div class="card"><div class="ct">Team performance</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Category</th><th>Sales</th><th>Expenses</th><th>Revenue</th><th>PNL contributed</th></tr></thead><tbody id="team-tbody"></tbody></table></div></div>
     <div class="card" id="pw-mgmt-card">
-      <div class="ct">Password management <span style="font-size:11px;color:var(--text2);font-weight:400">(owner &amp; manager)</span></div>
+      <div class="ct">Member logins <span style="font-size:11px;color:var(--text2);font-weight:400">(owner)</span></div>
       <div id="pw-mgmt-list"></div>
       <div class="section-divider" style="margin-top:.85rem">
         <div class="section-label" style="font-weight:600">Add new team member</div>
@@ -1635,13 +1618,7 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
           <div class="fl"><label>Full name</label><input type="text" id="nm-name" placeholder="e.g. John Kamau"></div>
           <div class="fl"><label>Category</label><select id="nm-cat" onchange="updateCatHint()"><option value="Executive">Executive — full access</option><option value="Manager">Manager — runs operations</option><option value="Staff" selected>Staff — accounts &amp; records</option><option value="Delivery">Delivery — own tasks only</option></select><div id="nm-cat-hint" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
           <div class="fl ff">
-            <label>Password</label>
-            <div class="pw-input-wrap">
-              <input type="password" id="nm-pw" placeholder="Set a password for this person" oninput="showStrength('nm-pw','nm-str')">
-              <button type="button" class="pw-toggle" onclick="togglePwVis('nm-pw',this)">Show</button>
-            </div>
-            <div class="strength-bar" id="nm-str"></div>
-            <div class="pw-hint">Use letters, numbers and symbols for a stronger password</div>
+            <label for="nm-pw">Authentication User UID</label><input type="text" id="nm-pw" placeholder="Paste the new member’s User UID"><div class="pw-hint">Create the member’s login in Supabase first, then paste their User UID here.</div>
           </div>
         </div>
         <div class="br"><button type="button" class="btn" onclick="addMember()">Add member</button></div>
@@ -1903,22 +1880,28 @@ function loadCos(){
   return DEF_COS;
 }
 function saveCos(){ try{ localStorage.setItem(CO_KEY,JSON.stringify(companies)); }catch(e){} }
-function loadD(id){ try{ const r=localStorage.getItem(DP+id); if(r) return JSON.parse(r); }catch(e){} return null; }
-function saveD(){ try{ localStorage.setItem(DP+currentCo.id,JSON.stringify(D)); }catch(e){} }
+function loadD(id){
+  if(!authUser)return null;
+  try{
+    const cached=JSON.parse(sessionStorage.getItem('baraka_auth_v1_'+authUser.id+'_'+id)||'null');
+    if(cached?.data){authBaseline=cached.baseline;return cached.data;}
+    const settings=JSON.parse(localStorage.getItem('baraka_settings_v1_'+authUser.id+'_'+id)||'{}');
+    return Object.assign(defD(),settings);
+  }catch(e){return null;}
+}
+function saveD(){
+  if(!authUser||!currentCo||!D)return;
+  try{
+    sessionStorage.setItem('baraka_auth_v1_'+authUser.id+'_'+currentCo.id,JSON.stringify({data:D,baseline:authBaseline}));
+    const settings={};for(const key of ['recurring','recPay','pins','monthlyTargets','expBudgets'])settings[key]=D[key];
+    localStorage.setItem('baraka_settings_v1_'+authUser.id+'_'+currentCo.id,JSON.stringify(settings));
+  }catch(e){}
+  clearTimeout(authDirtyTimer);authDirtyTimer=setTimeout(()=>authFlushDirty(),200);
+}
 
-function defD(coId){
-  // Default passwords only for Baraka — other companies start with no passwords
-  const pw=coId==='baraka'||!coId;
-  return {
-  sales:[],expenses:[],inventory:[],bundles:[],customers:[],suppliers:[],
-  users:[
-    {id:1,name:'Owner',role:'owner',password:pw?'Baraka@owner':''},
-    {id:2,name:'Manager',role:'manager',password:pw?'Baraka@manager':''},
-    {id:3,name:'Staff 1',role:'staff',password:pw?'Baraka@staff1':''},
-    {id:4,name:'Staff 2',role:'delivery',password:pw?'Baraka@staff2':''}
-  ],
-  recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{},auditLog:[],monthlyTargets:{},expBudgets:{}
-}; }
+function defD(){
+  return {sales:[],expenses:[],inventory:[],bundles:[],customers:[],suppliers:[],users:[],recurring:[],recPay:[],activity:[],pins:[],tasks:[],deletedIds:{},auditLog:[],monthlyTargets:{},expBudgets:{}};
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt=n=>'KES '+Math.round(n||0).toLocaleString();
@@ -1942,125 +1925,103 @@ function pwStrength(pw){ let s=0; if(pw.length>=6) s++; if(pw.length>=10) s++; i
 function showStrength(inputId,barId){ const pw=document.getElementById(inputId).value; const s=pwStrength(pw); const bar=document.getElementById(barId); const widths=['0%','25%','45%','65%','85%','100%']; const colors=['transparent','#E24B4A','#E24B4A','#BA7517','#1D9E75','#3B6D11']; bar.style.width=widths[s]; bar.style.background=colors[s]; }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-function init(){ applyDark(); try{ensureCategories();}catch(e){} initSupabaseClient(); const sc=loadCos(); companies=sc||DEF_COS; renderCoScreen(); }
+async function init(){
+  authUpgradeCache();applyDark(); initSupabaseClient(); authShowLogin();
+  if(!_supabaseClient){document.getElementById('pw-error').textContent='Sign-in could not load. Check your connection and reload.';return;}
+  _supabaseClient.auth.onAuthStateChange((event)=>{
+    // Do not call async Auth methods inside the Auth lock.
+    if(event==='PASSWORD_RECOVERY'){
+      authRecovery=true;
+      setTimeout(()=>{authShowLogin('Choose a new password.');openSetPw(null);},0);
+    }
+    if(event==='SIGNED_OUT') setTimeout(()=>{authUser=null;authProfiles=[];authShowLogin('Signed out.');},0);
+  });
+  try{
+    const {data,error}=await _supabaseClient.auth.getSession();
+    if(error) throw error;
+    if(data.session && !authRecovery) await authLoadMemberships();
+  }catch(e){authShowLogin('Please sign in.');}
+  window.addEventListener('focus',()=>{if(currentUser)syncNow(false);});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentUser)syncNow(false);});
+}
 
 function renderCoScreen(){
-  document.getElementById('co-screen').style.display='block';
+  if(!authUser){authShowLogin();return;}
+  authStop();authClearScreen();
   document.getElementById('login-screen').style.display='none';
-  document.getElementById('main-app').style.display='none';
-  document.getElementById('co-grid').innerHTML=companies.map(co=>`<button type="button" class="co-btn${co.parent?' parent':''}" onclick="selectCo('${co.id}')"><div class="co-dot" style="background:${co.color}"></div><div class="co-name">${co.name}</div><div class="co-desc">${co.desc}</div></button>`).join('');
+  document.getElementById('co-screen').style.display='block';
+  const grid=document.getElementById('co-grid');grid.replaceChildren();
+  companies.forEach(co=>{
+    const b=document.createElement('button');b.type='button';b.className='co-btn';
+    const label=document.createElement('div');label.className='co-name';label.textContent=co.name;b.append(label);
+    b.addEventListener('click',()=>selectCo(co.id));grid.append(b);
+  });
 }
 
-function addCompany(){ const n=document.getElementById('new-co-name').value.trim(); if(!n) return; const cols=['#D85A30','#BA7517','#D4537E','#888780','#1D9E75']; companies.push({id:'co_'+Date.now(),name:n,desc:document.getElementById('new-co-desc').value||'Subsidiary',color:cols[companies.length%cols.length],parent:false}); saveCos(); renderCoScreen(); document.getElementById('new-co-name').value=''; document.getElementById('new-co-desc').value=''; }
+function addCompany(){toast('Company access is configured by linking member profiles.','info');}
 
-function selectCo(id){
-  // Stop any running sync/realtime from previous company
-  if(_syncTimer){ clearInterval(_syncTimer); _syncTimer=null; }
-  if(_realtimeChannel&&_supabaseClient){ _supabaseClient.removeChannel(_realtimeChannel); _realtimeChannel=null; }
-  currentUser=null;
-
-  // Always use DEF_COS as the truth — never trust stale localStorage company list
-  currentCo=DEF_COS.find(c=>c.id===id)||companies.find(c=>c.id===id);
-  if(!currentCo){ console.warn('Company not found:',id); return; }
-
-  // Load saved data for this company, or start fresh
-  const saved=loadD(id);
-  D=saved||defD(id);
-  D._companyId=id;
-
-  ['bundles','pins','recurring','recPay','tasks'].forEach(k=>{ if(!D[k]) D[k]=[]; });
-  if(!D.deletedIds||Array.isArray(D.deletedIds)) D.deletedIds={};
-  if(!D.auditLog) D.auditLog=[];
-  D.users.forEach(u=>{ if(!u.password) u.password=''; if(u.phone===undefined) u.phone=''; });
-
-  document.getElementById('co-screen').style.display='none';
+async function selectCo(id){
+  if(!authUser)return authShowLogin();
+  authStop();authClearScreen();
   document.getElementById('login-screen').style.display='block';
-  document.getElementById('l-co-name').textContent=currentCo.name;
-  showPickStep();
+  document.getElementById('pw-error').textContent='Loading your company…';
+  try{
+    const profiles=await authRows('users','auth_user_id=eq.'+encodeURIComponent(authUser.id)+'&company_id=eq.'+encodeURIComponent(id)+'&select='+authUserColumns);
+    if(profiles.length!==1)throw new Error('Your account has no access to this company.');
+    currentCo=authCompany(id); currentUser=mapUser(profiles[0]);
+    D=loadD(id)||defD(id);D._companyId=id;D.users=[currentUser];
+    const ok=await syncNow(false);
+    if(!ok)throw new Error('Company data could not load. Please retry after checking your connection and database setup.');
+    doLogin(currentUser);
+  }catch(e){authShowLogin(e.message);}
 }
 
-function backToCo(){ document.getElementById('co-screen').style.display='block'; document.getElementById('login-screen').style.display='none'; document.getElementById('main-app').style.display='none'; }
+function backToCo(){if(authUser&&companies.length>1)renderCoScreen();else lockOut();}
 
 
 
-function pickUser(uid){
-  loginTargetUser=D.users.find(u=>u.id===uid);
-  document.getElementById('step-pick').style.display='none';
-  document.getElementById('step-pw').style.display='block';
-  document.getElementById('pw-header-user').innerHTML=`<div class="av ${avC(loginTargetUser.role)}">${ini(loginTargetUser.name)}</div><div><div style="font-size:13px;font-weight:600;color:var(--text)">${loginTargetUser.name}</div><div style="font-size:11px;color:var(--text2)">${loginTargetUser.category||roleToCat(loginTargetUser.role)}</div></div>`;
-  document.getElementById('pw-input').value='';
-  document.getElementById('pw-error').textContent='';
-  setTimeout(()=>document.getElementById('pw-input').focus(),100);
-}
+function pickUser(){authShowLogin();}
 
-function backToPickUser(){ showPickStep(); }
+function backToPickUser(){authShowLogin();}
 
 
 
 
 
-function lockOut(){
-  // Stop sync and realtime
-  if(_syncTimer){ clearInterval(_syncTimer); _syncTimer=null; }
-  currentUser=null;
-  document.getElementById('main-app').style.display='none';
-  document.getElementById('login-screen').style.display='block';
-  showPickStep();
+async function lockOut(){
+  authStop();authClearScreen();
+  if(_supabaseClient) await _supabaseClient.auth.signOut({scope:'local'}).catch(()=>{});
+  authUser=null;authProfiles=[];companies=[];
+  Object.keys(sessionStorage).filter(k=>k.startsWith('baraka_auth_v1_')).forEach(k=>sessionStorage.removeItem(k));
+  authShowLogin('Signed out.');
+  // Remove hidden business markup as well as in-memory data on shared devices.
+  location.replace(location.pathname+location.search);
 }
 
 // ── PW Management ─────────────────────────────────────────────────────────────
 function renderPwMgmt(){
-  const card=document.getElementById('pw-mgmt-card');
-  if(!can('pwmgmt')){ card.style.display='none'; return; }
-  card.style.display='block';
-  const isOwner=currentUser.role==='owner';
-  document.getElementById('pw-mgmt-list').innerHTML=D.users.map(u=>{
-    const canChange=isOwner||(currentUser.role==='manager'&&(u.role==='staff'||u.role==='delivery'));
-    return`<div class="pw-mgmt-row">
-      <div class="pw-mgmt-info">
-        <div class="av ${avC(u.role)}" style="width:30px;height:30px;font-size:10px">${ini(u.name)}</div>
-        <div><div style="font-size:13px;font-weight:500">${u.name}</div><div style="font-size:11px;color:var(--text2)">${u.role}</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span class="${u.password?'pw-set':'pw-unset'}">${u.password?'Password set':'No password'}</span>
-        ${canChange?`<button type="button" class="btn bsm" onclick="openSetPw(${u.id})">${u.password?'Reset':'Set password'}</button>`:''}
-        ${isOwner?`<button type="button" class="btn bsm success" onclick="editPhone(${u.id})"><i data-ic="phone" data-sz="14"></i> ${u.phone?u.phone:'Add number'}</button>`:''}
-        ${isOwner&&u.id!==currentUser.id?`<button type="button" class="del warn" onclick="removeMember(${u.id})"><i data-ic="x"></i></button>`:''}
-      </div>
-    </div>`;
-  }).join('');
+  const card=document.getElementById('pw-mgmt-card');card.style.display=currentUser.role==='owner'?'block':'none';
+  if(currentUser.role!=='owner')return;
+  document.getElementById('pw-mgmt-list').innerHTML=D.users.map(u=>'<div class="pw-mgmt-row"><div>'+authEscape(u.name)+'<div class="pw-hint">'+(u.auth_user_id?'Login linked':'Login not linked')+'</div></div><div class="br">'+(u.id!==currentUser.id?'<button type="button" class="btn bsm" onclick="authLinkMember('+u.id+')">Link login</button><button type="button" class="btn bsm" onclick="removeMember('+u.id+')">Remove</button>':'')+'<button type="button" class="btn bsm" onclick="authCopyMemberLink('+u.id+')">Copy link</button></div></div>').join('');
 }
 
-function openSetPw(uid){
-  setPwTargetId=uid;
-  const u=D.users.find(x=>x.id===uid);
-  document.getElementById('setpw-title').textContent=(u.password?'Reset':'Set')+' password';
-  document.getElementById('setpw-sub').textContent='Setting password for: '+u.name+' ('+u.role+')';
-  document.getElementById('setpw-new').value='';
-  document.getElementById('setpw-confirm').value='';
-  document.getElementById('setpw-error').textContent='';
-  document.getElementById('setpw-str').style.width='0';
+function openSetPw(){
+  document.getElementById('setpw-title').textContent='Change your password';
+  document.getElementById('setpw-sub').textContent='This changes your own sign-in password.';
+  document.getElementById('setpw-new').value='';document.getElementById('setpw-confirm').value='';document.getElementById('setpw-error').textContent='';
   document.getElementById('setpw-modal').classList.add('open');
 }
 
 
 
 
-function addMember(){
-  const name=document.getElementById('nm-name').value.trim();
-  const cat=document.getElementById('nm-cat').value;
-  const role=catToRole(cat);
-  const pw=document.getElementById('nm-pw').value;
-  if(!name){ alert('Enter a name.'); return; }
-  if(!pw||pw.length<4){ alert('Password must be at least 4 characters.'); return; }
-  const u={id:Date.now(),name,category:cat,role,password:pw};
-  D.users.push(u);
-  logA('team','Added: '+name+' ('+cat+')');
-  try{ auditLog('team',u.id,'added',name+' added as '+cat+' by '+currentUser.name); }catch(e){}
-  saveD(); pushUser&&pushUser(u); renderTeam();
-  document.getElementById('nm-name').value=''; document.getElementById('nm-pw').value='';
-  const st=document.getElementById('nm-str'); if(st) st.style.width='0';
-  try{ toast('\u2713 '+name+' added as '+cat); }catch(e){}
+async function addMember(){
+  if(currentUser.role!=='owner')return;
+  const name=document.getElementById('nm-name').value.trim(), uid=document.getElementById('nm-pw').value.trim(), role=catToRole(document.getElementById('nm-cat').value);
+  if(!name||!uid)return toast('Enter a name and the new Authentication User UID.','warn');
+  if(!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid))return toast('Enter a valid User UID.','warn');
+  const u={id:Date.now(),name,role,auth_user_id:uid};
+  if(await pushUser(u)){document.getElementById('nm-name').value='';document.getElementById('nm-pw').value='';await syncNow(false);renderTeam();toast('Member added');}
 }
 function updateCatHint(){
   const cat=document.getElementById('nm-cat').value;
@@ -2068,21 +2029,10 @@ function updateCatHint(){
   if(h&&CATEGORIES[cat]) h.textContent=CATEGORIES[cat].desc;
 }
 
-function removeMember(uid){
-  if(uid===currentUser.id){ alert('You cannot remove yourself.'); return; }
-  const u=D.users.find(x=>x.id===uid);
-  if(!u) return;
-  if(!confirm('Remove '+u.name+' from the team? They will no longer be able to log in.')) return;
-  // Blacklist first so no sync can bring them back, on this or any device
-  if(!D.deletedIds) D.deletedIds={};
-  D.deletedIds['users_'+uid]=1;
-  D.users=D.users.filter(x=>x.id!==uid);
-  logA('team','Removed: '+u.name);
-  try{ auditLog('team',uid,'removed',u.name+' removed from team by '+currentUser.name); }catch(e){}
-  saveD(); renderTeam();
-  // Delete from Supabase and record it in deleted_records
-  sbDel('users',uid).then(function(){ toast('\u2713 '+u.name+' removed on all devices'); })
-                    .catch(function(){ toast('Removed here \u2014 will sync when online','info'); });
+async function removeMember(uid){
+  if(currentUser.role!=='owner'||uid===currentUser.id)return;
+  const u=D.users.find(x=>x.id===uid);if(!u||!confirm('Remove '+u.name+' from this company?'))return;
+  if(await sbDel('users',uid)){await syncNow(false);renderTeam();toast('Company access removed');}
 }
 
 // ── Nav & Pages ───────────────────────────────────────────────────────────────
@@ -2151,22 +2101,7 @@ function roleToCat(role){
 }
 // Any user missing a category gets one derived from their existing role
 function ensureCategories(){
-  if(typeof D==='undefined'||!D||!D.users) return false;
-  const fixed=[];
-  D.users.forEach(function(u){
-    let ch=false;
-    if(!u.category){ u.category=roleToCat(u.role); ch=true; }
-    const r=catToRole(u.category);
-    if(u.role!==r){ u.role=r; ch=true; }
-    if(ch) fixed.push(u);
-  });
-  if(fixed.length){
-    try{ saveD(); }catch(e){}
-    if(typeof currentCo!=='undefined'&&currentCo&&typeof pushUser==='function'){
-      fixed.forEach(function(u){ try{ patchUser(u,{role:u.role}).then(function(){patchUserCategory(u);}); }catch(e){} });
-    }
-  }
-  return fixed.length>0;
+  if(!D)return false;D.users.forEach(u=>{u.category=roleToCat(u.role);});return false;
 }
 
 
@@ -2334,7 +2269,7 @@ function dashSetAll(){ dashMonth='all'; renderDash(); }
 function filterByDash(arr){ if(!dashMonth||dashMonth==='all') return arr; return arr.filter(r=>r.date.startsWith(dashMonth)); }
 function updateMonthNav(){ const months=getSortedMonths(); const isAll=dashMonth==='all'; document.getElementById('mnav-all-btn').classList.toggle('active-all',isAll); document.getElementById('mnav-label').textContent=isAll?'All time':fmtM(dashMonth||tM()); document.getElementById('dash-period-label').textContent=isAll?'All time overview':fmtM(dashMonth||tM()); const idx=months.indexOf(dashMonth); document.querySelectorAll('.mnav-btn')[0].style.opacity=(isAll||idx<=0)?'0.3':'1'; document.querySelectorAll('.mnav-btn')[1].style.opacity=(isAll||idx>=months.length-1)?'0.3':'1'; }
 
-async function switchSub(id){ currentCo=companies.find(c=>c.id===id); let saved=loadD(id); D=saved||defD(id); ['bundles','pins','recurring','recPay'].forEach(k=>{ if(!D[k]) D[k]=[]; }); document.getElementById('top-dot').style.background=currentCo.color; document.getElementById('top-co').textContent=currentCo.name; popAll(); renderDash(); checkDue(); }
+async function switchSub(id){await selectCo(id);}
 
 function renderDash(){
   try{renderOpsQueue();}catch(e){}
@@ -2841,7 +2776,7 @@ function renderBundles(){ document.getElementById('b-list').innerHTML=D.bundles.
 // ── Customers ─────────────────────────────────────────────────────────────────
 function custT(t,btn){ ['single','bulk','list'].forEach(x=>document.getElementById('c-'+x).style.display=x===t?'block':'none'); document.querySelectorAll('#pg-customers .tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(t==='list') renderCust(); }
 function addCust(){ const name=document.getElementById('c-name').value.trim(); if(!name){ alert('Enter name.'); return; } D.customers.push({id:Date.now(),ticketNo:nextTicketNo('customer'),name,phone:document.getElementById('c-phone').value,channel:document.getElementById('c-ch').value,loc:document.getElementById('c-loc').value,type:document.getElementById('c-type').value,notes:document.getElementById('c-notes').value}); const _newCust=D.customers[D.customers.length-1]; pushCust(_newCust); logA('customer','Added: '+name); saveD(); popAll(); ['c-name','c-phone','c-loc','c-notes'].forEach(id=>document.getElementById(id).value=''); alert('Customer saved!'); }
-function bulkImport(){ const lines=document.getElementById('bulk-in').value.trim().split('\n').filter(l=>l.trim()); let count=0; lines.forEach(line=>{ const p=line.split(',').map(x=>x.trim()); const name=p[0]; if(!name) return; const chs=['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in']; const ch=p[2]&&chs.find(c=>c.toLowerCase()===p[2].toLowerCase())||'WhatsApp'; D.customers.push({id:Date.now()+Math.random(),name,phone:p[1]||'',channel:ch,loc:p[3]||'',type:'Individual',notes:''}); count++; }); saveD(); popAll(); document.getElementById('bulk-res').textContent=count+' customers imported!'; document.getElementById('bulk-in').value=''; }
+function bulkImport(){ const lines=document.getElementById('bulk-in').value.trim().split('\n').filter(l=>l.trim()); let count=0; lines.forEach(line=>{ const p=line.split(',').map(x=>x.trim()); const name=p[0]; if(!name) return; const chs=['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in']; const ch=p[2]&&chs.find(c=>c.toLowerCase()===p[2].toLowerCase())||'WhatsApp'; D.customers.push({id:Date.now()+Math.floor(Math.random()*1000),name,phone:p[1]||'',channel:ch,loc:p[3]||'',type:'Individual',notes:''}); count++; }); saveD(); popAll(); document.getElementById('bulk-res').textContent=count+' customers imported!'; document.getElementById('bulk-in').value=''; }
 function renderCust(){ const q=(document.getElementById('c-search').value||'').toLowerCase(); const cf=(document.getElementById('c-chf')||{}).value||'all'; let list=D.customers; if(q) list=list.filter(c=>c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)); if(cf!=='all') list=list.filter(c=>c.channel===cf);   list=[...list].sort((a,b)=>b.id-a.id);
   document.getElementById('c-tbody').innerHTML=ist.length?list.map(c=>{ const spent=D.sales.filter(s=>s.custId==c.id).reduce((s,r)=>s+r.amount,0); const out=D.sales.filter(s=>s.custId==c.id&&s.paymentStatus!=='paid').reduce((s,r)=>s+(r.amount-(r.paidAmount||0)),0); const last=D.sales.filter(s=>s.custId==c.id).map(s=>s.date).sort().reverse()[0]||'—'; return`<tr><td style="font-weight:500">${c.name}</td><td>${c.phone||'—'}</td><td><span class="badge ${chC(c.channel)}">${c.channel||'—'}</span></td><td>${c.loc||'—'}</td><td><span class="badge bg">${c.type}</span></td><td style="color:var(--green);font-weight:500">${spent?fmt(spent):'—'}</td><td style="color:${out>0?'var(--red)':'var(--text2)'};font-weight:${out>0?500:400}">${out>0?fmt(out):'—'}</td><td>${last}</td><td>${can('del')?`<button type="button" class="del warn" onclick="delR('customers',${c.id})"><i data-ic="x"></i></button>`:''}
         <button type="button" class="del" onclick="openCustHistory(${c.id})" title="Purchase history" style="background:var(--bg2);color:var(--text)"><i data-ic="chart"></i></button></td></tr>`; }).join(''):`${emptyState('users','No customers yet','Add a customer to track their purchases',9)}`; }
@@ -2883,20 +2818,11 @@ function renderTeam(){
   try{ paintIcons(document); }catch(e){}
 }
 
-function changeCategory(uid,cat){
-  const u=D.users.find(function(x){return x.id===uid;});
-  if(!u) return;
-  if(uid===currentUser.id){ alert('You cannot change your own category.'); renderTeam(); return; }
-  const oldCat=u.category||roleToCat(u.role);
-  u.category=cat; u.role=catToRole(cat);
-  logA('team','Category: '+u.name+' \u2192 '+cat);
-  try{ auditLog('team',uid,'category_changed',u.name+': '+oldCat+' \u2192 '+cat+' by '+currentUser.name); }catch(e){}
-  saveD(); renderTeam();
-  patchUser(u,{role:u.role}).then(function(res){
-    patchUserCategory(u);
-    if(res.ok) toast('\u2713 '+u.name+' is now '+cat);
-    else toast(u.name+' changed on this device only ('+res.reason+'). Retrying on next sync.','warn',7000);
-  });
+async function changeCategory(uid,cat){
+  if(currentUser.role!=='owner'||uid===currentUser.id)return;
+  const u=D.users.find(x=>x.id===uid);if(!u)return;
+  const result=await patchUser(u,{role:catToRole(cat)});
+  renderTeam();toast(result.ok?'Category updated':result.reason,result.ok?'success':'error');
 }
 
 // ── Recurring (basic) ─────────────────────────────────────────────────────────
@@ -3147,7 +3073,7 @@ function renderTasks(){
     const isUrgent=t.priority==='urgent';
     const isDone=t.status==='done'||t.status==='cancelled';
     const isAssignee=t.assignee===currentUser.name||(t.assignees&&t.assignees.includes(currentUser.name));
-    const canMarkDone=(isAssignee||currentUser.role==='owner'||currentUser.role==='manager')&&!isDone;
+    const canMarkDone=(currentUser.role==='delivery'&&isAssignee||currentUser.role==='owner'||currentUser.role==='manager')&&!isDone;
     const timeStr=t.timeStart?(fmt12(t.timeStart)+(t.timeEnd?' – '+fmt12(t.timeEnd):'')):'';
 
     return`<div class="task-card ${isUrgent&&!isDone?'urgent':''} ${isDone?'done-card':''}">
@@ -3255,8 +3181,8 @@ function doneMethodChanged(){
   const a=document.getElementById('done-amount');
   if(m==='none'){ a.value='0'; a.disabled=true; } else { a.disabled=false; if(a.value==='0') a.value=''; }
 }
-function confirmDone(){
-  if(!doneTaskId) return;
+async function confirmDone(){
+  if(!doneTaskId || !['owner','manager','delivery'].includes(currentUser.role)) return;
   const task=D.tasks.find(t=>t.id===doneTaskId); if(!task) return;
   const err=document.getElementById('done-error');
   const deliv=isDeliveryTask(task);
@@ -3285,7 +3211,8 @@ function confirmDone(){
   task.statusHistory.push({status:'done',by:currentUser.name,at:task.completedAt,note:note});
   auditLog('task',task.id,'done','['+task.ticketNo+'] Done by '+currentUser.name+(deliv?' — collected '+fmt(task.amountCollected)+', fee '+fmt(task.deliveryCost):'')+(note?' · '+note:''));
   logA('task','Completed: '+task.title);
-  saveD(); updateTask(task);
+  if(!await updateTask(task)){await syncNow(false);renderTasksMetrics();renderTasks();return;}
+  saveD();
   document.getElementById('done-modal').classList.remove('open');
   renderTasksMetrics(); renderTasks();
   toast(deliv?'\u2713 Done \u2014 sent to the office to confirm':'\u2713 Task marked done');
@@ -3295,7 +3222,7 @@ function confirmDone(){
   try{ refreshOps(); }catch(e){}
 }
 
-function ownerUpdateStatus(taskId, newStatus){
+async function ownerUpdateStatus(taskId, newStatus){
   const task=D.tasks.find(t=>t.id===taskId);
   if(!task) return;
   task.status=newStatus;
@@ -3303,6 +3230,7 @@ function ownerUpdateStatus(taskId, newStatus){
   task.statusHistory=task.statusHistory||[];
   task.statusHistory.push({status:newStatus,by:currentUser.name,at:new Date().toISOString()});
   logA('task','Status → '+newStatus+': '+task.title);
+  if(!await updateTask(task)){await syncNow(false);return;}
   saveD(); renderTasksMetrics(); renderTasks();
 }
 
@@ -3311,23 +3239,9 @@ function ownerUpdateStatus(taskId, newStatus){
 
 // ── Connection health check ───────────────────────────────────────────────────
 async function checkHealth(){
-  const dot=document.getElementById('health-dot');
-  if(!dot||!currentCo) return;
-  try{
-    const r=await fetch(SUPA_URL+'/rest/v1/users?company_id=eq.'+currentCo.id+'&limit=1',{
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-    });
-    if(r.ok){
-      dot.style.background='#25D366';
-      dot.title='Supabase connected ✓';
-    } else {
-      dot.style.background='#e53935';
-      dot.title='Supabase error: '+r.status;
-    }
-  }catch(e){
-    dot.style.background='#e53935';
-    dot.title='No connection to Supabase';
-  }
+  if(!currentUser)return;
+  const el=document.getElementById('health-dot');
+  try{await authRows('users','id=eq.'+currentUser.id+'&select=id');if(el)el.style.background='#0F766E';}catch(e){if(el)el.style.background='#e53935';}
 }
 
 
@@ -3655,37 +3569,17 @@ async function confirmDeleteProduct(){
 
 // ── Reset company data (clear all Supabase + local data for current company) ──
 async function resetCompanyData(){
-  if(currentUser.role!=='owner'){toast('Only the owner can reset company data.','warn');return;}
+  if(currentUser?.role!=='owner')return;
   const name=currentCo.name;
-  const confirm1=prompt('Type the company name to confirm reset: "'+name+'"');
-  if(confirm1!==name){toast('Reset cancelled — name did not match.','warn');return;}
-  if(!confirm('This will permanently delete ALL data for '+name+'. Are you absolutely sure?'))return;
-
-  const ss=document.getElementById('sync-status');
-  if(ss)ss.textContent='Resetting...';
-
-  // Delete all records from Supabase for this company
-  const h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
-  const co=currentCo.id;
-  const tables=['sales','expenses','inventory','customers','suppliers','tasks','activity_log','deleted_records'];
-  for(const tbl of tables){
-    await fetch(SUPA_URL+'/rest/v1/'+tbl+'?company_id=eq.'+co,{method:'DELETE',headers:h}).catch(()=>{});
-  }
-
-  // Clear local storage
-  localStorage.removeItem('baraka_data_v4_html_'+co);
-
-  // Reset D to empty
-  D=defD();
-  if(co==='baraka'){
-    D.users[0].password='Baraka@owner';D.users[1].password='Baraka@manager';
-    D.users[2].password='Baraka@staff1';D.users[3].password='Baraka@staff2';
-  }
-  saveD();
-
-  toast('✓ '+name+' data has been reset.','success');
-  if(ss)ss.textContent='';
-  goPage('dashboard');
+  if(prompt('Type the company name to confirm reset: '+name)!==name)return;
+  if(!confirm('Permanently delete business records for '+name+'? Member accounts will remain.'))return;
+  try{
+    for(const table of ['sales','expenses','inventory','customers','suppliers','tasks','bundles','activity_log','deleted_records']){
+      const r=await authFetch(SUPA_URL+'/rest/v1/'+table+'?company_id=eq.'+encodeURIComponent(currentCo.id),{method:'DELETE'});
+      if(!r.ok)throw new Error('Reset stopped at '+table+'. Some earlier tables may already be cleared.');
+    }
+    authBaseline=null;D=defD();await syncNow(false);goPage('dashboard');toast('Company records reset');
+  }catch(e){toast(e.message,'error');}
 }
 
 
@@ -4303,7 +4197,148 @@ function confirmMP(){
   try{renderAccounts();}catch(e){}
   toast('✓ Payment of '+fmt(amt)+' recorded');
 }
-</script>
+
+let authProfiles = [], authUser = null, authEpoch = 0, authRecovery = false;
+let authBusy = false, authSyncing = false;
+let authBaseline=null, authDirtyTimer=null, authFlushBusy=false;
+const authWrites=new Map();
+const authUserColumns = 'id,company_id,name,role,phone,created_at,auth_user_id';
+const authNativeFetch = window.fetch.bind(window);
+function authEscape(value){
+  return String(value == null ? '' : value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function authCompany(id){
+  const known = DEF_COS.find(c=>c.id===id) || (id==='lux' ? DEF_COS.find(c=>c.id==='luxecraft') : null);
+  return {...(known || {name:id,desc:'Company',color:'#0F766E',parent:false}),id};
+}
+async function authFetch(input, options={}){
+  const url = new URL(input, location.href);
+  if(url.origin !== new URL(SUPA_URL).origin || !url.pathname.startsWith('/rest/v1/')) throw new Error('Unexpected data endpoint');
+  if(!_supabaseClient || !authUser) throw new Error('Please sign in again.');
+  const epoch = authEpoch;
+  const {data,error} = await _supabaseClient.auth.getSession();
+  if(error || !data.session || data.session.user.id!==authUser.id) throw new Error('Your session has expired. Please sign in again.');
+  if(epoch!==authEpoch) throw new Error('Session changed.');
+  const headers = new Headers(options.headers || {});
+  headers.set('apikey',SUPA_KEY);
+  headers.set('Authorization','Bearer '+data.session.access_token);
+  const table=url.pathname.split('/').pop();
+  if(table==='users' && !url.searchParams.has('select')) url.searchParams.set('select',authUserColumns);
+  const response = await authNativeFetch(url.toString(),{...options,headers});
+  if(epoch!==authEpoch) throw new Error('Session changed.');
+  return response;
+}
+async function authRows(table, query=''){
+  const result=await authFetch(SUPA_URL+'/rest/v1/'+table+'?'+query);
+  if(!result.ok) throw new Error('Could not load '+table+' ('+result.status+'). Check your access or connection.');
+  return result.json();
+}
+function authStop(){
+  authEpoch++;
+  if(_syncTimer){clearInterval(_syncTimer);_syncTimer=null;}
+  if(_realtimeChannel&&_supabaseClient){_supabaseClient.removeChannel(_realtimeChannel);_realtimeChannel=null;}
+  authSyncing=false;
+}
+function authClearScreen(){
+  document.getElementById('main-app').style.display='none';
+  document.querySelectorAll('.modal-bg.open').forEach(el=>el.classList.remove('open'));
+  document.getElementById('co-screen').style.display='none';
+  currentUser=null; currentCo=null; D=null; authBaseline=null; aiInited=false;
+}
+function authShowLogin(message=''){
+  authStop(); authClearScreen();
+  document.getElementById('login-screen').style.display='block';
+  document.getElementById('l-co-name').textContent='Baraka Enterprise Hub';
+  document.getElementById('pw-error').textContent=message;
+  document.getElementById('pw-input').value='';
+}
+function authUpgradeCache(){
+  // Installation instructions require exporting unsynced records before this upgrade.
+  // Preserve local-only settings for the confirmed owner; discard shared business/password caches.
+  const owner='cf167365-8458-41ec-848f-26c316d7b107';
+  for(const key of Object.keys(localStorage).filter(k=>k.startsWith('baraka_data_v4_html_'))){
+    try{
+      const old=JSON.parse(localStorage.getItem(key)||'{}');const settings={};
+      for(const field of ['recurring','recPay','pins','monthlyTargets','expBudgets'])if(old[field]!==undefined)settings[field]=old[field];
+      const co=key.slice('baraka_data_v4_html_'.length);
+      const next='baraka_settings_v1_'+owner+'_'+co;
+      if(!localStorage.getItem(next))localStorage.setItem(next,JSON.stringify(settings));
+      localStorage.removeItem(key);
+    }catch(e){}
+  }
+}
+async function authLoadMemberships(){
+  const {data,error}=await _supabaseClient.auth.getUser();
+  if(error||!data.user) throw new Error('Please sign in again.');
+  authUser=data.user;
+  authProfiles=await authRows('users','auth_user_id=eq.'+encodeURIComponent(authUser.id)+'&select='+authUserColumns);
+  authProfiles=authProfiles.filter(u=>['owner','manager','staff','delivery'].includes(u.role));
+  companies=[...new Set(authProfiles.map(p=>p.company_id))].map(authCompany);
+  if(!companies.length){authShowLogin('Your account is signed in but has no linked company. Ask the owner to link your login.');return;}
+  if(authRecovery)return;
+  const requested=new URLSearchParams(location.search).get('company');
+  if(requested && authProfiles.some(p=>p.company_id===requested)) await selectCo(requested);
+  else if(companies.length===1) await selectCo(companies[0].id);
+  else renderCoScreen();
+}
+function authSnapshot(){
+  const snapshot={};for(const table of ['sales','expenses','inventory','customers','suppliers','tasks','bundles']){
+    snapshot[table]={};for(const row of D[table]||[])snapshot[table][row.id]=JSON.stringify(row);
+  }return snapshot;
+}
+async function authFlushDirty(){
+  if(!authBaseline||!currentUser||!D)return true;
+  if(authFlushBusy)return false;
+  const epoch=authEpoch;
+  authFlushBusy=true;
+  try{
+    await Promise.allSettled([...authWrites.values()]);
+    if(epoch!==authEpoch||!currentUser||!D||!authBaseline)return false;
+    const writers={sales:pushSale,expenses:pushExp,inventory:pushItem,customers:pushCust,suppliers:pushSup,tasks:t=>(authBaseline.tasks[t.id]?updateTask(t):pushTask(t)),bundles:b=>sbUpsert('bundles',{id:b.id,company_id:currentCo.id,name:b.name,items:b.items||[],price:b.price||0,cost:b.cost||0})};
+    const tables=currentUser.role==='delivery'?['tasks']:Object.keys(writers);
+    for(const table of tables)for(const row of D[table]||[]){
+      if(authBaseline?.[table]?.[row.id]===JSON.stringify(row))continue;
+      if(!await writers[table](row))return false;
+    }
+    return true;
+  }catch(e){return false;}finally{authFlushBusy=false;}
+}
+async function authAllRows(table,co){
+  let all=[];const size=500;
+  for(let offset=0;;offset+=size){
+    const rows=await authRows(table,'company_id=eq.'+encodeURIComponent(co)+'&order=id.asc&limit='+size+'&offset='+offset);
+    all=all.concat(rows);if(rows.length<size)return all;
+  }
+}
+async function authUpsertNow(table,row){
+  const epoch=authEpoch, localRow=D?.[table]?.find(r=>String(r.id)===String(row.id));
+  const snapshot=localRow?JSON.stringify(localRow):null;
+  try{
+    if(!currentUser||!currentCo||row.company_id!==currentCo.id)throw new Error('Company changed. Please retry.');
+    const r=await authFetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',headers:{'Content-Type':'application/json','Prefer':['users','activity_log'].includes(table)?'return=minimal':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});
+    if(!r.ok)throw new Error('Save failed for '+table+' ('+r.status+').');
+    if(epoch===authEpoch&&authBaseline?.[table]&&snapshot)authBaseline[table][row.id]=snapshot;
+    return true;
+  }catch(e){toast(e.message+' This change has not been saved to the server.','error');return false;}
+}
+async function authLinkMember(id){
+  const u=D.users.find(x=>x.id===id);if(!u||currentUser.role!=='owner'||id===currentUser.id)return;
+  const value=prompt('Paste the Supabase Authentication User UID for '+u.name,u.auth_user_id||'');if(value===null)return;
+  if(!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value.trim()))return toast('Enter a valid User UID.','warn');
+  const result=await patchUser(u,{auth_user_id:value.trim()});renderPwMgmt();toast(result.ok?'Login linked':result.reason,result.ok?'success':'error');
+}
+async function authCopyMemberLink(id){
+  const url=new URL(location.pathname,location.origin);url.searchParams.set('company',currentCo.id);url.searchParams.set('member',id);
+  try{await navigator.clipboard.writeText(url.toString());toast('Sign-in link copied');}catch(e){prompt('Copy this sign-in link',url.toString());}
+}
+async function authResetPassword(){
+  const email=document.getElementById('auth-email').value.trim(),err=document.getElementById('pw-error');
+  if(!email){err.textContent='Enter your email first.';return;}
+  try{
+    const {error}=await _supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+    if(error)throw error;err.textContent='If this account can receive a reset email, a link has been sent.';
+  }catch(e){err.textContent='Could not send a reset email. Contact the owner.';}
+}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onerror="window.Chart=null"></script>
 <script>
 
@@ -4496,7 +4531,7 @@ function initStaffPerf(){
 // RECURRING TASKS
 // ════════════════════════════════════════════════════════
 function checkRecurringTasks(){
-  if(!D.recurring||!D.recurring.length) return;
+  if(!currentUser||!['owner','manager'].includes(currentUser.role)||!D.recurring||!D.recurring.length) return;
   const tod=today();
   let created=0;
   D.recurring.forEach(rt=>{
@@ -5109,244 +5144,112 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 // ── Generic helpers ────────────────────────────────────────────────
 async function sbUpsert(table,row){
-  try{
-    const r=await fetch(SUPA_URL+'/rest/v1/'+table,{
-      method:'POST',
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify(row)
-    });
-    if(!r.ok){
-      const e=await r.text().catch(()=>'');
-      console.warn('sbUpsert fail:',table,r.status,e.substring(0,300));
-      // Show visible warning for non-activity_log failures
-      if(table!=='activity_log'){
-        const dot=document.getElementById('health-dot');
-        if(dot){dot.style.background='#e53935';dot.title='Sync error: '+table+' '+r.status+' — check Supabase columns';}
-      }
-    }
-    return r.ok;
-  }catch(e){console.warn('sbUpsert err:',table,e);return false;}
+  const signature=table+':'+row.id+':'+JSON.stringify(row);
+  if(authWrites.has(signature))return authWrites.get(signature);
+  const operation=authUpsertNow(table,row);authWrites.set(signature,operation);
+  try{return await operation;}finally{authWrites.delete(signature);}
 }
 
 async function sbDel(table,id){
   try{
-    // 1. Delete from source table
-    const r=await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id+'&company_id=eq.'+currentCo.id,{
-      method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-    });
-    if(!r.ok) console.warn('sbDel fail:',table,id,r.status);
-    // 2. Record deletion in deleted_records so ALL devices know
-    await fetch(SUPA_URL+'/rest/v1/deleted_records',{
-      method:'POST',
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify({record_id:String(id),table_name:table,company_id:currentCo.id,deleted_at:new Date().toISOString()})
-    });
-    return r.ok;
-  }catch(e){console.warn('sbDel err:',e);return false;}
+    const co=currentCo.id;
+    const r=await authFetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(co),{method:'DELETE',headers:{Prefer:'return=representation'}});
+    if(!r.ok)throw new Error('Delete failed ('+r.status+').');
+    const rows=await r.json();if(!rows.length)throw new Error('Record was not deleted. Check your permissions.');
+    return true;
+  }catch(e){toast(e.message,'error');return false;}
 }
 
 // ── Row mappers ────────────────────────────────────────────────────
 function mapSale(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,items:r.items||[],amount:r.amount||0,cost:r.cost||0,pnl:r.pnl||0,paidAmount:r.paid_amount||0,paymentStatus:r.payment_status||'paid',custName:r.cust_name||'Walk-in',custId:r.cust_id||'',channel:r.channel||'',payment:r.payment||'M-Pesa',ref:r.ref||'',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapExp(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,amount:r.amount||0,cat:r.cat||'Other',supId:r.sup_id||'',supName:'',vendor:r.vendor||'',ref:r.ref||'',paymethod:r.paymethod||'M-Pesa',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapTask(r){return{id:r.id,ticketNo:r.ticket_no||'',title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false,convertedToSale:r.converted_to_sale||false,saleId:r.sale_id||null};}
-function mapUser(r){return{id:r.id,name:r.name,role:r.role,category:r.category||roleToCat(r.role),password:r.password||'',phone:r.phone||''};}
+function mapUser(r){return {id:r.id,name:r.name,role:r.role,category:roleToCat(r.role),phone:r.phone||'',auth_user_id:r.auth_user_id||null,company_id:r.company_id};}
 
 // ── Push functions ─────────────────────────────────────────────────
-function pushSale(s){sbUpsert('sales',{id:s.id,company_id:currentCo.id,ticket_no:s.ticketNo||'',date:s.date,items:s.items,amount:s.amount,cost:s.cost||0,pnl:s.pnl||0,paid_amount:s.paidAmount||0,payment_status:s.paymentStatus||'paid',cust_name:s.custName||'Walk-in',cust_id:s.custId||null,channel:s.channel||'',payment:s.payment||'',ref:s.ref||'',notes:s.notes||'',by_user:s.by||'',created_at:new Date().toISOString()});}
-function pushExp(e){sbUpsert('expenses',{id:e.id,company_id:currentCo.id,ticket_no:e.ticketNo||'',date:e.date,amount:e.amount,cat:e.cat,vendor:e.vendor||'',ref:e.ref||'',paymethod:e.paymethod||'M-Pesa',notes:e.notes||'',by_user:e.by||'',sup_id:e.supId||null,created_at:new Date().toISOString()});}
+function pushSale(s){return sbUpsert('sales',{id:s.id,company_id:currentCo.id,ticket_no:s.ticketNo||'',date:s.date,items:s.items,amount:s.amount,cost:s.cost||0,pnl:s.pnl||0,paid_amount:s.paidAmount||0,payment_status:s.paymentStatus||'paid',cust_name:s.custName||'Walk-in',cust_id:s.custId||null,channel:s.channel||'',payment:s.payment||'',ref:s.ref||'',notes:s.notes||'',by_user:s.by||'',created_at:new Date().toISOString()});}
+function pushExp(e){return sbUpsert('expenses',{id:e.id,company_id:currentCo.id,ticket_no:e.ticketNo||'',date:e.date,amount:e.amount,cat:e.cat,vendor:e.vendor||'',ref:e.ref||'',paymethod:e.paymethod||'M-Pesa',notes:e.notes||'',by_user:e.by||'',sup_id:e.supId||null,created_at:new Date().toISOString()});}
 function mapItem(r){return{id:r.id,ticketNo:r.ticket_no||'',name:r.name,cat:r.cat||'Other',qty:r.qty||0,cost:r.cost||0,sell:r.sell||0,low:r.low||2,created_at:r.created_at||''};}
-function pushItem(i){sbUpsert('inventory',{id:i.id,company_id:currentCo.id,ticket_no:i.ticketNo||'',name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:i.created_at||new Date().toISOString()});}
-function pushCust(cu){sbUpsert('customers',{id:cu.id,company_id:currentCo.id,name:cu.name,phone:cu.phone||'',channel:cu.channel||'',loc:cu.loc||'',type:cu.type||'Individual',notes:cu.notes||'',created_at:new Date().toISOString()});}
-function pushSup(s){sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()});}
-function pushTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString(),converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
-function updateTask(t){sbUpsert('tasks',{id:t.id,company_id:currentCo.id,title:t.title,assignee:t.assignee,assignees:t.assignees,created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:t.deliveryCostExpensed||false,converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
+function pushItem(i){return sbUpsert('inventory',{id:i.id,company_id:currentCo.id,ticket_no:i.ticketNo||'',name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:i.created_at||new Date().toISOString()});}
+function pushCust(cu){return sbUpsert('customers',{id:cu.id,company_id:currentCo.id,name:cu.name,phone:cu.phone||'',channel:cu.channel||'',loc:cu.loc||'',type:cu.type||'Individual',notes:cu.notes||'',created_at:new Date().toISOString()});}
+function pushSup(s){return sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()});}
+function pushTask(t){return sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString(),converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
+async function updateTask(t){
+  const epoch=authEpoch,snapshot=JSON.stringify(t);
+  const role=currentUser?.role;
+  let fields;
+  if(role==='delivery')fields={status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash'};
+  else if(role==='staff')fields={delivery_cost:t.deliveryCost||0,delivery_cost_expensed:!!t.deliveryCostExpensed,converted_to_sale:!!t.convertedToSale,sale_id:t.saleId||null};
+  else fields={title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:!!t.deliveryCostExpensed,converted_to_sale:!!t.convertedToSale,sale_id:t.saleId||null};
+  try{
+    const r=await authFetch(SUPA_URL+'/rest/v1/tasks?id=eq.'+t.id+'&company_id=eq.'+encodeURIComponent(currentCo.id),{method:'PATCH',headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(fields)});
+    if(!r.ok)throw new Error('Task could not be saved ('+r.status+').');
+    const rows=await r.json();if(!rows.length)throw new Error('Task access was removed.');
+    if(epoch===authEpoch&&authBaseline?.tasks)authBaseline.tasks[t.id]=snapshot;
+    return true;
+  }catch(e){toast(e.message,'error');return false;}
+}
 // ════════════════════════════════════════════════════════════════════
 // SYNC — Supabase is the single source of truth.
 // Pull fresh on login. Pull fresh every 30s. Pull fresh on demand.
 // Delete from Supabase first, then update local.
 // ════════════════════════════════════════════════════════════════════
 async function syncNow(showFeedback){
-  if(!currentCo||!currentUser) return;
-  const ss=document.getElementById('sync-status');
-  if(ss) ss.textContent='';
-  const _syncBtn=document.getElementById('sync-btn');
-  if(_syncBtn) _syncBtn.classList.add('syncing');
+  if(!currentCo||!currentUser||!authUser||authSyncing)return false;
+  authSyncing=true;
+  const epoch=authEpoch, co=currentCo.id, oldRole=currentUser.role;
+  const status=document.getElementById('sync-status');
   try{
-    const h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
-    const co=currentCo.id;
-    const base=SUPA_URL+'/rest/v1/';
-
-    // Fetch deleted records first
-    const deletedRows=await fetch(base+'deleted_records?company_id=eq.'+co+'&select=record_id,table_name',{headers:h})
-      .then(r=>r.ok?r.json():[]).catch(()=>[]);
-    const _serverDel={};
-    deletedRows.forEach(row=>{
-      if(!_serverDel[row.table_name]) _serverDel[row.table_name]=new Set();
-      _serverDel[row.table_name].add(String(row.record_id));
-    });
-    const _localDel=D.deletedIds||{};
-    const isDeleted=(table,id)=>{
-      const sid=String(id);
-      if(_localDel[table+'_'+sid]) return true;
-      if(_serverDel[table]&&_serverDel[table].has(sid)) return true;
-      return false;
-    };
-
-    // Fetch all data in parallel
-    const [sales,expenses,inventory,customers,suppliers,tasks,users,activityRows]=await Promise.all([
-      fetch(base+'sales?company_id=eq.'+co+'&order=created_at.desc&limit=2000',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(base+'expenses?company_id=eq.'+co+'&order=created_at.desc&limit=2000',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(base+'inventory?company_id=eq.'+co+'&order=name.asc',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(base+'customers?company_id=eq.'+co+'&order=created_at.desc',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(base+'suppliers?company_id=eq.'+co+'&order=name.asc',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(base+'tasks?company_id=eq.'+co+'&order=created_at.desc&limit=500',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(base+'users?company_id=eq.'+co+'&order=id.asc',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(base+'activity_log?company_id=eq.'+co+'&order=created_at.desc&limit=500',{headers:h}).then(r=>r.ok?r.json():[]).catch(()=>[]),
-    ]);
-
-    // Apply Supabase data — direct assignment, filtered by deleted blacklist
-    if(sales.length)     D.sales     = sales.map(mapSale).filter(r=>!isDeleted('sales',r.id));
-    if(expenses.length)  D.expenses  = expenses.map(mapExp).filter(r=>!isDeleted('expenses',r.id));
-    if(inventory.length) D.inventory = inventory.map(mapItem).filter(r=>!isDeleted('inventory',r.id));
-    if(customers.length) D.customers = customers.filter(r=>!isDeleted('customers',r.id));
-    if(suppliers.length) D.suppliers = suppliers.filter(r=>!isDeleted('suppliers',r.id));
-    if(tasks.length)     D.tasks     = tasks.map(mapTask).filter(r=>!isDeleted('tasks',r.id));
-    if(users.length){
-      const _du=D.deletedIds||{};
-      const _kept=users.filter(function(r){ return !_du['users_'+String(r.id)] && !isDeleted('users',r.id); }).map(mapUser);
-      const _pend=D._pendingUser||{};
-      _kept.forEach(function(u){ if(_pend[u.id]) Object.assign(u,_pend[u.id]); });
-      if(_kept.length) D.users=_kept;
+    const own=await authRows('users','company_id=eq.'+encodeURIComponent(co)+'&auth_user_id=eq.'+encodeURIComponent(authUser.id)+'&select='+authUserColumns);
+    if(!own.length){authShowLogin('Your access to this company was removed.');return false;}
+    const member=mapUser(own[0]);
+    if(member.role===oldRole && !await authFlushDirty())throw new Error('Some changes are still waiting to save. Check your connection.');
+    // Reload all scoped data after a role change; never keep broader cached access.
+    const rider=member.role==='delivery';
+    const tables=rider?['tasks']:['sales','expenses','inventory','customers','suppliers','tasks','users','activity_log','bundles'];
+    const values=await Promise.all(tables.map(async table=>[table,await authAllRows(table,co)]));
+    if(epoch!==authEpoch)return false;
+    const rows=Object.fromEntries(values), fresh=defD();
+    fresh.sales=(rows.sales||[]).map(mapSale);fresh.expenses=(rows.expenses||[]).map(mapExp);
+    fresh.inventory=(rows.inventory||[]).map(mapItem);fresh.customers=rows.customers||[];fresh.suppliers=rows.suppliers||[];
+    fresh.tasks=(rows.tasks||[]).map(mapTask);fresh.users=(rows.users||own).map(mapUser);fresh.bundles=rows.bundles||[];
+    fresh.auditLog=(rows.activity_log||[]).map(r=>({id:r.id,entity:r.entity,entityId:r.entity_id,ticketNo:r.ticket_no||'',action:r.action,details:r.details,by:r.by_user,at:r.created_at}));
+    if(D&&oldRole===member.role){for(const k of ['recurring','recPay','pins','monthlyTargets','expBudgets','activity'])fresh[k]=D[k]||fresh[k];}
+    D=fresh;D._companyId=co;currentUser=member;authBaseline=authSnapshot();saveD();
+    if(status)status.textContent='✓ Synced';
+    if(showFeedback)toast('Data synced','success');
+    if(document.getElementById('main-app').style.display!=='none'){
+      if(oldRole!==member.role){buildNav();goPage(rider?'tasks':'dashboard');}
+      refreshCurrentPage();
     }
-    try{ Object.keys(D._pendingUser||{}).forEach(function(id){ const pu=D.users.find(function(x){return String(x.id)===String(id);}); if(pu) patchUser(pu,D._pendingUser[id]); else delete D._pendingUser[id]; }); }catch(e){}
-    try{ensureCategories();}catch(e){}
-    try{
-      if(currentUser){
-        const fresh=D.users.find(function(x){return x.id===currentUser.id;});
-        if(fresh){
-          const changed=fresh.role!==currentUser.role;
-          currentUser=fresh;
-          if(changed){
-            buildNav();
-            const rb=document.getElementById('top-role'); if(rb){rb.textContent=fresh.category||roleToCat(fresh.role);rb.className='badge '+rcC(fresh.role);}
-            const av=document.getElementById('top-av'); if(av) av.className='av '+avC(fresh.role);
-            const onPage=(document.querySelector('.page.on')||{}).id||'';
-            if(!document.getElementById('nb-'+onPage.replace('pg-',''))){
-              const first=document.querySelector('#main-nav .nb'); if(first) goPage(first.id.replace('nb-',''));
-            }
-            try{ toast('Your access was updated: '+(fresh.category||roleToCat(fresh.role)),'info',3500); }catch(e){}
-          }
-        }
-      }
-    }catch(e){}
-
-    // Push any local-only records to Supabase (offline entries)
-    const sIds=new Set(sales.map(r=>String(r.id)));
-    const eIds=new Set(expenses.map(r=>String(r.id)));
-    const iIds=new Set(inventory.map(r=>String(r.id)));
-    const cuIds=new Set(customers.map(r=>String(r.id)));
-    const suIds=new Set(suppliers.map(r=>String(r.id)));
-    const tIds=new Set(tasks.map(r=>String(r.id)));
-    (D.sales||[]).forEach(r=>{if(!sIds.has(String(r.id))&&!isDeleted('sales',r.id))pushSale(r);});
-    (D.expenses||[]).forEach(r=>{if(!eIds.has(String(r.id))&&!isDeleted('expenses',r.id))pushExp(r);});
-    (D.inventory||[]).forEach(r=>{if(!iIds.has(String(r.id))&&!isDeleted('inventory',r.id))pushItem(r);});
-    (D.customers||[]).forEach(r=>{if(!cuIds.has(String(r.id))&&!isDeleted('customers',r.id))pushCust(r);});
-    (D.suppliers||[]).forEach(r=>{if(!suIds.has(String(r.id))&&!isDeleted('suppliers',r.id))pushSup(r);});
-    (D.tasks||[]).forEach(r=>{if(!tIds.has(String(r.id))&&!isDeleted('tasks',r.id))pushTask(r);});
-
-    // Merge activity log
-    if(activityRows&&activityRows.length){
-      const localAuditIds=new Set((D.auditLog||[]).map(l=>String(l.id)));
-      const newLogs=activityRows.filter(r=>!localAuditIds.has(String(r.id))).map(r=>({
-        id:r.id,entity:r.entity,entityId:r.entity_id,ticketNo:r.ticket_no||'',
-        action:r.action,details:r.details,by:r.by_user,at:r.created_at,
-      }));
-      D.auditLog=[...(D.auditLog||[]),...newLogs].sort((a,b)=>new Date(b.at)-new Date(a.at)).slice(0,500);
-    }
-
-    // Sort data
-    D.sales=[...D.sales].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    D.expenses=[...D.expenses].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    D.tasks=[...D.tasks].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-
-    saveD();
-    if(ss){ss.textContent='✓ Synced';setTimeout(()=>{if(ss)ss.textContent='';},2000);}
-    const _sb=document.getElementById('sync-btn'); if(_sb) _sb.classList.remove('syncing');
-    if(showFeedback) toast('✓ Data synced','success');
-    checkHealth();
-    refreshCurrentPage();
-  }catch(e){
-    console.warn('syncNow error:',e);
-    if(ss){ss.textContent='⚠ Offline';setTimeout(()=>{if(ss)ss.textContent='';},3000);}
-    const _sb2=document.getElementById('sync-btn'); if(_sb2) _sb2.classList.remove('syncing');
-  }
+    return true;
+  }catch(e){if(epoch===authEpoch){if(status)status.textContent='Sync failed — retry';if(showFeedback)toast(e.message,'error');}return false;}
+  finally{if(epoch===authEpoch)authSyncing=false;}
 }
 
 async function pushUser(u){
-  const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-  const url=SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id;
-  let saved=false;
-  // Core fields first — these columns always exist, so the role change always lands
-  try{
-    const r=await fetch(url,{method:'PATCH',headers:H,
-      body:JSON.stringify({name:u.name,role:u.role,password:u.password||'',phone:u.phone||''})});
-    if(r.ok){ const rows=await r.json(); saved=!!(rows&&rows.length); }
-  }catch(e){}
-  if(!saved){
-    try{ await sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,password:u.password||'',phone:u.phone||''}); saved=true; }catch(e){}
-  }
-  // Category separately and optionally — if the column is missing this simply fails quietly
-  try{ await fetch(url,{method:'PATCH',headers:H,body:JSON.stringify({category:u.category||''})}); }catch(e){}
-  return saved;
+  return sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,phone:u.phone||'',auth_user_id:u.auth_user_id||null});
 }
 
 // Save specific fields for one member, then read the cloud back to confirm.
 // While unconfirmed, the change is held as "pending" so a sync can't undo it.
 async function patchUser(u,fields){
-  if(!D._pendingUser) D._pendingUser={};
-  D._pendingUser[u.id]=Object.assign(D._pendingUser[u.id]||{},fields);
-  try{ saveD(); }catch(e){}
-  const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
-  const url=SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id;
-  let reason='';
   try{
-    const r=await fetch(url,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json','Prefer':'return=representation'},H),body:JSON.stringify(fields)});
-    if(!r.ok){ reason='Supabase '+r.status+' '+(await r.text().catch(function(){return '';})).slice(0,120); }
-    else{
-      const rows=await r.json().catch(function(){return [];});
-      if(!rows||!rows.length){ // member not in the cloud yet: create the full row
-        await sbUpsert('users',{id:u.id,company_id:currentCo.id,name:u.name,role:u.role,password:u.password||'',phone:u.phone||''});
-      }
-    }
-  }catch(e){ reason='no connection'; }
-  let ok=false;
-  try{
-    const g=await fetch(url,{headers:H});
-    if(g.ok){
-      const row=((await g.json())||[])[0];
-      ok=!!row&&Object.keys(fields).every(function(k){return String(row[k]==null?'':row[k])===String(fields[k]==null?'':fields[k]);});
-      if(!ok&&!reason) reason=row?'the cloud did not accept the change':'member not found in the cloud';
-    } else if(!reason){ reason='Supabase '+g.status; }
-  }catch(e){ if(!reason) reason='no connection'; }
-  if(ok){ delete D._pendingUser[u.id]; try{ saveD(); }catch(e){} }
-  return {ok:ok,reason:reason};
+    const allowed={};for(const key of ['role','phone','auth_user_id'])if(key in fields)allowed[key]=fields[key];
+    if(!Object.keys(allowed).length)throw new Error('No supported profile changes.');
+    const r=await authFetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+encodeURIComponent(currentCo.id),{method:'PATCH',headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(allowed)});
+    if(!r.ok)throw new Error('Profile update failed ('+r.status+').');
+    const rows=await r.json();if(rows.length!==1)throw new Error('Profile was not updated.');
+    Object.assign(u,mapUser(rows[0]));saveD();return {ok:true};
+  }catch(e){return {ok:false,reason:e.message};}
 }
 // Category column is optional: best effort, never blocks anything
-function patchUserCategory(u){
-  try{ fetch(SUPA_URL+'/rest/v1/users?id=eq.'+u.id+'&company_id=eq.'+currentCo.id,{method:'PATCH',
-    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({category:u.category||''})}).catch(function(){}); }catch(e){}
-}
+function patchUserCategory(){}
 
 let _syncTimer=null;
 function startAutoSync(){
-  if(_syncTimer) clearInterval(_syncTimer);
-  _syncTimer=setInterval(()=>syncNow(false),10000);
-  setInterval(checkHealth, 120000);
-  window.addEventListener('focus', ()=>syncNow(false), {once:false});
-  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncNow(false); }, {once:false});
-  // Start Supabase Realtime for instant cross-device sync
-  setTimeout(initRealtime, 1500);
+  if(_syncTimer)clearInterval(_syncTimer);
+  _syncTimer=setInterval(()=>syncNow(false),10000);initRealtime();
 }
 
 function refreshCurrentPage(){
@@ -5366,136 +5269,65 @@ function refreshCurrentPage(){
 }
 
 // ── Show/hide login steps ──────────────────────────────────────────
-function showPickStep(){
-  loginTargetUser=null;
-  document.getElementById('step-pick').style.display='block';
-  document.getElementById('step-pw').style.display='none';
-  renderUserList();
-  // Refresh passwords from Supabase in background
-  fetch(SUPA_URL+'/rest/v1/users?company_id=eq.'+currentCo.id+'&order=id.asc',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
-    .then(r=>r.ok?r.json():[]).then(rows=>{
-      if(rows.length){
-        rows.forEach(row=>{const u=D.users.find(x=>x.id===row.id);if(u){u.password=row.password||u.password;u.phone=row.phone||u.phone;if(row.role){u.role=row.role;u.category=row.category||roleToCat(row.role);}}});
-        saveD();renderUserList();
-      }
-    }).catch(()=>{});
-}
-function renderUserList(){
-  const el=document.getElementById('usel-list');if(!el)return;
-  el.innerHTML=D.users.map(u=>`
-    <button type="button" class="usel-btn" onclick="pickUser(${u.id})">
-      <div class="av ${avC(u.role)}">${ini(u.name)}</div>
-      <div style="flex:1"><div class="uname">${u.name}</div><div class="urole">${u.category||roleToCat(u.role)}</div></div>
-      <div style="font-size:10px;padding:2px 8px;border-radius:3px;font-weight:500;${u.password?'background:var(--green-bg);color:var(--green)':'background:var(--red-bg);color:var(--red)'}">${u.password?'Password set':'No password'}</div>
-    </button>`).join('');
-}
+function showPickStep(){authShowLogin();}
+function renderUserList(){}
 
 async function tryLogin(){
-  const entered=document.getElementById('pw-input').value;
-  // Get latest password from Supabase
+  if(authBusy)return;
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('pw-input').value;
+  const err=document.getElementById('pw-error');
+  if(!email||!password){err.textContent='Enter your email and password.';return;}
+  authBusy=true;document.getElementById('auth-login-button').disabled=true;err.textContent='Signing in…';
   try{
-    const r=await fetch(SUPA_URL+'/rest/v1/users?id=eq.'+loginTargetUser.id+'&company_id=eq.'+currentCo.id,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
-    if(r.ok){const rows=await r.json();if(rows.length){const row=rows[0];loginTargetUser.password=row.password||loginTargetUser.password;if(row.role){loginTargetUser.role=row.role;loginTargetUser.category=row.category||roleToCat(row.role);}const u=D.users.find(x=>x.id===loginTargetUser.id);if(u){u.password=loginTargetUser.password;u.role=loginTargetUser.role;u.category=loginTargetUser.category;}saveD();}}
-  }catch(e){}
-  if(!loginTargetUser.password){document.getElementById('pw-error').textContent='No password set. Ask owner.';return;}
-  if(entered!==loginTargetUser.password){document.getElementById('pw-error').textContent='Wrong password. Try again.';document.getElementById('pw-input').value='';return;}
-  doLogin(loginTargetUser);
+    if(!_supabaseClient) throw new Error('Sign-in is unavailable. Reload the page.');
+    const {error}=await _supabaseClient.auth.signInWithPassword({email,password});
+    if(error)throw new Error('Sign-in failed. Check your email and password, then try again.');
+    document.getElementById('pw-input').value='';
+    await authLoadMemberships();
+  }catch(e){authShowLogin(e.message);}
+  finally{authBusy=false;document.getElementById('auth-login-button').disabled=false;}
 }
 
 function doLogin(user){
-  try{ensureCategories();}catch(e){}
+  if(!authUser||!user||user.auth_user_id!==authUser.id)return authShowLogin('Please sign in.');
   currentUser=user;
+  document.getElementById('co-screen').style.display='none';
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
   document.getElementById('top-dot').style.background=currentCo.color;
   document.getElementById('top-co').textContent=currentCo.name;
-  document.getElementById('top-name').textContent=currentUser.name;
-  document.getElementById('top-av').textContent=ini(currentUser.name);
-  document.getElementById('top-av').className='av '+avC(currentUser.role);
-  const rb=document.getElementById('top-role');rb.textContent=currentUser.category||roleToCat(currentUser.role);rb.className='badge '+rcC(currentUser.role);
-  dashMonth=tM();
-  buildNav();setDates();popAll();
-  // Push any locally-deleted IDs to Supabase deleted_records on login
-  // This handles deletions made while offline
-  if(D.deletedIds && Object.keys(D.deletedIds).length){
-    const tableMap={sales:'sales',expenses:'expenses',inventory:'inventory',
-      customers:'customers',suppliers:'suppliers',tasks:'tasks',bundles:'bundles'};
-    Object.entries(D.deletedIds).forEach(([key])=>{
-      const parts=key.split('_');
-      const tbl=parts[0]; const rid=parts.slice(1).join('_');
-      if(tableMap[tbl]){
-        fetch(SUPA_URL+'/rest/v1/deleted_records',{
-          method:'POST',
-          headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-          body:JSON.stringify({record_id:rid,table_name:tbl,company_id:currentCo.id,deleted_at:new Date().toISOString()})
-        }).catch(()=>{});
-      }
-    });
-  }
-  syncNow(false);
-  startAutoSync();
-  setTimeout(checkRecurringTasks, 3000);
-  setTimeout(checkHealth, 2000);
-  if(currentUser.role==='delivery'){goPage('tasks');}
-  else{goPage('dashboard');checkDue();}
+  document.getElementById('top-name').textContent=user.name;
+  document.getElementById('top-av').textContent=ini(user.name);
+  document.getElementById('top-av').className='av '+avC(user.role);
+  const rb=document.getElementById('top-role');rb.textContent=user.category;rb.className='badge '+rcC(user.role);
+  dashMonth=tM();buildNav();setDates();popAll();startAutoSync();
+  goPage(user.role==='delivery'?'tasks':'dashboard');
+  if(['owner','manager'].includes(user.role))checkRecurringTasks();
+  if(user.role!=='delivery')checkDue();
 }
 
-function saveNewPw(){
-  const uid=setPwTargetId;
-  const u=D.users.find(x=>x.id===uid);
-  const err=document.getElementById('setpw-error');
-  if(!u){ if(err) err.textContent='User not found.'; return; }
-  const pw=document.getElementById('setpw-new').value;
-  const pw2=document.getElementById('setpw-confirm').value;
-  if(pw.length<4){ if(err) err.textContent='Password must be at least 4 characters.'; return; }
-  if(pw!==pw2){ if(err) err.textContent='The two passwords do not match.'; return; }
-  if(err) err.textContent='';
-  u.password=pw;
-  saveD(); renderPwMgmt();
-  try{ auditLog('team',uid,'password_changed','Password changed for '+u.name+' by '+currentUser.name); }catch(e){}
-  document.getElementById('setpw-modal').classList.remove('open');
-  patchUser(u,{password:pw}).then(function(res){
-    if(res.ok) toast('\u2713 Password updated for '+u.name+' on all devices');
-    else toast('Saved on this device only ('+res.reason+'). Retrying on next sync.','warn',7000);
-  });
+async function saveNewPw(){
+  const a=document.getElementById('setpw-new').value,b=document.getElementById('setpw-confirm').value,err=document.getElementById('setpw-error');
+  if(a.length<12){err.textContent='Use at least 12 characters.';return;}
+  if(a!==b){err.textContent='Passwords do not match.';return;}
+  try{
+    const {error}=await _supabaseClient.auth.updateUser({password:a});if(error)throw error;
+    document.getElementById('setpw-new').value='';document.getElementById('setpw-confirm').value='';
+    document.getElementById('setpw-modal').classList.remove('open');authRecovery=false;toast('Password updated');
+    await authLoadMemberships();
+  }catch(e){err.textContent=e.message;}
 }
 
-async function deleteTask(taskId){
-  if(!confirm('Delete this task?'))return;
-  // Record deletion FIRST so sync never restores it
-  const _dtask=D.tasks.find(t=>t.id===taskId);
-  auditLog('task',taskId,'deleted','Task deleted: '+(_dtask?_dtask.title:'#'+taskId));
-  if(!D.deletedIds) D.deletedIds={};
-  D.deletedIds['tasks_'+taskId]=1;
-  D.tasks=D.tasks.filter(t=>t.id!==taskId);
-  saveD();
-  sbDel('tasks',taskId); // async - don't wait, blacklist protects us
-  renderTasksMetrics();renderTasks();toast('Task deleted');
+async function deleteTask(id){
+  if(!['owner','manager'].includes(currentUser?.role)||!confirm('Delete this task?'))return;
+  if(await sbDel('tasks',id)){D.tasks=D.tasks.filter(t=>t.id!==id);if(authBaseline?.tasks)delete authBaseline.tasks[id];saveD();renderTasksMetrics();renderTasks();toast('Task deleted');}
 }
 
 async function delR(type,id){
-  if(!can('del')){alert('Owners and managers only.');return;}
-  if(!confirm('Delete this record?'))return;
-  // Get record info BEFORE removing it
-  const _arr=type==='bundles'?D.bundles:(D[type]||[]);
-  const _rec=_arr.find(r=>String(r.id)==String(id));
-  const _tick=_rec?.ticketNo||'';
-  const _name=_rec?.name||_rec?.title||_rec?.custName||'';
-  // Record deletion FIRST so sync never restores it
-  if(!D.deletedIds) D.deletedIds={};
-  D.deletedIds[type+'_'+id]=1;
-  if(type==='bundles') D.bundles=D.bundles.filter(r=>r.id!=id); else if(D[type]) D[type]=D[type].filter(r=>r.id!=id);
-  auditLog(type,id,'deleted',(_tick?'['+_tick+'] ':'')+type+' deleted by '+currentUser.name+(_name?' — '+_name:''));
-  saveD();
-  const tbl={sales:'sales',expenses:'expenses',inventory:'inventory',customers:'customers',suppliers:'suppliers',bundles:'bundles'}[type];
-  if(tbl) sbDel(tbl,id);
-  toast('🗑 '+(_tick||type)+' deleted','info',2500);
-  if(type==='sales')renderSales();
-  else if(type==='expenses')renderExpenses();
-  else if(type==='inventory'){renderInv();popAll();}
-  else if(type==='bundles'){renderBundles();popAll();}
-  else if(type==='customers'){renderCust();popAll();}
-  else if(type==='suppliers'){renderSup();popAll();}
+  if(!['owner','manager'].includes(currentUser?.role)||!confirm('Delete this record?'))return;
+  if(!['sales','expenses','inventory','customers','suppliers','bundles'].includes(type))return;
+  if(await sbDel(type,id)){D[type]=D[type].filter(r=>String(r.id)!==String(id));if(authBaseline?.[type])delete authBaseline[type][id];saveD();popAll();refreshCurrentPage();toast('Record deleted');}
 }
 
 function toggleDark(){
@@ -5512,11 +5344,15 @@ function applyDark(){
 }
 function toast(msg,type,dur){
   let t=document.getElementById('_toast');
-  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;transition:opacity .25s';document.body.appendChild(t);}
-  const col={success:'background:var(--black);color:#fff',error:'background:var(--red);color:#fff',info:'background:var(--blue);color:#fff',warn:'background:var(--amber);color:#fff'}[type||'success']||'background:var(--black);color:#fff';
-  t.innerHTML=`<div style="${col};padding:10px 20px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.18)">${msg}</div>`;
-  const displayDuration=Math.min(Math.max(Number(dur)||2800,0),5000);
-  t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},displayDuration);
+  if(t){clearTimeout(t._t);t.remove();}
+  t=document.createElement('div');t.id='_toast';
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;max-width:calc(100vw - 32px)';
+  const content=document.createElement('div');content.textContent=String(msg);
+  const background={success:'var(--black)',error:'var(--red)',info:'var(--blue)',warn:'var(--amber)'}[type||'success']||'var(--black)';
+  content.style.cssText='background:'+background+';color:#fff;padding:10px 20px;border-radius:8px;font-size:12px;font-weight:700;white-space:normal;overflow-wrap:anywhere;box-shadow:0 4px 16px rgba(0,0,0,.18)';
+  t.append(content);document.body.append(t);
+  const delay=Math.min(Math.max(Number(dur)||2800,0),5000);
+  t._t=setTimeout(()=>t.remove(),delay);
 }
 
 
