@@ -1296,7 +1296,7 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
    <div id="pw-error" class="pw-error" role="status" aria-live="polite"></div>
    <button id="auth-login-button" class="btn primary block" type="submit">Sign in</button>
   </form>
-  <button type="button" class="linkbtn" style="margin-top:16px" onclick="authResetPassword()">Forgot password?</button>
+  <button id="auth-reset-button" type="button" class="linkbtn" style="margin-top:16px" onclick="authResetPassword()">Forgot password?</button>
  </div>
 </div>
 
@@ -1926,6 +1926,7 @@ function showStrength(inputId,barId){ const pw=document.getElementById(inputId).
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init(){
+  const recoveryHint=location.hash.includes('type=recovery')||location.search.includes('type=recovery');
   authUpgradeCache();applyDark(); initSupabaseClient(); authShowLogin();
   if(!_supabaseClient){document.getElementById('pw-error').textContent='Sign-in could not load. Check your connection and reload.';return;}
   _supabaseClient.auth.onAuthStateChange((event)=>{
@@ -1939,7 +1940,10 @@ async function init(){
   try{
     const {data,error}=await _supabaseClient.auth.getSession();
     if(error) throw error;
-    if(data.session && !authRecovery) await authLoadMemberships();
+    if(data.session && recoveryHint){
+      authRecovery=true;authUser=data.session.user;
+      setTimeout(()=>{authShowLogin('Choose a new password.');openSetPw(null);},0);
+    }else if(data.session && !authRecovery) await authLoadMemberships();
   }catch(e){authShowLogin('Please sign in.');}
   window.addEventListener('focus',()=>{if(currentUser)syncNow(false);});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentUser)syncNow(false);});
@@ -4252,6 +4256,16 @@ function authShowLogin(message=''){
   document.getElementById('pw-error').textContent=message;
   document.getElementById('pw-input').value='';
 }
+function authErrorMessage(error,action){
+  const code=String(error?.code||'').toLowerCase();
+  if(code==='invalid_credentials')return 'Supabase rejected this email/password. Check the Authentication user, or reset its password.';
+  if(code==='email_not_confirmed')return 'This Authentication email is not confirmed. Confirm it in Supabase, then sign in again.';
+  if(code==='user_banned')return 'This Authentication account is currently disabled.';
+  if(code.includes('rate_limit')||error?.status===429)return action==='reset'?'Too many reset attempts. Wait at least 60 seconds before trying again.':'Too many sign-in attempts. Wait a few minutes and retry.';
+  if(code==='email_address_invalid')return 'Enter a valid email address.';
+  const detail=String(error?.message||'').trim();
+  return (action==='reset'?'Password reset failed':'Sign-in failed')+(detail?' — '+detail:'.');
+}
 function authUpgradeCache(){
   // Installation instructions require exporting unsynced records before this upgrade.
   // Preserve local-only settings for the confirmed owner; discard shared business/password caches.
@@ -4333,11 +4347,17 @@ async function authCopyMemberLink(id){
 }
 async function authResetPassword(){
   const email=document.getElementById('auth-email').value.trim(),err=document.getElementById('pw-error');
-  if(!email){err.textContent='Enter your email first.';return;}
+  const input=document.getElementById('auth-email'),button=document.getElementById('auth-reset-button');
+  if(!email){err.textContent='Enter your email first.';input.focus();return;}
+  if(!input.checkValidity()){err.textContent='Enter a valid email address.';input.focus();return;}
+  if(button)button.disabled=true;err.textContent='Requesting a password reset…';
   try{
-    const {error}=await _supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
-    if(error)throw error;err.textContent='If this account can receive a reset email, a link has been sent.';
-  }catch(e){err.textContent='Could not send a reset email. Contact the owner.';}
+    const redirectTo=new URL('/',location.origin).toString();
+    const {error}=await _supabaseClient.auth.resetPasswordForEmail(email,{redirectTo});
+    if(error)throw error;
+    err.textContent='Reset requested. Check your inbox and spam folder. Supabase may intentionally show success even when an address is not registered.';
+  }catch(e){err.textContent=authErrorMessage(e,'reset');}
+  finally{if(button){setTimeout(()=>{button.disabled=false;},60000);}}
 }</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onerror="window.Chart=null"></script>
 <script>
@@ -5282,7 +5302,7 @@ async function tryLogin(){
   try{
     if(!_supabaseClient) throw new Error('Sign-in is unavailable. Reload the page.');
     const {error}=await _supabaseClient.auth.signInWithPassword({email,password});
-    if(error)throw new Error('Sign-in failed. Check your email and password, then try again.');
+    if(error)throw new Error(authErrorMessage(error,'login'));
     document.getElementById('pw-input').value='';
     await authLoadMemberships();
   }catch(e){authShowLogin(e.message);}
