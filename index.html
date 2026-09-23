@@ -1263,7 +1263,14 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
+<style>
+.prod-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}.prod-heading h2,.prod-heading h3{margin:0;color:var(--text)}.prod-heading h2{font-size:25px}.prod-heading h3{font-size:18px}.prod-heading p,#pg-roles p{color:var(--text2);line-height:1.6;margin:7px 0}.prod-eyebrow{font-size:10px;letter-spacing:2px;font-weight:800;color:var(--green)!important}.prod-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.prod-stat{padding:18px;background:var(--bg);border:1px solid var(--border);border-radius:12px}.prod-stat span{display:block;color:var(--text2);font-size:12px}.prod-stat strong{display:block;font-size:27px;margin-top:8px}.prod-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:20px}.prod-toolbar label:first-child{flex:1;min-width:200px}.prod-toolbar label,.prod-form-grid label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600}.prod-toolbar input,.prod-toolbar select,.prod-form-grid input,.prod-form-grid select,.prod-form-grid textarea,#role-name,#prod-progress-form select,#prod-progress-form textarea{width:100%;padding:11px;border:1px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);font:inherit;box-sizing:border-box;min-width:0}.prod-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.prod-order{min-width:0;background:var(--bg);border:1px solid var(--border);border-left:4px solid #a3b3b0;border-radius:12px;padding:20px;overflow-wrap:anywhere}.prod-order.urgent{border-left-color:#c53030}.prod-order.high{border-left-color:#b76e00}.prod-reference{font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px}.prod-order small{font-weight:500;color:var(--text2)}.prod-priority{font-size:11px;padding:5px 10px;border-radius:20px;background:var(--bg3);font-weight:700;white-space:nowrap}.prod-priority.urgent{color:#9b1c1c;background:#fee2e2}.prod-priority.high{color:#854d0e;background:#fef3c7}.prod-priority.normal{color:#115e59;background:#ccfbf1}.prod-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text2);padding-bottom:15px;border-bottom:1px solid var(--border)}.prod-overdue{color:#c53030;font-weight:700}.prod-specs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.prod-specs div:last-child,.prod-specs div:nth-last-child(2){grid-column:1/-1}.prod-specs dt{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);margin-bottom:5px}.prod-specs dd{margin:0;font-size:13px;white-space:pre-wrap;line-height:1.5}.prod-note{padding:12px;border-radius:8px;background:var(--bg2);font-size:12px}.prod-note p{white-space:pre-wrap;line-height:1.5;margin:6px 0 0}.prod-order footer{margin-top:16px;display:flex;flex-direction:column;gap:12px}.prod-order footer>span{font-size:10px;color:var(--text2)}.prod-preview{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--border);padding:12px 0;font-size:12px}.prod-preview>span:last-child{color:var(--text2)}.prod-modal{width:700px;max-width:calc(100vw - 24px)!important;max-height:90vh;overflow:auto}.prod-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.prod-wide{grid-column:1/-1}.prod-check{display:flex;gap:10px;align-items:center;padding:10px 0;font-size:13px}.prod-check input{width:auto}.prod-role-row{display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--border);padding:14px 0}.prod-empty{grid-column:1/-1;line-height:1.7;padding:35px!important;text-align:center}.prod-modal p{font-size:12px;line-height:1.5;color:var(--text2)}
+#pg-production,#pg-roles{padding:24px;max-width:1440px;margin:0 auto;box-sizing:border-box}
+.prod-heading [hidden],#production-overview[hidden]{display:none!important}
+@media(max-width:760px){#pg-production,#pg-roles{padding:18px 14px 90px}.production-active #main-app{overflow-x:clip}.production-active .topbar{flex-wrap:wrap;gap:6px;justify-content:flex-start}.production-active .topbar .tbL{flex:1;min-width:120px}.production-active .nav{position:static}}
+@media(max-width:650px){.prod-list{grid-template-columns:1fr}.prod-stats{grid-template-columns:1fr 1fr;gap:8px}.prod-stat{padding:13px}.prod-form-grid{grid-template-columns:1fr}.prod-heading h2{font-size:21px}.prod-order{padding:15px}.prod-role-row{flex-wrap:wrap}}
+
+</style></head>
 <body>
 <!-- iOS Install Banner (shown only in Safari, not standalone) -->
 <div id="ios-banner" style="display:none;background:#1D2129;color:#fff;padding:12px 16px;font-size:13px;text-align:center;position:sticky;top:0;z-index:200;line-height:1.4">
@@ -1315,10 +1322,39 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
   </div>
   <div id="due-alerts"></div>
   <div class="nav" id="main-nav"></div>
+<section id="pg-production" class="page">
+  <div class="prod-heading"><div><p class="prod-eyebrow">WORKSHOP</p><h2>Production orders</h2><p>Urgent orders first, then due date. Shared with your production team.</p></div><button id="prod-new" type="button" class="btn primary" onclick="openProductionOrder()">+ New order</button></div>
+  <div id="prod-summary" class="prod-stats"></div>
+  <div class="prod-toolbar"><label>Search orders<input type="search" placeholder="Order, dimensions, colour or technician" oninput="productionSearch=this.value;renderProduction()"></label><label>Show<select onchange="productionFilter=this.value;renderProduction()"><option value="active">Active orders</option><option value="all">All orders</option><option value="pending">To do</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="ready">Ready for review</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label><button class="btn bsm" type="button" onclick="syncNow(true)">Refresh</button></div>
+  <div id="prod-list" class="prod-list" aria-live="polite"></div>
+</section>
+<section id="pg-roles" class="page">
+  <div class="prod-heading"><div><p class="prod-eyebrow">OWNER SETTINGS</p><h2>Manage roles</h2><p>Create production roles such as Carpenter, Painter or Quality checker.</p></div></div>
+  <div class="card"><h3>Production access</h3><p>Every custom role can view this company’s production orders. Choose additional permissions below. These roles do not grant sales, financial, delivery or member-management access.</p>
+    <form id="role-form" onsubmit="saveProductionRole(event)"><input type="hidden" id="role-key"><label class="fl">Role name<input id="role-name" maxlength="60" placeholder="e.g. Carpenter" required></label><label class="prod-check"><input type="checkbox" id="role-progress">Update order progress and notes</label><label class="prod-check"><input type="checkbox" id="role-manage">Manage orders: create, edit specifications, set urgency, assign and close orders</label><p>Manage orders also includes progress updates. Only the Owner can create roles or change a member’s role.</p><div id="role-error" class="pw-error" role="alert"></div><div class="br"><button id="role-save" class="btn primary" type="submit">Save role</button><button class="btn" type="button" onclick="editProductionRole()">New role / clear</button></div></form>
+  </div><div id="role-list" class="card"></div>
+</section>
+<div class="modal-bg" id="prod-order-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-order-title"><div class="prod-heading"><h2 id="prod-order-title">New production order</h2><button class="btn bsm" type="button" aria-label="Close order form" onclick="document.getElementById('prod-order-modal').classList.remove('open')">Close</button></div>
+<form id="prod-order-form" onsubmit="saveProductionOrder(event)"><div class="prod-form-grid">
+ <label>Order reference<input name="reference" maxlength="80" required placeholder="e.g. ORDER-003"></label>
+ <label>Product<input name="product" maxlength="160" required placeholder="e.g. Shoerack"></label>
+ <label>Quantity<input name="quantity" type="number" min="1" max="10000" step="1" value="1" required></label>
+ <label>Urgency<select name="priority"><option value="urgent">Urgent</option><option value="high">High</option><option value="normal" selected>Normal</option><option value="low">Low</option></select></label>
+ <label>Due date<input name="due_date" type="date"></label>
+ <label>Assigned technician<select name="assigned_member_id"></select></label>
+ <label>Dimensions (include units)<input name="dimensions" maxlength="240" placeholder="4 ft wide × 4 ft high × 400 mm deep"></label>
+ <label>Colour combination / finish<input name="colours" maxlength="240" placeholder="Dark walnut body, white doors"></label>
+ <label>Door design<input name="doors" maxlength="240" placeholder="2 sliding doors"></label>
+ <label>Drawer details<input name="drawers" maxlength="240" placeholder="2 drawers at the bottom"></label>
+ <label class="prod-wide">Extensions / additions<textarea name="extensions" maxlength="1000" rows="2" placeholder="Top extension: describe its size and position"></textarea></label>
+ <label class="prod-wide">Other specifications<textarea name="specifications" maxlength="5000" rows="3" placeholder="Shelves, materials, handles and other build instructions"></textarea></label>
+</div><p>Saving shares this order with Owner, Manager, Technicians and authorised production roles.</p><div id="prod-order-error" class="pw-error" role="alert"></div><button id="prod-save" type="submit" class="btn primary">Save order</button></form></div></div>
+<div class="modal-bg" id="prod-progress-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-progress-title"><div class="prod-heading"><h2 id="prod-progress-title">Update progress</h2><button class="btn bsm" type="button" aria-label="Close progress form" onclick="document.getElementById('prod-progress-modal').classList.remove('open')">Close</button></div><form id="prod-progress-form" onsubmit="saveProductionProgress(event)"><label class="fl">Stage<select id="prod-progress-status"></select></label><label class="fl">Progress / blocker notes<textarea id="prod-progress-note" maxlength="3000" rows="5" placeholder="e.g. Panels cut; waiting for white edging"></textarea></label><p>Use “Ready for review” when workshop work is finished. Owner or Manager can mark the order completed.</p><div id="prod-progress-error" class="pw-error" role="alert"></div><button id="prod-progress-save" class="btn primary" type="submit">Share progress</button></form></div></div>
+
 
   <!-- DASHBOARD -->
   <div id="pg-dashboard" class="page on">
-    <div id="sub-banner"></div>
+    <div id="sub-banner"></div><div class="card" id="production-overview" hidden></div>
     <div id="staff-checkin" style="display:none;background:var(--bg2);border-radius:var(--radius);padding:10px 14px;margin-bottom:.75rem;border:1px solid var(--border)"></div>
     <div id="low-stock-alert-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);margin-bottom:12px;font-size:12px;color:#7a5c00"></div>
     <div id="exp-budget-alerts" style="display:none;padding:8px 12px;background:#FFF3CD;border:1px solid #FFE082;border-radius:var(--radius);font-size:11px;margin-bottom:.75rem"></div>
@@ -2033,9 +2069,8 @@ async function addMember(){
   finally{if(button)button.disabled=false;}
 }
 function updateCatHint(){
-  const cat=document.getElementById('nm-cat').value;
-  const h=document.getElementById('nm-cat-hint');
-  if(h&&CATEGORIES[cat]) h.textContent=CATEGORIES[cat].desc;
+  const role=catToRole(document.getElementById('nm-cat').value),el=document.getElementById('nm-cat-hint');
+  el.textContent=role==='technician'?'Shared production queue, specifications and progress updates.':productionOnly(role)?'Production orders only. Permissions are set in Manage roles.':'';
 }
 
 async function removeMember(uid){
@@ -2045,7 +2080,7 @@ async function removeMember(uid){
 }
 
 // ── Nav & Pages ───────────────────────────────────────────────────────────────
-function buildNav(){
+function legacyBuildNav(){
   const isDelivery=currentUser.role==='delivery';
   const p=isDelivery
     ?[{id:'tasks',l:'My tasks'}]
@@ -2059,6 +2094,12 @@ function buildNav(){
   if(currentUser.role==='owner'||currentUser.role==='manager') p.push({id:'staff-perf',l:'Performance'});
   if(!isDelivery) p.push({id:'ai',l:'AI'});
   document.getElementById('main-nav').innerHTML=p.map(x=>`<button type="button" class="nb" id="nb-${x.id}" onclick="goPage('${x.id}')">${x.l}</button>`).join('');
+}
+function buildNav(){
+  if(productionOnly())document.getElementById('main-nav').replaceChildren();else legacyBuildNav();
+  const nav=document.getElementById('main-nav');
+  if(productionPermission('view'))nav.insertAdjacentHTML('beforeend','<button type="button" class="nb" id="nb-production" onclick="goPage(\'production\')">Production orders</button>');
+  if(currentUser?.role==='owner')nav.insertAdjacentHTML('beforeend','<button type="button" class="nb" id="nb-roles" onclick="goPage(\'roles\')">Manage roles</button>');
 }
 
 // ── Icon system (Lucide-style, inline SVG, no network) ────────────────────
@@ -2103,11 +2144,8 @@ const CATEGORIES = {
   Staff:    {role:'staff',  icon:'user',  desc:'Accounts and records'},
   Delivery: {role:'delivery',icon:'truck',desc:'Own delivery tasks only'}
 };
-function catToRole(cat){ return (CATEGORIES[cat]||{}).role || 'staff'; }
-function roleToCat(role){
-  for(const k in CATEGORIES){ if(CATEGORIES[k].role===role) return k; }
-  return 'Staff';
-}
+function catToRole(value){return productionBuiltins[value]||productionRoles.some(r=>r.role_key===value)?value:({Executive:'owner',Owner:'owner',Manager:'manager',Staff:'staff',Delivery:'delivery',Technician:'technician'}[value]||'');}
+function roleToCat(role){return productionRoleName(role);}
 // Any user missing a category gets one derived from their existing role
 function ensureCategories(){
   if(!D)return false;D.users.forEach(u=>{u.category=roleToCat(u.role);});return false;
@@ -2264,7 +2302,18 @@ function paintIcons(root){(root||document).querySelectorAll('i[data-ic]:not([dat
 var _paintObs=new MutationObserver(function(){paintIcons(document);});
 function startIconPainter(){paintIcons(document);try{_paintObs.observe(document.body,{childList:true,subtree:true});}catch(e){}}
 
-function goPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();setDates();const si=document.getElementById('s-items');if(si&&!si.children.length)addSaleItemRow();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar,channels:initChannels,audit:initAuditLog,'staff-perf':initStaffPerf}[pg]||(() =>{}))(); }
+function legacyGoPage(pg){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active')); const el=document.getElementById('pg-'+pg); if(el) el.classList.add('on'); const nb=document.getElementById('nb-'+pg); if(nb) nb.classList.add('active'); ({dashboard:renderDash,quick:renderQuick,sales:()=>{popAll();renderSales();setDates();const si=document.getElementById('s-items');if(si&&!si.children.length)addSaleItemRow();},expenses:()=>{initExpPage();},inventory:renderInv,customers:()=>{},suppliers:renderSup,tasks:initTasksPage,pl:()=>{popMonths();renderPL();},team:renderTeam,ai:initAI,accounts:initAccounts,calendar:initCalendar,channels:initChannels,audit:initAuditLog,'staff-perf':initStaffPerf}[pg]||(() =>{}))(); }
+function goPage(pg){
+  if(!currentUser)return;
+  if(productionOnly()&&pg!=='production')pg='production';
+  if(pg==='production'&&!productionPermission('view'))return;
+  if(pg==='roles'&&currentUser.role!=='owner')return;
+  if(!document.getElementById('nb-'+pg))return;
+  document.body.classList.toggle('production-active',pg==='production'||pg==='roles');
+  legacyGoPage(pg);
+  if(pg==='production')renderProduction();
+  if(pg==='roles')renderRoles();
+}
 function setDates(){ ['s-date','e-date'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.value) el.value=today(); }); }
 function allMonths(){ const ms=new Set([...D.sales.map(r=>r.date.substring(0,7)),...D.expenses.map(r=>r.date.substring(0,7))]); return[...ms].sort().reverse(); }
 function popMonths(){ const o='<option value="all">All months</option>'+allMonths().map(m=>`<option value="${m}">${fmtM(m)}</option>`).join(''); ['sf-mo','ef-mo','pl-mo'].forEach(id=>{ const el=document.getElementById(id); if(el){ const v=el.value; el.innerHTML=o; el.value=v||'all'; }}); }
@@ -2280,7 +2329,7 @@ function updateMonthNav(){ const months=getSortedMonths(); const isAll=dashMonth
 
 async function switchSub(id){await selectCo(id);}
 
-function renderDash(){
+function legacyRenderDash(){
   try{renderOpsQueue();}catch(e){}
   try{renderStaffCheckin();}catch(e){}
   try{checkExpBudgetAlerts();}catch(e){}
@@ -2331,6 +2380,7 @@ function renderDash(){
   renderBarChart(); renderChChart();
   try{paintIcons(document);animateCounts(document);}catch(e){}
 }
+function renderDash(){legacyRenderDash();renderProductionOverview();}
 
 function renderBarChart(){ if(!window.Chart) return; if(charts.bar) charts.bar.destroy(); const isAll=dashMonth==='all'; if(isAll){ const months=getSortedMonths().slice(-10); if(!months.length) return; charts.bar=new Chart(document.getElementById('ch-bar'),{type:'bar',data:{labels:months.map(fmtM),datasets:[{label:'Revenue',data:months.map(m=>D.sales.filter(r=>r.date.startsWith(m)).reduce((s,r)=>s+r.amount,0)),backgroundColor:'#639922',borderRadius:3},{label:'Cost',data:months.map(m=>D.sales.filter(r=>r.date.startsWith(m)).reduce((s,r)=>s+(r.cost||0),0)),backgroundColor:'#E24B4A',borderRadius:3},{label:'PNL',data:months.map(m=>D.sales.filter(r=>r.date.startsWith(m)).reduce((s,r)=>s+(r.pnl||0),0)),backgroundColor:'#378ADD',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{y:{ticks:{callback:v=>'KES '+Math.round(v/1000)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{display:false},ticks:{font:{size:10},autoSkip:false,maxRotation:35}}}}}); } else { const sales=D.sales.filter(r=>r.date.startsWith(dashMonth||tM())); const days=[...new Set(sales.map(r=>r.date))].sort(); if(!days.length) return; charts.bar=new Chart(document.getElementById('ch-bar'),{type:'bar',data:{labels:days.map(d=>d.substring(8)),datasets:[{label:'Revenue',data:days.map(d=>sales.filter(r=>r.date===d).reduce((s,r)=>s+r.amount,0)),backgroundColor:'#639922',borderRadius:3},{label:'PNL',data:days.map(d=>sales.filter(r=>r.date===d).reduce((s,r)=>s+(r.pnl||0),0)),backgroundColor:'#378ADD',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{y:{ticks:{callback:v=>'KES '+Math.round(v/1000)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{display:false},ticks:{font:{size:10},autoSkip:false,maxRotation:45}}}}}); } }
 function renderChChart(){ if(!window.Chart) return; const sales=filterByDash(D.sales); const chs=['WhatsApp','Instagram','Facebook','Website','Phone call','Walk-in','M-Pesa','Paybill','Cash']; const cols=['#1D9E75','#D4537E','#378ADD','#7F77DD','#BA7517','#888780','#D85A30','#5B45C7','#639922']; const filled=chs.map((c,i)=>({c,v:sales.filter(s=>s.channel===c||s.payment===c).reduce((t,s)=>t+s.amount,0),col:cols[i]})).filter(x=>x.v>0); if(!filled.length) return; if(charts.ch) charts.ch.destroy(); charts.ch=new Chart(document.getElementById('ch-ch'),{type:'doughnut',data:{labels:filled.map(x=>x.c),datasets:[{data:filled.map(x=>x.v),backgroundColor:filled.map(x=>x.col),borderWidth:1,borderColor:'rgba(255,255,255,0.5)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10,padding:6}}}}}); }
@@ -2797,34 +2847,15 @@ function renderSup(){   const _sortedSup=[...D.suppliers].sort((a,b)=>(a.name||'
 
 // ── Team ──────────────────────────────────────────────────────────────────────
 function renderTeam(){
-  const isExec = currentUser.role==='owner' || currentUser.role==='manager';
-  document.getElementById('team-tbody').innerHTML=D.users.map(function(u){
-    const s=D.sales.filter(function(x){return x.by===u.name;});
-    const e=D.expenses.filter(function(x){return x.by===u.name;}).length;
-    const rv=s.reduce(function(t,x){return t+x.amount;},0);
-    const pnl=s.reduce(function(t,x){return t+(x.pnl||0);},0);
-    const cat=u.category||roleToCat(u.role);
-    const catCell = isExec
-      ? '<select onchange="changeCategory('+u.id+',this.value)" class="cat-sel" '
-        + (u.id===currentUser.id?'title="You cannot change your own category" disabled':'')+'>'
-        + Object.keys(CATEGORIES).map(function(k){return '<option value="'+k+'"'+(k===cat?' selected':'')+'>'+k+'</option>';}).join('')
-        + '</select>'
-      : '<span class="badge '+rcC(u.role)+'">'+cat+'</span>';
-    return '<tr>'
-      + '<td style="display:flex;align-items:center;gap:7px"><div class="av '+avC(u.role)+'" style="width:27px;height:27px;font-size:10px">'+ini(u.name)+'</div>'+u.name+'</td>'
-      + '<td>'+catCell+'</td>'
-      + '<td>'+s.length+'</td><td>'+e+'</td>'
-      + '<td style="color:var(--green);font-weight:500">'+(rv?fmt(rv):'\u2014')+'</td>'
-      + '<td class="'+(pnl>0?'pnl-pos':'pnl-neg')+'">'+(pnl?fmt(pnl):'\u2014')+'</td>'
-      + '</tr>';
+  const owner=currentUser?.role==='owner';
+  document.getElementById('team-tbody').innerHTML=(D.users||[]).map(u=>{
+    const sales=D.sales.filter(s=>s.by===u.name),expenseCount=D.expenses.filter(e=>e.by===u.name).length;
+    const role=owner&&u.id!==currentUser.id?'<select aria-label="Role for '+authEscape(u.name)+'" onchange="changeCategory('+u.id+',this.value)">'+productionRoleOptions(u.role,true)+'</select>':authEscape(productionRoleName(u.role));
+    return '<tr><td>'+authEscape(u.name)+'</td><td>'+role+'</td><td>'+sales.length+'</td><td>'+expenseCount+'</td><td>'+fmt(sales.reduce((s,r)=>s+r.amount,0))+'</td><td>'+fmt(sales.reduce((s,r)=>s+(r.pnl||0),0))+'</td></tr>';
   }).join('');
-  renderPwMgmt();
-  document.getElementById('team-act').innerHTML=D.activity.slice(0,25).map(function(a){return '<div class="arow"><span><span class="badge bp" style="margin-right:5px">'+a.user+'</span>'+a.desc+'</span><span style="color:var(--text2);font-size:11px">'+a.date+'</span></div>';}).join('')||'<div class="empty">No activity yet.</div>';
-  const _rc=document.getElementById('reset-data-card');
-  if(_rc) _rc.style.display=currentUser.role==='owner'?'block':'none';
-  const _rn=document.getElementById('reset-co-name');
-  if(_rn&&currentCo) _rn.textContent=currentCo.name;
-  try{ paintIcons(document); }catch(e){}
+  const select=document.getElementById('nm-cat'),previous=select.value;select.innerHTML=productionRoleOptions(previous||'staff');if(!select.value)select.value='staff';updateCatHint();
+  renderPwMgmt();document.getElementById('team-act').textContent='Member roles determine their dashboard access.';
+  document.getElementById('reset-data-card').style.display=owner?'block':'none';document.getElementById('reset-co-name').textContent=currentCo.name;
 }
 
 async function changeCategory(uid,cat){
@@ -4259,7 +4290,7 @@ function authClearScreen(){
   document.getElementById('main-app').style.display='none';
   document.querySelectorAll('.modal-bg.open').forEach(el=>el.classList.remove('open'));
   document.getElementById('co-screen').style.display='none';
-  currentUser=null; currentCo=null; D=null; authBaseline=null; aiInited=false;
+  currentUser=null; currentCo=null; D=null; authBaseline=null; aiInited=false; productionReset();
 }
 function authShowLogin(message=''){
   authStop(); authClearScreen();
@@ -4298,7 +4329,7 @@ async function authLoadMemberships(){
   if(error||!data.user) throw new Error('Please sign in again.');
   authUser=data.user;
   authProfiles=await authRows('users','auth_user_id=eq.'+encodeURIComponent(authUser.id)+'&select='+authUserColumns);
-  authProfiles=authProfiles.filter(u=>['owner','manager','staff','delivery'].includes(u.role));
+  authProfiles=authProfiles.filter(u=>typeof u.role==='string'&&u.role.length>0);
   companies=[...new Set(authProfiles.map(p=>p.company_id))].map(authCompany);
   if(!companies.length){authShowLogin('Your account is signed in but has no linked company. Ask the owner to link your login.');return;}
   if(authRecovery)return;
@@ -5243,14 +5274,23 @@ async function syncNow(showFeedback){
   try{
     const own=await authRows('users','company_id=eq.'+encodeURIComponent(co)+'&auth_user_id=eq.'+encodeURIComponent(authUser.id)+'&select='+authUserColumns);
     if(!own.length){authShowLogin('Your access to this company was removed.');return false;}
+    const roles=await authRows('company_roles','company_id=eq.'+encodeURIComponent(co)+'&order=name.asc');
+    if(epoch!==authEpoch)return false;
+    productionRoles=roles;
     const member=mapUser(own[0]);
     if(member.role===oldRole && !await authFlushDirty())throw new Error('Some changes are still waiting to save. Check your connection.');
     // Reload all scoped data after a role change; never keep broader cached access.
     const rider=member.role==='delivery';
-    const tables=rider?['tasks']:['sales','expenses','inventory','customers','suppliers','tasks','users','activity_log','bundles'];
+    const tables=productionOnly(member.role)?[]:rider?['tasks']:['sales','expenses','inventory','customers','suppliers','tasks','users','activity_log','bundles'];
+    if(productionPermission('view',member.role))tables.push('production_orders');
     const values=await Promise.all(tables.map(async table=>[table,await authAllRows(table,co)]));
     if(epoch!==authEpoch)return false;
-    const rows=Object.fromEntries(values), fresh=defD();
+    const rows=Object.fromEntries(values), fresh=defD(); fresh.productionOrders=rows.production_orders||[];
+    if(productionPermission('manage',member.role)){
+      const response=await authFetch(SUPA_URL+'/rest/v1/rpc/baraka_production_members',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_company:co})});
+      if(!response.ok)throw new Error('Could not load production members.');
+      const members=await response.json();if(epoch!==authEpoch)return false;productionMembers=members;
+    }else productionMembers=[];
     fresh.sales=(rows.sales||[]).map(mapSale);fresh.expenses=(rows.expenses||[]).map(mapExp);
     fresh.inventory=(rows.inventory||[]).map(mapItem);fresh.customers=rows.customers||[];fresh.suppliers=rows.suppliers||[];
     fresh.tasks=(rows.tasks||[]).map(mapTask);fresh.users=(rows.users||own).map(mapUser);fresh.bundles=rows.bundles||[];
@@ -5260,7 +5300,7 @@ async function syncNow(showFeedback){
     if(status)status.textContent='✓ Synced';
     if(showFeedback)toast('Data synced','success');
     if(document.getElementById('main-app').style.display!=='none'){
-      if(oldRole!==member.role){buildNav();goPage(rider?'tasks':'dashboard');}
+      buildNav(); document.getElementById('top-role').textContent=productionRoleName(member.role); if(oldRole!==member.role)goPage(productionLanding());
       refreshCurrentPage();
     }
     return true;
@@ -5293,7 +5333,7 @@ function startAutoSync(){
   _syncTimer=setInterval(()=>syncNow(false),10000);initRealtime();
 }
 
-function refreshCurrentPage(){
+function legacyRefreshCurrentPage(){
   try{
     const pg=document.querySelector('.page.on')?.id||'';
     if(pg.includes('dashboard'))renderDash();
@@ -5307,6 +5347,12 @@ function refreshCurrentPage(){
     // Always keep quick record in sync since products come from inventory
     if(!pg.includes('quick')&&document.getElementById('pg-quick')?.classList.contains('on'))renderQuick();
   }catch(e){}
+}
+function refreshCurrentPage(){
+  legacyRefreshCurrentPage();
+  if(document.getElementById('pg-production')?.classList.contains('on'))renderProduction();
+  if(document.getElementById('pg-roles')?.classList.contains('on')&&!document.getElementById('role-name')?.matches(':focus'))renderRolesList();
+  renderProductionOverview();
 }
 
 // ── Show/hide login steps ──────────────────────────────────────────
@@ -5343,9 +5389,9 @@ function doLogin(user){
   document.getElementById('top-av').className='av '+avC(user.role);
   const rb=document.getElementById('top-role');rb.textContent=user.category;rb.className='badge '+rcC(user.role);
   dashMonth=tM();buildNav();setDates();popAll();startAutoSync();
-  goPage(user.role==='delivery'?'tasks':'dashboard');
+  goPage(productionLanding());
   if(['owner','manager'].includes(user.role))checkRecurringTasks();
-  if(user.role!=='delivery')checkDue();
+  if(['owner','manager','staff'].includes(user.role))checkDue();
 }
 
 async function saveNewPw(){
@@ -5960,12 +6006,145 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
 </div>
 
 <!-- Bottom tab bar (phones only) -->
-<nav id="mobile-tabs" aria-label="Main">
+<nav id="mobile-tabs" aria-label="Main"><button type="button" class="mtab" data-pg="production"><i data-ic="wrench" data-sz="20"></i><span>Workshop</span></button>
   <button type="button" class="mtab" data-pg="dashboard"><i data-ic="home" data-sz="20"></i><span>Home</span></button>
   <button type="button" class="mtab" data-pg="quick"><i data-ic="plus" data-sz="20"></i><span>Sell</span></button>
   <button type="button" class="mtab" data-pg="tasks"><i data-ic="clipboard" data-sz="20"></i><span>Tasks</span></button>
   <button type="button" class="mtab" data-pg="pl"><i data-ic="coins" data-sz="20"></i><span>Money</span></button>
   <button type="button" class="mtab" data-pg="__more"><i data-ic="menu" data-sz="20"></i><span>More</span></button>
 </nav>
+<script>
+let productionRoles=[], productionMembers=[], productionEditing=null, productionProgressEditing=null;
+let productionFilter='active', productionSearch='', productionBusy=false;
+const productionBuiltins={owner:'Owner',manager:'Manager',staff:'Staff',delivery:'Delivery',technician:'Technician'};
+const productionStatus={pending:'To do',in_progress:'In progress',blocked:'Blocked',ready:'Ready for review',completed:'Completed',cancelled:'Cancelled'};
+const productionPriority={urgent:'Urgent',high:'High',normal:'Normal',low:'Low'};
+function productionPermission(action,role=currentUser?.role){
+  if(['owner','manager'].includes(role))return true;
+  if(role==='technician')return action==='view'||action==='progress';
+  const custom=productionRoles.find(r=>r.role_key===role);
+  return !!custom&&(action==='view'||(action==='progress'&&(custom.can_update_orders||custom.can_manage_orders))||(action==='manage'&&custom.can_manage_orders));
+}
+function productionOnly(role=currentUser?.role){return !['owner','manager','staff','delivery'].includes(role);}
+function productionRoleName(role){return productionBuiltins[role]||productionRoles.find(r=>r.role_key===role)?.name||role;}
+function productionRoleOptions(selected,includeOwner=false){
+  const roles=Object.entries(productionBuiltins).filter(([key])=>includeOwner||key!=='owner').map(([role_key,name])=>({role_key,name})).concat(productionRoles);
+  return roles.map(r=>'<option value="'+authEscape(r.role_key)+'"'+(r.role_key===selected?' selected':'')+'>'+authEscape(r.name)+'</option>').join('');
+}
+function productionReset(){
+  document.body.classList.remove('production-active');
+  productionRoles=[];productionMembers=[];productionEditing=null;productionProgressEditing=null;productionFilter='active';productionSearch='';productionBusy=false;
+  ['prod-list','prod-summary','production-overview','role-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.replaceChildren();});
+  document.getElementById('prod-order-form')?.reset();document.getElementById('prod-progress-form')?.reset();
+}
+function productionLanding(){return currentUser?.role==='delivery'?'tasks':productionOnly()?'production':'dashboard';}
+function productionSorted(rows){
+  const rank={urgent:0,high:1,normal:2,low:3};
+  return [...rows].sort((a,b)=>Number(['completed','cancelled'].includes(a.status))-Number(['completed','cancelled'].includes(b.status))||rank[a.priority]-rank[b.priority]||(a.due_date||'9999').localeCompare(b.due_date||'9999')||a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id));
+}
+function productionActive(){return (D?.productionOrders||[]).filter(o=>!['completed','cancelled'].includes(o.status));}
+function renderProductionOverview(){
+  const el=document.getElementById('production-overview');if(!el)return;
+  el.hidden=!productionPermission('view');if(el.hidden){el.replaceChildren();return;}
+  const rows=productionSorted(productionActive());
+  el.innerHTML='<div class="prod-heading"><div><h3>Production queue</h3><p>'+rows.length+' active orders · '+rows.filter(o=>o.priority==='urgent').length+' urgent · '+rows.filter(o=>o.status==='blocked').length+' blocked</p></div><button class="btn bsm" type="button" onclick="goPage(\'production\')">View orders</button></div>'+rows.slice(0,3).map(o=>'<div class="prod-preview"><strong>'+authEscape(o.reference)+' · '+authEscape(o.product)+'</strong><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span><span>'+authEscape(o.dimensions||'Dimensions not set')+' · '+authEscape(o.colours||'Colours not set')+'</span></div>').join('');
+}
+function renderProduction(){
+  if(!productionPermission('view'))return;
+  document.getElementById('prod-new').hidden=!productionPermission('manage');
+  const all=D?.productionOrders||[],active=productionActive();
+  document.getElementById('prod-summary').innerHTML=[['Active',active.length],['Urgent',active.filter(o=>o.priority==='urgent').length],['Blocked',active.filter(o=>o.status==='blocked').length],['Ready for review',active.filter(o=>o.status==='ready').length]].map(([label,count])=>'<div class="prod-stat"><span>'+label+'</span><strong>'+count+'</strong></div>').join('');
+  let rows=all.filter(o=>productionFilter==='all'||productionFilter==='active'&&!['completed','cancelled'].includes(o.status)||o.status===productionFilter);
+  const search=productionSearch.toLowerCase();
+  rows=productionSorted(rows.filter(o=>[o.reference,o.product,o.dimensions,o.colours,o.specifications,o.assigned_to_name].join(' ').toLowerCase().includes(search)));
+  document.getElementById('prod-list').innerHTML=rows.length?rows.map(o=>{
+    const overdue=o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status);
+    const details=[['Dimensions',o.dimensions],['Colours / finish',o.colours],['Doors',o.doors],['Drawers',o.drawers],['Extensions',o.extensions],['Specifications',o.specifications]];
+    return '<article class="prod-order '+o.priority+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div><div class="prod-meta"><span>'+productionStatus[o.status]+'</span><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(value||'—')+'</dd></div>').join('')+'</dl>'+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+(productionPermission('progress')&&(!['completed','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+(productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'')+'</div></footer></article>';
+  }).join(''):'<div class="card prod-empty">No orders match this view.'+(productionPermission('manage')?' Create a production order to share it with the workshop.':' New orders will appear here when your team adds them.')+'</div>';
+}
+function openProductionOrder(id=null){
+  if(!productionPermission('manage'))return;
+  const order=id?(D.productionOrders||[]).find(o=>o.id===id):null;if(id&&!order)return;
+  productionEditing=order?{...order}:null;
+  const form=document.getElementById('prod-order-form');form.reset();
+  document.getElementById('prod-order-title').textContent=order?'Edit production order':'New production order';
+  document.getElementById('prod-order-error').textContent='';
+  ['reference','product','quantity','dimensions','doors','drawers','extensions','colours','specifications','priority','due_date'].forEach(k=>{form.elements[k].value=order?.[k]??(k==='quantity'?1:k==='priority'?'normal':'');});
+  const members=productionMembers;
+  form.elements.assigned_member_id.innerHTML='<option value="">Unassigned</option>'+members.map(u=>'<option value="'+u.id+'">'+authEscape(u.name)+' · '+authEscape(productionRoleName(u.role))+'</option>').join('');
+  form.elements.assigned_member_id.value=order?.assigned_member_id||'';
+  document.getElementById('prod-order-modal').classList.add('open');form.elements.reference.focus();
+}
+async function productionWrite(table,body,query='',method='POST'){
+  const response=await authFetch(SUPA_URL+'/rest/v1/'+table+query,{method,headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(body)});
+  const result=await response.json().catch(()=>null);
+  if(!response.ok)throw new Error(result?.message||'Could not save. Check your connection and permissions.');
+  if(!result?.length)throw new Error('This record changed or your access was removed. Refresh, reopen it, and try again.');
+  return result[0];
+}
+async function saveProductionOrder(event){
+  event?.preventDefault();if(productionBusy||!productionPermission('manage'))return;
+  const form=document.getElementById('prod-order-form');if(!form.reportValidity())return;
+  const company=currentCo.id,epoch=authEpoch,edit=productionEditing;
+  const body={company_id:company};
+  ['reference','product','dimensions','doors','drawers','extensions','colours','specifications','priority'].forEach(k=>body[k]=form.elements[k].value.trim());
+  body.quantity=Number(form.elements.quantity.value);body.due_date=form.elements.due_date.value||null;body.assigned_member_id=form.elements.assigned_member_id.value?Number(form.elements.assigned_member_id.value):null;
+  productionBusy=true;document.getElementById('prod-save').disabled=true;
+  try{
+    const row=await productionWrite('production_orders',body,edit?'?id=eq.'+edit.id+'&company_id=eq.'+encodeURIComponent(company)+'&revision=eq.'+edit.revision:'',edit?'PATCH':'POST');
+    if(epoch!==authEpoch)return;
+    productionAccept(row);document.getElementById('prod-order-modal').classList.remove('open');toast('Order saved and shared with the team.');
+  }catch(e){if(epoch===authEpoch)document.getElementById('prod-order-error').textContent=e.message;}
+  finally{productionBusy=false;document.getElementById('prod-save').disabled=false;}
+}
+function productionAccept(row){
+  D.productionOrders=(D.productionOrders||[]).filter(o=>o.id!==row.id).concat(row);renderProduction();renderProductionOverview();
+}
+function openProductionProgress(id){
+  if(!productionPermission('progress'))return;
+  const row=(D.productionOrders||[]).find(o=>o.id===id);if(!row)return;productionProgressEditing={...row};
+  document.getElementById('prod-progress-title').textContent=row.reference+' · '+row.product;
+  document.getElementById('prod-progress-status').innerHTML=Object.entries(productionStatus).filter(([k])=>productionPermission('manage')||!['completed','cancelled'].includes(k)).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('');
+  document.getElementById('prod-progress-status').value=row.status;document.getElementById('prod-progress-note').value=row.progress_note;
+  document.getElementById('prod-progress-error').textContent='';document.getElementById('prod-progress-modal').classList.add('open');
+}
+async function saveProductionProgress(event){
+  event?.preventDefault();if(productionBusy||!productionPermission('progress')||!productionProgressEditing)return;
+  const form=document.getElementById('prod-progress-form');if(!form.reportValidity())return;
+  const edit=productionProgressEditing,epoch=authEpoch;productionBusy=true;document.getElementById('prod-progress-save').disabled=true;
+  try{
+    const row=await productionWrite('production_orders',{status:document.getElementById('prod-progress-status').value,progress_note:document.getElementById('prod-progress-note').value.trim()},'?id=eq.'+edit.id+'&company_id=eq.'+encodeURIComponent(currentCo.id)+'&revision=eq.'+edit.revision,'PATCH');
+    if(epoch!==authEpoch)return;productionAccept(row);document.getElementById('prod-progress-modal').classList.remove('open');toast('Progress shared with the team.');
+  }catch(e){if(epoch===authEpoch)document.getElementById('prod-progress-error').textContent=e.message;}
+  finally{productionBusy=false;document.getElementById('prod-progress-save').disabled=false;}
+}
+function renderRoles(){if(currentUser?.role!=='owner')return;renderRolesList();}
+function renderRolesList(){
+  const el=document.getElementById('role-list');if(!el)return;
+  el.innerHTML='<p>Built-in roles: Owner, Manager, Staff, Delivery, Technician.</p>'+productionRoles.map(r=>'<div class="prod-role-row"><div><strong>'+authEscape(r.name)+'</strong><p>View production orders'+(r.can_update_orders?' · Update progress':'')+(r.can_manage_orders?' · Manage orders':'')+'</p></div><button type="button" class="btn bsm" onclick="editProductionRole(\''+r.role_key+'\')">Edit permissions</button></div>').join('');
+}
+function editProductionRole(key=''){
+  if(currentUser?.role!=='owner')return;
+  const role=productionRoles.find(r=>r.role_key===key);
+  document.getElementById('role-key').value=role?.role_key||'';document.getElementById('role-name').value=role?.name||'';
+  document.getElementById('role-progress').checked=!!role?.can_update_orders;document.getElementById('role-manage').checked=!!role?.can_manage_orders;
+  document.getElementById('role-error').textContent='';document.getElementById('role-name').focus();
+}
+async function saveProductionRole(event){
+  event?.preventDefault();if(productionBusy||currentUser?.role!=='owner')return;
+  const form=document.getElementById('role-form');if(!form.reportValidity())return;
+  const key=document.getElementById('role-key').value,epoch=authEpoch;
+  const name=document.getElementById('role-name').value.trim();if(!name)return;
+  if(Object.values(productionBuiltins).some(n=>n.toLowerCase()===name.toLowerCase())){document.getElementById('role-error').textContent='Choose a name different from the built-in roles.';return;}
+  const body={company_id:currentCo.id,role_key:key||'custom_'+crypto.randomUUID().replaceAll('-',''),name,can_update_orders:document.getElementById('role-progress').checked,can_manage_orders:document.getElementById('role-manage').checked};
+  productionBusy=true;document.getElementById('role-save').disabled=true;
+  try{
+    const row=await productionWrite('company_roles',body,key?'?company_id=eq.'+encodeURIComponent(currentCo.id)+'&role_key=eq.'+key:'',key?'PATCH':'POST');
+    if(epoch!==authEpoch)return;productionRoles=productionRoles.filter(r=>r.role_key!==row.role_key).concat(row);form.reset();document.getElementById('role-key').value='';renderRolesList();toast('Role saved. Select it when inviting or editing a member.');
+  }catch(e){if(epoch===authEpoch)document.getElementById('role-error').textContent=e.message;}
+  finally{productionBusy=false;document.getElementById('role-save').disabled=false;}
+}
+</script>
 </body>
 </html>
