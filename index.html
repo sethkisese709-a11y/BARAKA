@@ -1618,10 +1618,10 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
           <div class="fl"><label>Full name</label><input type="text" id="nm-name" placeholder="e.g. John Kamau"></div>
           <div class="fl"><label>Category</label><select id="nm-cat" onchange="updateCatHint()"><option value="Executive">Executive — full access</option><option value="Manager">Manager — runs operations</option><option value="Staff" selected>Staff — accounts &amp; records</option><option value="Delivery">Delivery — own tasks only</option></select><div id="nm-cat-hint" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
           <div class="fl ff">
-            <label for="nm-pw">Authentication User UID</label><input type="text" id="nm-pw" placeholder="Paste the new member’s User UID"><div class="pw-hint">Create the member’s login in Supabase first, then paste their User UID here.</div>
+            <label for="nm-email">Email address</label><input type="email" id="nm-email" placeholder="member@example.com" autocomplete="email"><div class="pw-hint">The member will receive an invitation and create their own password.</div>
           </div>
         </div>
-        <div class="br"><button type="button" class="btn" onclick="addMember()">Add member</button></div>
+        <div class="br"><button id="nm-add-button" type="button" class="btn" onclick="addMember()">Invite member</button></div>
       </div>
     </div>
     <div class="card"><div class="ct">Activity log</div><div id="team-act"></div>
@@ -2021,11 +2021,16 @@ function openSetPw(){
 
 async function addMember(){
   if(currentUser.role!=='owner')return;
-  const name=document.getElementById('nm-name').value.trim(), uid=document.getElementById('nm-pw').value.trim(), role=catToRole(document.getElementById('nm-cat').value);
-  if(!name||!uid)return toast('Enter a name and the new Authentication User UID.','warn');
-  if(!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid))return toast('Enter a valid User UID.','warn');
-  const u={id:Date.now(),name,role,auth_user_id:uid};
-  if(await pushUser(u)){document.getElementById('nm-name').value='';document.getElementById('nm-pw').value='';await syncNow(false);renderTeam();toast('Member added');}
+  const name=document.getElementById('nm-name').value.trim(), email=document.getElementById('nm-email').value.trim(), role=catToRole(document.getElementById('nm-cat').value), button=document.getElementById('nm-add-button');
+  if(!name||!email)return toast('Enter the member’s name and email.','warn');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return toast('Enter a valid email address.','warn');
+  if(button)button.disabled=true;
+  try{
+    await authInviteMember({name,email,role});
+    document.getElementById('nm-name').value='';document.getElementById('nm-email').value='';
+    await syncNow(false);renderTeam();toast('Invitation sent. The member can set a password from their email.');
+  }catch(e){toast(e.message,'error');}
+  finally{if(button)button.disabled=false;}
 }
 function updateCatHint(){
   const cat=document.getElementById('nm-cat').value;
@@ -3426,6 +3431,12 @@ let _supabaseClient = null;
 function initSupabaseClient(){
   try{
     _supabaseClient = supabase.createClient(SUPA_URL, SUPA_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage
+      },
       realtime: { params: { eventsPerSecond: 10 } }
     });
     console.log('Supabase client ready');
@@ -4208,6 +4219,7 @@ let authBaseline=null, authDirtyTimer=null, authFlushBusy=false;
 const authWrites=new Map();
 const authUserColumns = 'id,company_id,name,role,phone,created_at,auth_user_id';
 const authNativeFetch = window.fetch.bind(window);
+const AUTH_MEMBER_FUNCTION = 'admin-create-member';
 function authEscape(value){
   return String(value == null ? '' : value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -4340,6 +4352,15 @@ async function authLinkMember(id){
   const value=prompt('Paste the Supabase Authentication User UID for '+u.name,u.auth_user_id||'');if(value===null)return;
   if(!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value.trim()))return toast('Enter a valid User UID.','warn');
   const result=await patchUser(u,{auth_user_id:value.trim()});renderPwMgmt();toast(result.ok?'Login linked':result.reason,result.ok?'success':'error');
+}
+async function authInviteMember({name,email,role}){
+  if(currentUser?.role!=='owner')throw new Error('Only the owner can invite members.');
+  const {data,error}=await _supabaseClient.auth.getSession();
+  if(error||!data.session)throw new Error('Your session has expired. Sign in again.');
+  const response=await authNativeFetch(SUPA_URL+'/functions/v1/'+AUTH_MEMBER_FUNCTION,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+data.session.access_token,apikey:SUPA_KEY},body:JSON.stringify({name,email,role,company_id:currentCo.id})});
+  let body={};try{body=await response.json();}catch(e){}
+  if(!response.ok)throw new Error(body.error||'The invitation could not be sent.');
+  return body.profile;
 }
 async function authCopyMemberLink(id){
   const url=new URL(location.pathname,location.origin);url.searchParams.set('company',currentCo.id);url.searchParams.set('member',id);
