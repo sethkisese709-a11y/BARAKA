@@ -1343,9 +1343,14 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
  <label>Due date<input name="due_date" type="date"></label>
  <label>Assigned technician<select name="assigned_member_id"></select></label>
  <label>Dimensions (include units)<input name="dimensions" maxlength="240" placeholder="4 ft wide × 4 ft high × 400 mm deep"></label>
- <label>Colour combination / finish<input name="colours" maxlength="240" placeholder="Dark walnut body, white doors"></label>
+ <label>Frame color<select name="frame_color"><option value="">Select a color</option><option value="plain">Plain</option><option value="dark_walnut">Dark walnut</option><option value="white">White</option><option value="salzar">Salzar</option><option value="dark_grey">Dark grey</option><option value="black">Black</option><option value="royal_teak">Royal teak</option><option value="american_walnut">American walnut</option></select></label>
+ <label>Door color<select name="door_color"><option value="">Select a color</option><option value="plain">Plain</option><option value="dark_walnut">Dark walnut</option><option value="white">White</option><option value="salzar">Salzar</option><option value="dark_grey">Dark grey</option><option value="black">Black</option><option value="royal_teak">Royal teak</option><option value="american_walnut">American walnut</option></select></label>
+ <label>Number of drawers<select name="drawer_count" onchange="productionDrawerPosition(this.form)"><option value="">Select number</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select></label>
+ <label>Drawers at the top or bottom<select name="drawer_position"><option value="">Select a position</option><option value="top">Top</option><option value="bottom">Bottom</option><option value="both">Top and bottom</option></select></label>
+ <label>Material<select name="material"><option value="">Select a material</option><option value="mdf">MDF</option><option value="particle_board">Particle board</option><option value="waterproof_board">Waterproof board</option><option value="solid_wood">Solid wood</option></select></label>
+ <label>Additional colour / finish notes<input name="colours" maxlength="240" placeholder="e.g. White trim or mixed colour panels"></label>
  <label>Door design<input name="doors" maxlength="240" placeholder="2 sliding doors"></label>
- <label>Drawer details<input name="drawers" maxlength="240" placeholder="2 drawers at the bottom"></label>
+ <label>Extra drawer details<input name="drawers" maxlength="240" placeholder="e.g. Soft-close runners and handles"></label>
  <label class="prod-wide">Extensions / additions<textarea name="extensions" maxlength="1000" rows="2" placeholder="Top extension: describe its size and position"></textarea></label>
  <label class="prod-wide">Other specifications<textarea name="specifications" maxlength="5000" rows="3" placeholder="Shelves, materials, handles and other build instructions"></textarea></label>
 </div><p>Saving shares this order with Owner, Manager, Technicians and authorised production roles.</p><div id="prod-order-error" class="pw-error" role="alert"></div><button id="prod-save" type="submit" class="btn primary">Save order</button></form></div></div>
@@ -6019,6 +6024,9 @@ let productionFilter='active', productionSearch='', productionBusy=false;
 const productionBuiltins={owner:'Owner',manager:'Manager',staff:'Staff',delivery:'Delivery',technician:'Technician'};
 const productionStatus={pending:'To do',in_progress:'In progress',blocked:'Blocked',ready:'Ready for review',completed:'Completed',cancelled:'Cancelled'};
 const productionPriority={urgent:'Urgent',high:'High',normal:'Normal',low:'Low'};
+const productionColors={plain:'Plain',dark_walnut:'Dark walnut',white:'White',salzar:'Salzar',dark_grey:'Dark grey',black:'Black',royal_teak:'Royal teak',american_walnut:'American walnut'};
+const productionMaterials={mdf:'MDF',particle_board:'Particle board',waterproof_board:'Waterproof board',solid_wood:'Solid wood'};
+const productionDrawerPositions={top:'Top',bottom:'Bottom',both:'Top and bottom'};
 function productionPermission(action,role=currentUser?.role){
   if(['owner','manager'].includes(role))return true;
   if(role==='technician')return action==='view'||action==='progress';
@@ -6047,7 +6055,10 @@ function renderProductionOverview(){
   const el=document.getElementById('production-overview');if(!el)return;
   el.hidden=!productionPermission('view');if(el.hidden){el.replaceChildren();return;}
   const rows=productionSorted(productionActive());
-  el.innerHTML='<div class="prod-heading"><div><h3>Production queue</h3><p>'+rows.length+' active orders · '+rows.filter(o=>o.priority==='urgent').length+' urgent · '+rows.filter(o=>o.status==='blocked').length+' blocked</p></div><button class="btn bsm" type="button" onclick="goPage(\'production\')">View orders</button></div>'+rows.slice(0,3).map(o=>'<div class="prod-preview"><strong>'+authEscape(o.reference)+' · '+authEscape(o.product)+'</strong><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span><span>'+authEscape(o.dimensions||'Dimensions not set')+' · '+authEscape(o.colours||'Colours not set')+'</span></div>').join('');
+  el.innerHTML='<div class="prod-heading"><div><h3>Production queue</h3><p>'+rows.length+' active orders · '+rows.filter(o=>o.priority==='urgent').length+' urgent · '+rows.filter(o=>o.status==='blocked').length+' blocked</p></div><button class="btn bsm" type="button" onclick="goPage(\'production\')">View orders</button></div>'+rows.slice(0,3).map(o=>{
+    const finish=[o.frame_color&&'Frame '+productionColors[o.frame_color],o.door_color&&'Doors '+productionColors[o.door_color],o.colours].filter(Boolean).join(' · ');
+    return '<div class="prod-preview"><strong>'+authEscape(o.reference)+' · '+authEscape(o.product)+'</strong><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span><span>'+authEscape(o.dimensions||'Dimensions not set')+' · '+authEscape(finish||'Colours not set')+'</span></div>';
+  }).join('');
 }
 function renderProduction(){
   if(!productionPermission('view'))return;
@@ -6056,12 +6067,17 @@ function renderProduction(){
   document.getElementById('prod-summary').innerHTML=[['Active',active.length],['Urgent',active.filter(o=>o.priority==='urgent').length],['Blocked',active.filter(o=>o.status==='blocked').length],['Ready for review',active.filter(o=>o.status==='ready').length]].map(([label,count])=>'<div class="prod-stat"><span>'+label+'</span><strong>'+count+'</strong></div>').join('');
   let rows=all.filter(o=>productionFilter==='all'||productionFilter==='active'&&!['completed','cancelled'].includes(o.status)||o.status===productionFilter);
   const search=productionSearch.toLowerCase();
-  rows=productionSorted(rows.filter(o=>[o.reference,o.product,o.dimensions,o.colours,o.specifications,o.assigned_to_name].join(' ').toLowerCase().includes(search)));
+  rows=productionSorted(rows.filter(o=>[o.reference,o.product,o.dimensions,o.colours,o.specifications,o.assigned_to_name,productionColors[o.frame_color],productionColors[o.door_color],productionMaterials[o.material],o.drawers,productionDrawerPositions[o.drawer_position],o.drawer_count].join(' ').toLowerCase().includes(search)));
   document.getElementById('prod-list').innerHTML=rows.length?rows.map(o=>{
     const overdue=o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status);
-    const details=[['Dimensions',o.dimensions],['Colours / finish',o.colours],['Doors',o.doors],['Drawers',o.drawers],['Extensions',o.extensions],['Specifications',o.specifications]];
-    return '<article class="prod-order '+o.priority+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div><div class="prod-meta"><span>'+productionStatus[o.status]+'</span><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(value||'—')+'</dd></div>').join('')+'</dl>'+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+(productionPermission('progress')&&(!['completed','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+(productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'')+'</div></footer></article>';
+    const details=[['Dimensions',o.dimensions],['Frame color',productionColors[o.frame_color]],['Door color',productionColors[o.door_color]],['Number of drawers',o.drawer_count],['Drawer position',productionDrawerPositions[o.drawer_position]],['Material',productionMaterials[o.material]],['Colours / finish notes',o.colours],['Door design',o.doors],['Extra drawer details',o.drawers],['Extensions',o.extensions],['Specifications',o.specifications]];
+    return '<article class="prod-order '+o.priority+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div><div class="prod-meta"><span>'+productionStatus[o.status]+'</span><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(String(value))+'</dd></div>').join('')+'</dl>'+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+(productionPermission('progress')&&(!['completed','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+(productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'')+'</div></footer></article>';
   }).join(''):'<div class="card prod-empty">No orders match this view.'+(productionPermission('manage')?' Create a production order to share it with the workshop.':' New orders will appear here when your team adds them.')+'</div>';
+}
+function productionDrawerPosition(form){
+  const count=form.elements.drawer_count.value,position=form.elements.drawer_position;
+  position.disabled=count===''||count==='0';position.required=Number(count)>0;
+  if(position.disabled)position.value='';
 }
 function openProductionOrder(id=null){
   if(!productionPermission('manage'))return;
@@ -6071,6 +6087,9 @@ function openProductionOrder(id=null){
   document.getElementById('prod-order-title').textContent=order?'Edit production order':'New production order';
   document.getElementById('prod-order-error').textContent='';
   ['reference','product','quantity','dimensions','doors','drawers','extensions','colours','specifications','priority','due_date'].forEach(k=>{form.elements[k].value=order?.[k]??(k==='quantity'?1:k==='priority'?'normal':'');});
+  ['frame_color','door_color','drawer_position','material'].forEach(k=>{form.elements[k].value=order?.[k]??'';});
+  form.elements.drawer_count.value=order?.drawer_count??'';
+  productionDrawerPosition(form);
   const members=productionMembers;
   form.elements.assigned_member_id.innerHTML='<option value="">Unassigned</option>'+members.map(u=>'<option value="'+u.id+'">'+authEscape(u.name)+' · '+authEscape(productionRoleName(u.role))+'</option>').join('');
   form.elements.assigned_member_id.value=order?.assigned_member_id||'';
@@ -6089,6 +6108,8 @@ async function saveProductionOrder(event){
   const company=currentCo.id,epoch=authEpoch,edit=productionEditing;
   const body={company_id:company};
   ['reference','product','dimensions','doors','drawers','extensions','colours','specifications','priority'].forEach(k=>body[k]=form.elements[k].value.trim());
+  for(const key of ['frame_color','door_color','drawer_position','material'])body[key]=form.elements[key].value||null;
+  body.drawer_count=form.elements.drawer_count.value===''?null:Number(form.elements.drawer_count.value);
   body.quantity=Number(form.elements.quantity.value);body.due_date=form.elements.due_date.value||null;body.assigned_member_id=form.elements.assigned_member_id.value?Number(form.elements.assigned_member_id.value):null;
   productionBusy=true;document.getElementById('prod-save').disabled=true;
   try{
