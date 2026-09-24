@@ -1289,6 +1289,19 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 .prod-alerts-head strong{font-size:13px}.prod-alert{display:flex;justify-content:space-between;align-items:start;gap:15px;padding:11px 14px;border:1px solid var(--border);border-top:0;background:var(--bg)}
 .prod-alert:last-child{border-radius:0 0 10px 10px}.prod-alert strong{font-size:13px}.prod-alert p{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0;color:var(--text)}.prod-alert small{font-size:10px;color:var(--text2)}.prod-alert-empty{display:none}
 @media(max-width:650px){.prod-alert{flex-wrap:wrap}.prod-chips{justify-content:start}.prod-heading{align-items:start}}
+.prod-stats{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.prod-stat{color:var(--text);text-align:left;font:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
+.prod-stat:hover,.prod-stat:focus-visible{transform:translateY(-2px);border-color:var(--text2)}.prod-stat.status-completed{border-color:#16803c;background:color-mix(in srgb,var(--bg) 92%,#16a34a)}
+.prod-stat.status-in_progress{border-color:#6366f1;background:color-mix(in srgb,var(--bg) 94%,#6366f1)}.prod-stat.status-changes_requested{border-color:#d97706;background:color-mix(in srgb,var(--bg) 93%,#f59e0b)}
+.prod-stage-legend{display:flex;flex-wrap:wrap;gap:7px;margin:-2px 0 18px;align-items:center}.prod-stage-legend .prod-status{font-size:10px}
+.prod-completed-info{display:block;border:1px solid #86efac;color:#166534;background:#dcfce7;border-radius:8px;padding:9px 11px;font-size:12px;font-weight:700;margin-top:12px}
+.prod-delivery-info{padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-top:9px;color:var(--text);background:var(--bg2);font-size:12px}
+@media(max-width:650px){.prod-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.prod-stat.status-awaiting_delivery{border-color:#d97706;background:color-mix(in srgb,var(--bg) 94%,#f59e0b)}
+.prod-delivery-queue{border:1px solid #d97706;background:color-mix(in srgb,var(--bg) 96%,#f59e0b);border-radius:12px;margin:0 0 20px;overflow:hidden}
+.prod-delivery-queue[hidden]{display:none}.prod-delivery-queue-head,.prod-delivery-queue-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px}
+.prod-delivery-queue-head{background:color-mix(in srgb,var(--bg) 89%,#f59e0b);font-size:13px}.prod-delivery-queue-head span,.prod-delivery-queue-row>span{font-size:12px}
+.prod-delivery-queue-row{border-top:1px solid color-mix(in srgb,var(--border) 80%,#f59e0b)}
+.prod-delivery-description{padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5;margin:10px 0 18px;max-height:160px;overflow:auto}
 
 </style></head>
 <body>
@@ -1345,8 +1358,10 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 <section id="pg-production" class="page">
   <div class="prod-heading"><div><p class="prod-eyebrow">WORKSHOP</p><h2>Production orders</h2><p>Urgent orders first, then due date. Shared with your production team.</p></div><button id="prod-new" type="button" class="btn primary" onclick="openProductionOrder()">+ New order</button></div>
   <div id="prod-summary" class="prod-stats"></div>
+  <div id="prod-delivery-queue" class="prod-delivery-queue" hidden></div>
+  <div class="prod-stage-legend" aria-label="Production stage colours"><span class="prod-status status-pending">To do</span><span class="prod-status status-in_progress">In progress</span><span class="prod-status status-blocked">Blocked</span><span class="prod-status status-ready">Ready for review</span><span class="prod-status status-changes_requested">Changes requested</span><span class="prod-status status-completed">Completed</span><span class="prod-status status-cancelled">Cancelled</span></div>
   <div id="prod-alerts" class="prod-alerts" aria-live="polite"></div>
-  <div class="prod-toolbar"><label>Search orders<input id="prod-search" type="search" placeholder="Order, dimensions, colour or technician" oninput="productionSearch=this.value;renderProduction()"></label><label>Show<select id="prod-filter" onchange="productionFilter=this.value;renderProduction()"><option value="active">Active orders</option><option value="mine">Assigned to me</option><option value="overdue">Overdue</option><option value="ready">Ready for review</option><option value="changes_requested">Changes requested</option><option value="pending">To do</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="all">All orders</option></select></label><button class="btn bsm" type="button" onclick="syncNow(true)">Refresh</button></div>
+  <div class="prod-toolbar"><label>Search orders<input id="prod-search" type="search" placeholder="Order, dimensions, colour or technician" oninput="productionSearch=this.value;renderProduction()"></label><label>Show<select id="prod-filter" onchange="productionFilter=this.value;renderProduction()"><option value="active">Open + awaiting delivery</option><option value="awaiting_delivery">Awaiting delivery</option><option value="mine">Assigned to me</option><option value="overdue">Overdue</option><option value="ready">Ready for review</option><option value="changes_requested">Changes requested</option><option value="pending">To do</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="all">All orders</option></select></label><button class="btn bsm" type="button" onclick="syncNow(true)">Refresh</button></div>
   <div id="prod-list" class="prod-list" aria-live="polite"></div>
 </section>
 <section id="pg-roles" class="page">
@@ -1377,6 +1392,7 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 </div><p id="prod-spec-preview" class="prod-spec-preview" aria-live="polite"></p><p>Saving shares this order with Owner, Manager, Technicians and authorised production roles. The assigned member receives an in-app notice when details change.</p><div id="prod-order-error" class="pw-error" role="alert"></div><button id="prod-save" type="submit" class="btn primary">Save order</button></form></div></div>
 <div class="modal-bg" id="prod-progress-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-progress-title"><div class="prod-heading"><h2 id="prod-progress-title">Update progress</h2><button class="btn bsm" type="button" aria-label="Close progress form" onclick="document.getElementById('prod-progress-modal').classList.remove('open')">Close</button></div><form id="prod-progress-form" onsubmit="saveProductionProgress(event)"><label class="fl">Stage<select id="prod-progress-status"></select></label><label class="fl">Progress / blocker notes<textarea id="prod-progress-note" maxlength="3000" rows="5" placeholder="e.g. Panels cut; waiting for white edging"></textarea></label><p>Use “Ready for review” when workshop work is finished. Owner or Manager can mark the order completed.</p><div id="prod-progress-error" class="pw-error" role="alert"></div><button id="prod-progress-save" class="btn primary" type="submit">Share progress</button></form></div></div>
 <div class="modal-bg" id="prod-review-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-review-title"><div class="prod-heading"><h2 id="prod-review-title">Review production order</h2><button type="button" class="btn bsm" onclick="document.getElementById('prod-review-modal').classList.remove('open')">Close</button></div><p>Approve the finished work, or describe what the technician must correct.</p><label class="fl">Review feedback<textarea id="prod-review-note" maxlength="3000" rows="5" placeholder="e.g. Change the door colour to white and check the top extension"></textarea></label><div id="prod-review-error" class="pw-error" role="alert"></div><div class="prod-review-actions"><button id="prod-review-approve" type="button" class="btn primary" onclick="saveProductionReview('completed')">Approve and complete</button><button id="prod-review-changes" type="button" class="btn" onclick="saveProductionReview('changes_requested')">Request changes</button></div></div></div>
+<div class="modal-bg" id="prod-delivery-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-delivery-title"><div class="prod-heading"><h2 id="prod-delivery-title">Assign delivery task</h2><button type="button" class="btn bsm" onclick="document.getElementById('prod-delivery-modal').classList.remove('open')">Close</button></div><p>This creates a delivery task in the existing Tasks area using this order’s description. Assigning it locks the production order against further edits.</p><div id="prod-delivery-description" class="prod-delivery-description" aria-label="Order description for delivery task"></div><form id="prod-delivery-form" onsubmit="saveProductionDelivery(event)"><div class="prod-form-grid"><label>Delivery member<select name="member_id" required></select></label><label>Delivery date<input name="date" type="date" required></label><label>Client name<input name="client" maxlength="160" required></label><label>Client phone<input name="phone" maxlength="80" type="tel"></label><label class="prod-wide">Delivery address<input name="location" maxlength="300" required></label><label>Amount to collect (KES)<input name="amount" type="number" min="0" max="100000000" step="0.01" value="0" required></label><label class="prod-wide">Delivery instructions<textarea name="notes" maxlength="2000" rows="3" placeholder="Access instructions, packaging, special handling"></textarea></label></div><div id="prod-delivery-error" class="pw-error" role="alert"></div><button id="prod-delivery-save" type="submit" class="btn primary">Assign delivery task</button></form></div></div>
 
 
   <!-- DASHBOARD -->
@@ -5313,6 +5329,7 @@ async function syncNow(showFeedback){
     const values=await Promise.all(tables.map(async table=>[table,await authAllRows(table,co)]));
     if(epoch!==authEpoch)return false;
     const rows=Object.fromEntries(values), fresh=defD(); fresh.productionOrders=rows.production_orders||[];
+    fresh.productionDeliveryTasks=(rows.tasks||[]).filter(t=>t.production_order_id);
     fresh.productionNotifications=productionPermission('view',member.role)?await authRows('production_notifications','company_id=eq.'+encodeURIComponent(co)+'&recipient_auth_user_id=eq.'+encodeURIComponent(authUser.id)+'&order=created_at.desc&limit=100'):[];
     if(epoch!==authEpoch)return false;
     if(productionPermission('manage',member.role)){
@@ -6044,7 +6061,7 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
   <button type="button" class="mtab" data-pg="__more"><i data-ic="menu" data-sz="20"></i><span>More</span></button>
 </nav>
 <script>
-let productionRoles=[], productionMembers=[], productionEditing=null, productionProgressEditing=null, productionReviewEditing=null;
+let productionRoles=[], productionMembers=[], productionEditing=null, productionProgressEditing=null, productionReviewEditing=null, productionDeliveryEditing=null;
 let productionFilter='active', productionSearch='', productionBusy=false;
 let productionNotificationSession='',productionKnownNotifications=null;
 const productionBuiltins={owner:'Owner',manager:'Manager',staff:'Staff',delivery:'Delivery',technician:'Technician'};
@@ -6067,10 +6084,11 @@ function productionRoleOptions(selected,includeOwner=false){
 }
 function productionReset(){
   document.body.classList.remove('production-active');
-  productionRoles=[];productionMembers=[];productionEditing=null;productionProgressEditing=null;productionReviewEditing=null;productionFilter='active';productionSearch='';productionBusy=false;productionKnownNotifications=null;productionNotificationSession='';
-  ['prod-list','prod-summary','prod-alerts','production-overview','role-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.replaceChildren();});
+  productionRoles=[];productionMembers=[];productionEditing=null;productionProgressEditing=null;productionReviewEditing=null;productionDeliveryEditing=null;productionFilter='active';productionSearch='';productionBusy=false;productionKnownNotifications=null;productionNotificationSession='';
+  ['prod-list','prod-summary','prod-alerts','prod-delivery-queue','production-overview','role-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.replaceChildren();});
+  if(document.getElementById('prod-delivery-queue'))document.getElementById('prod-delivery-queue').hidden=true;
   document.getElementById('prod-order-form')?.reset();document.getElementById('prod-progress-form')?.reset();
-  for(const id of ['prod-order-modal','prod-progress-modal','prod-review-modal'])document.getElementById(id)?.classList.remove('open');
+  for(const id of ['prod-order-modal','prod-progress-modal','prod-review-modal','prod-delivery-modal'])document.getElementById(id)?.classList.remove('open');
   if(document.getElementById('prod-filter'))document.getElementById('prod-filter').value='active';
   if(document.getElementById('prod-search'))document.getElementById('prod-search').value='';
 }
@@ -6080,11 +6098,16 @@ function productionSorted(rows){
   return [...rows].sort((a,b)=>Number(['completed','cancelled'].includes(a.status))-Number(['completed','cancelled'].includes(b.status))||rank[a.priority]-rank[b.priority]||(a.due_date||'9999').localeCompare(b.due_date||'9999')||a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id));
 }
 function productionActive(){return (D?.productionOrders||[]).filter(o=>!['completed','cancelled'].includes(o.status));}
+function productionDeliveryTask(id){return (D?.productionDeliveryTasks||[]).find(t=>t.production_order_id===id);}
+function productionAwaitingDelivery(o){return o.status==='completed'&&!productionDeliveryTask(o.id);}
+function productionShowFilter(value){if(!document.getElementById('pg-production').classList.contains('on'))goPage('production');productionFilter=value;document.getElementById('prod-filter').value=value;renderProduction();document.getElementById('prod-list')?.scrollIntoView({behavior:'smooth',block:'start'});}
+function productionCanAssignDelivery(){return ['owner','manager'].includes(currentUser?.role);}
 function renderProductionOverview(){
   const el=document.getElementById('production-overview');if(!el)return;
   el.hidden=!productionPermission('view');if(el.hidden){el.replaceChildren();return;}
   const rows=productionSorted(productionActive());
-  el.innerHTML='<div class="prod-heading"><div><h3>Production queue</h3><p>'+rows.length+' active orders · '+rows.filter(o=>o.priority==='urgent').length+' urgent · '+rows.filter(o=>o.status==='blocked').length+' blocked</p></div><button class="btn bsm" type="button" onclick="goPage(\'production\')">View orders</button></div>'+rows.slice(0,3).map(o=>{
+  const awaiting=(D.productionOrders||[]).filter(productionAwaitingDelivery).length;
+  el.innerHTML='<div class="prod-heading"><div><h3>Production queue</h3><p>'+rows.length+' active orders · '+rows.filter(o=>o.priority==='urgent').length+' urgent · '+rows.filter(o=>o.status==='blocked').length+' blocked · '+awaiting+' awaiting delivery</p></div><button class="btn bsm" type="button" onclick="productionShowFilter(\''+(awaiting?'awaiting_delivery':'active')+'\')">'+(awaiting?'Assign delivery':'View orders')+'</button></div>'+rows.slice(0,3).map(o=>{
     const finish=[o.frame_color&&'Frame '+productionColors[o.frame_color],o.door_color&&'Doors '+productionColors[o.door_color],o.colours].filter(Boolean).join(' · ');
     return '<div class="prod-preview"><strong>'+authEscape(o.reference)+' · '+authEscape(o.product)+'</strong><span class="prod-status status-'+o.status+'">'+authEscape(productionStatus[o.status]||o.status)+'</span><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span><span>'+authEscape(o.dimensions||'Dimensions not set')+' · '+authEscape(finish||'Colours not set')+'</span></div>';
   }).join('');
@@ -6092,16 +6115,25 @@ function renderProductionOverview(){
 function renderProduction(){
   if(!productionPermission('view'))return;
   document.getElementById('prod-new').hidden=!productionPermission('manage');
-  const all=D?.productionOrders||[],active=productionActive();
-  document.getElementById('prod-summary').innerHTML=[['Active',active.length],['Urgent',active.filter(o=>o.priority==='urgent').length],['Needs review',active.filter(o=>o.status==='ready').length],['Changes needed',active.filter(o=>o.status==='changes_requested').length]].map(([label,count])=>'<div class="prod-stat"><span>'+label+'</span><strong>'+count+'</strong></div>').join('');
-  let rows=all.filter(o=>productionFilter==='all'||productionFilter==='active'&&!['completed','cancelled'].includes(o.status)||productionFilter==='mine'&&o.assigned_member_id===currentUser?.id||productionFilter==='overdue'&&o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status)||o.status===productionFilter);
+  const all=D?.productionOrders||[],active=productionActive(),awaiting=all.filter(productionAwaitingDelivery);
+  document.getElementById('prod-summary').innerHTML=[['Active',active.length,'active'],['Urgent',active.filter(o=>o.priority==='urgent').length,'active'],['In progress',active.filter(o=>o.status==='in_progress').length,'in_progress'],['Ready for review',active.filter(o=>o.status==='ready').length,'ready'],['Changes needed',active.filter(o=>o.status==='changes_requested').length,'changes_requested'],['Awaiting delivery',awaiting.length,'awaiting_delivery'],['Completed',all.filter(o=>o.status==='completed').length,'completed']].map(([label,count,filter])=>'<button type="button" class="prod-stat status-'+filter+'" onclick="productionShowFilter(\''+filter+'\')"><span>'+label+'</span><strong>'+count+'</strong></button>').join('');
+  const handoffPanel=document.getElementById('prod-delivery-queue');handoffPanel.hidden=!awaiting.length;
+  handoffPanel.innerHTML=awaiting.length?'<div class="prod-delivery-queue-head"><strong>Ready to assign delivery · '+awaiting.length+'</strong><span>Finished production orders awaiting a rider</span></div>'+awaiting.map(o=>'<div class="prod-delivery-queue-row"><span><strong>'+authEscape(o.reference)+'</strong> · '+authEscape(o.quantity+' × '+o.product)+'</span>'+(productionCanAssignDelivery()?'<button type="button" class="btn primary bsm" onclick="openProductionDelivery(\''+o.id+'\')">Assign delivery task</button>':'<span>Awaiting owner or manager</span>')+'</div>').join(''):'';
+  let rows=all.filter(o=>productionFilter==='all'||productionFilter==='active'&&(!['completed','cancelled'].includes(o.status)||productionAwaitingDelivery(o))||productionFilter==='awaiting_delivery'&&productionAwaitingDelivery(o)||productionFilter==='mine'&&o.assigned_member_id===currentUser?.id||productionFilter==='overdue'&&o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status)||o.status===productionFilter);
   const search=productionSearch.toLowerCase();
   rows=productionSorted(rows.filter(o=>[o.reference,o.product,o.dimensions,o.colours,o.specifications,o.assigned_to_name,productionColors[o.frame_color],productionColors[o.door_color],productionMaterials[o.material],o.drawers,productionDrawerPositions[o.drawer_position],o.drawer_count].join(' ').toLowerCase().includes(search)));
   document.getElementById('prod-list').innerHTML=rows.length?rows.map(o=>{
     const overdue=o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status);
     const closed=['completed','cancelled'].includes(o.status),status=productionStatus[o.status]||o.status;
+    const delivery=productionDeliveryTask(o.id);
     const details=[['Dimensions',o.dimensions],['Frame color',productionColors[o.frame_color]],['Door color',productionColors[o.door_color]],['Number of drawers',o.drawer_count],['Drawer position',productionDrawerPositions[o.drawer_position]],['Material',productionMaterials[o.material]],['Colours / finish notes',o.colours],['Door design',o.doors],['Extra drawer details',o.drawers],['Extensions',o.extensions],['Specifications',o.specifications]];
-    return '<article class="prod-order '+(closed?'closed':o.priority)+' status-'+o.status+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><div class="prod-chips"><span class="prod-status status-'+o.status+'">'+authEscape(status)+'</span><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div></div><div class="prod-meta"><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(String(value))+'</dd></div>').join('')+'</dl>'+(o.review_note&&!closed?'<div class="prod-note prod-review-feedback"><strong>'+(o.status==='changes_requested'?'Changes needed':'Review feedback')+' · '+authEscape(o.reviewed_by_name||'Reviewer')+'</strong><p>'+authEscape(o.review_note)+'</p></div>':'')+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+(productionPermission('manage')&&o.status==='ready'?'<button class="btn primary bsm" type="button" onclick="openProductionReview(\''+o.id+'\')">Review order</button>':'')+(productionPermission('progress')&&(!['ready','completed','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+(productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'')+'</div></footer></article>';
+    const completed=o.status==='completed'?'<div class="prod-completed-info">✓ Completed · '+authEscape(o.reviewed_at?new Date(o.reviewed_at).toLocaleString():'Reviewed')+' · '+(delivery?'Delivery assigned · Read only':'Ready for delivery')+'</div>':'';
+    const handoff=delivery?'<div class="prod-delivery-info"><strong>Delivery assigned</strong> · '+authEscape(delivery.assignee||'Rider')+' · '+authEscape(delivery.date||'Date pending')+' · '+authEscape(delivery.status||'pending')+'</div>':'';
+    const actions=o.status==='completed'?(productionCanAssignDelivery()&&!delivery?'<button class="btn primary bsm" type="button" onclick="openProductionDelivery(\''+o.id+'\')">Assign delivery task</button>':'')+(productionPermission('manage')&&!delivery?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':''):
+      (productionPermission('manage')&&o.status==='ready'?'<button class="btn primary bsm" type="button" onclick="openProductionReview(\''+o.id+'\')">Review order</button>':'')+
+      (productionPermission('progress')&&(!['ready','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+
+      (productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'');
+    return '<article class="prod-order '+(closed?'closed':o.priority)+' status-'+o.status+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><div class="prod-chips"><span class="prod-status status-'+o.status+'">'+authEscape(status)+'</span><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div></div><div class="prod-meta"><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(String(value))+'</dd></div>').join('')+'</dl>'+(o.review_note&&!closed?'<div class="prod-note prod-review-feedback"><strong>'+(o.status==='changes_requested'?'Changes needed':'Review feedback')+' · '+authEscape(o.reviewed_by_name||'Reviewer')+'</strong><p>'+authEscape(o.review_note)+'</p></div>':'')+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+completed+handoff+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+actions+'</div></footer></article>';
   }).join(''):'<div class="card prod-empty">No orders match this view.'+(productionPermission('manage')?' Create a production order to share it with the workshop.':' New orders will appear here when your team adds them.')+'</div>';
 }
 function productionDrawerPosition(form){
@@ -6117,6 +6149,7 @@ function productionDrawerPosition(form){
 function openProductionOrder(id=null){
   if(!productionPermission('manage'))return;
   const order=id?(D.productionOrders||[]).find(o=>o.id===id):null;if(id&&!order)return;
+  if(order?.status==='completed'&&productionDeliveryTask(order.id))return;
   productionEditing=order?{...order}:null;
   const form=document.getElementById('prod-order-form');form.reset();
   document.getElementById('prod-order-title').textContent=order?'Edit production order':'New production order';
@@ -6141,6 +6174,7 @@ async function productionWrite(table,body,query='',method='POST'){
 }
 async function saveProductionOrder(event){
   event?.preventDefault();if(productionBusy||!productionPermission('manage'))return;
+  if(productionEditing?.status==='completed'&&productionDeliveryTask(productionEditing.id))return;
   const form=document.getElementById('prod-order-form');productionDrawerPosition(form);if(!form.reportValidity())return;
   const company=currentCo.id,epoch=authEpoch,edit=productionEditing;
   const body={company_id:company};
@@ -6162,6 +6196,7 @@ function productionAccept(row){
 function openProductionProgress(id){
   if(!productionPermission('progress'))return;
   const row=(D.productionOrders||[]).find(o=>o.id===id);if(!row)return;productionProgressEditing={...row};
+  if(row.status==='completed')return;
   if(['ready','completed','cancelled'].includes(row.status)&&!productionPermission('manage'))return;
   document.getElementById('prod-progress-title').textContent=row.reference+' · '+row.product;
   document.getElementById('prod-progress-status').innerHTML=Object.entries(productionStatus).filter(([k])=>!['completed','changes_requested'].includes(k)&&(productionPermission('manage')||k!=='cancelled')).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('');
@@ -6171,6 +6206,7 @@ function openProductionProgress(id){
 }
 async function saveProductionProgress(event){
   event?.preventDefault();if(productionBusy||!productionPermission('progress')||!productionProgressEditing)return;
+  if(productionProgressEditing.status==='completed')return;
   const form=document.getElementById('prod-progress-form');if(!form.reportValidity())return;
   if(document.getElementById('prod-progress-status').value==='blocked'&&!document.getElementById('prod-progress-note').value.trim()){document.getElementById('prod-progress-error').textContent='Describe what is blocking the order.';return;}
   const edit=productionProgressEditing,epoch=authEpoch;productionBusy=true;document.getElementById('prod-progress-save').disabled=true;
@@ -6199,6 +6235,47 @@ async function saveProductionReview(status){
     toast(status==='completed'?'Order approved and completed.':'Changes sent to the assigned member.');
   }catch(e){if(epoch===authEpoch)document.getElementById('prod-review-error').textContent=e.message;}
   finally{productionBusy=false;for(const id of ['prod-review-approve','prod-review-changes'])document.getElementById(id).disabled=false;}
+}
+function productionDeliverySummary(o){
+  return [o.quantity+' × '+o.product,o.dimensions,
+    o.frame_color&&'Frame: '+(productionColors[o.frame_color]||o.frame_color),
+    o.door_color&&'Doors: '+(productionColors[o.door_color]||o.door_color),
+    o.drawer_count!=null&&o.drawer_count+' drawers'+(o.drawer_position?' ('+(productionDrawerPositions[o.drawer_position]||o.drawer_position)+')':''),
+    o.material&&'Material: '+(productionMaterials[o.material]||o.material),
+    o.colours,o.doors,o.drawers,o.extensions,o.specifications].filter(v=>v!==null&&v!==undefined&&v!=='').join(' · ');
+}
+function openProductionDelivery(id){
+  if(!productionCanAssignDelivery())return;
+  const order=(D.productionOrders||[]).find(o=>o.id===id&&o.status==='completed');
+  if(!order||(D.productionDeliveryTasks||[]).some(t=>t.production_order_id===id))return;
+  productionDeliveryEditing={...order};
+  const form=document.getElementById('prod-delivery-form');form.reset();
+  document.getElementById('prod-delivery-title').textContent='Assign delivery · '+order.reference;
+  document.getElementById('prod-delivery-description').textContent=productionDeliverySummary(order);
+  const riders=(D.users||[]).filter(u=>u.role==='delivery'&&u.auth_user_id);
+  form.elements.member_id.innerHTML='<option value="">Choose a delivery member</option>'+riders.map(u=>'<option value="'+u.id+'">'+authEscape(u.name)+'</option>').join('');
+  form.elements.date.value=today();form.elements.amount.value='0';
+  document.getElementById('prod-delivery-error').textContent=riders.length?'':'Link a delivery member’s login before assigning this task.';
+  document.getElementById('prod-delivery-save').disabled=!riders.length;
+  document.getElementById('prod-delivery-modal').classList.add('open');
+}
+async function saveProductionDelivery(event){
+  event?.preventDefault();if(productionBusy||!productionCanAssignDelivery()||!productionDeliveryEditing)return;
+  const form=document.getElementById('prod-delivery-form');if(!form.reportValidity())return;
+  const order=productionDeliveryEditing,epoch=authEpoch,rider=(D.users||[]).find(u=>u.id===Number(form.elements.member_id.value)&&u.role==='delivery'&&u.auth_user_id);
+  if(!rider){document.getElementById('prod-delivery-error').textContent='Choose a delivery member with a linked login.';return;}
+  productionBusy=true;document.getElementById('prod-delivery-save').disabled=true;
+  try{
+    const body={p_order:order.id,p_member_id:rider.id,p_date:form.elements.date.value,p_client:form.elements.client.value.trim(),p_phone:form.elements.phone.value.trim(),p_location:form.elements.location.value.trim(),p_amount:Number(form.elements.amount.value),p_notes:form.elements.notes.value.trim()};
+    const response=await authFetch(SUPA_URL+'/rest/v1/rpc/baraka_assign_production_delivery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const result=await response.json().catch(()=>null);
+    if(!response.ok||!result?.id)throw new Error(result?.message||'Could not assign delivery. Refresh and try again.');
+    if(epoch!==authEpoch)return;
+    document.getElementById('prod-delivery-modal').classList.remove('open');
+    const refreshed=await syncNow(false);
+    if(epoch===authEpoch)toast(refreshed?'Delivery task assigned to '+rider.name+'.':'Delivery saved. Refresh to see the linked task.');
+  }catch(e){if(epoch===authEpoch)document.getElementById('prod-delivery-error').textContent=e.message;}
+  finally{productionBusy=false;document.getElementById('prod-delivery-save').disabled=false;}
 }
 function productionOnSync(){
   const session=(authUser?.id||'')+'|'+(currentCo?.id||'');
