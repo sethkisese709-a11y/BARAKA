@@ -1269,6 +1269,26 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 .prod-heading [hidden],#production-overview[hidden]{display:none!important}
 @media(max-width:760px){#pg-production,#pg-roles{padding:18px 14px 90px}.production-active #main-app{overflow-x:clip}.production-active .topbar{flex-wrap:wrap;gap:6px;justify-content:flex-start}.production-active .topbar .tbL{flex:1;min-width:120px}.production-active .nav{position:static}}
 @media(max-width:650px){.prod-list{grid-template-columns:1fr}.prod-stats{grid-template-columns:1fr 1fr;gap:8px}.prod-stat{padding:13px}.prod-form-grid{grid-template-columns:1fr}.prod-heading h2{font-size:21px}.prod-order{padding:15px}.prod-role-row{flex-wrap:wrap}}
+/* State and urgency are shown with both labels and colour. */
+.prod-order.status-ready{border-left-color:#2563eb;background:color-mix(in srgb,var(--bg) 95%,#2563eb)}
+.prod-order.status-changes_requested{border-left-color:#d97706;background:color-mix(in srgb,var(--bg) 93%,#f59e0b)}
+.prod-order.status-blocked{border-left-color:#be185d;background:color-mix(in srgb,var(--bg) 96%,#be185d)}
+.prod-order.status-completed{border-left-color:#16803c;background:color-mix(in srgb,var(--bg) 95%,#16803c)}
+.prod-order.status-cancelled{border-left-color:#64748b;opacity:.85}
+.prod-order.status-in_progress:not(.urgent):not(.high){border-left-color:#6366f1}
+.prod-chips{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.prod-status{font-size:11px;font-weight:700;border-radius:20px;padding:5px 10px;white-space:nowrap;background:#e5e7eb;color:#374151}
+.prod-status.status-in_progress{background:#e0e7ff;color:#3730a3}.prod-status.status-blocked{background:#fce7f3;color:#9d174d}
+.prod-status.status-ready{background:#dbeafe;color:#1d4ed8}.prod-status.status-changes_requested{background:#fef3c7;color:#92400e}
+.prod-status.status-completed{background:#dcfce7;color:#166534}.prod-status.status-cancelled{background:#e2e8f0;color:#475569}
+.prod-order.closed .prod-priority{color:#475569;background:#e2e8f0}.prod-review-feedback{margin-bottom:8px;border:1px solid #f59e0b;background:color-mix(in srgb,var(--bg) 89%,#f59e0b)}
+.prod-review-feedback strong{color:#a16207}.prod-review-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.prod-spec-preview{padding:12px!important;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);margin:16px 0}
+.prod-nav-badge{display:inline-block;border-radius:16px;background:#be123c;color:#fff;padding:2px 6px;font-size:10px;line-height:1.2;margin-left:5px}
+.prod-nav-badge[hidden]{display:none}.prod-alerts{margin:0 0 17px}.prod-alerts-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px 10px 0 0}
+.prod-alerts-head strong{font-size:13px}.prod-alert{display:flex;justify-content:space-between;align-items:start;gap:15px;padding:11px 14px;border:1px solid var(--border);border-top:0;background:var(--bg)}
+.prod-alert:last-child{border-radius:0 0 10px 10px}.prod-alert strong{font-size:13px}.prod-alert p{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0;color:var(--text)}.prod-alert small{font-size:10px;color:var(--text2)}.prod-alert-empty{display:none}
+@media(max-width:650px){.prod-alert{flex-wrap:wrap}.prod-chips{justify-content:start}.prod-heading{align-items:start}}
 
 </style></head>
 <body>
@@ -1325,7 +1345,8 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 <section id="pg-production" class="page">
   <div class="prod-heading"><div><p class="prod-eyebrow">WORKSHOP</p><h2>Production orders</h2><p>Urgent orders first, then due date. Shared with your production team.</p></div><button id="prod-new" type="button" class="btn primary" onclick="openProductionOrder()">+ New order</button></div>
   <div id="prod-summary" class="prod-stats"></div>
-  <div class="prod-toolbar"><label>Search orders<input type="search" placeholder="Order, dimensions, colour or technician" oninput="productionSearch=this.value;renderProduction()"></label><label>Show<select onchange="productionFilter=this.value;renderProduction()"><option value="active">Active orders</option><option value="all">All orders</option><option value="pending">To do</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="ready">Ready for review</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label><button class="btn bsm" type="button" onclick="syncNow(true)">Refresh</button></div>
+  <div id="prod-alerts" class="prod-alerts" aria-live="polite"></div>
+  <div class="prod-toolbar"><label>Search orders<input id="prod-search" type="search" placeholder="Order, dimensions, colour or technician" oninput="productionSearch=this.value;renderProduction()"></label><label>Show<select id="prod-filter" onchange="productionFilter=this.value;renderProduction()"><option value="active">Active orders</option><option value="mine">Assigned to me</option><option value="overdue">Overdue</option><option value="ready">Ready for review</option><option value="changes_requested">Changes requested</option><option value="pending">To do</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="all">All orders</option></select></label><button class="btn bsm" type="button" onclick="syncNow(true)">Refresh</button></div>
   <div id="prod-list" class="prod-list" aria-live="polite"></div>
 </section>
 <section id="pg-roles" class="page">
@@ -1353,8 +1374,9 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
  <label>Extra drawer details<input name="drawers" maxlength="240" placeholder="e.g. Soft-close runners and handles"></label>
  <label class="prod-wide">Extensions / additions<textarea name="extensions" maxlength="1000" rows="2" placeholder="Top extension: describe its size and position"></textarea></label>
  <label class="prod-wide">Other specifications<textarea name="specifications" maxlength="5000" rows="3" placeholder="Shelves, materials, handles and other build instructions"></textarea></label>
-</div><p>Saving shares this order with Owner, Manager, Technicians and authorised production roles.</p><div id="prod-order-error" class="pw-error" role="alert"></div><button id="prod-save" type="submit" class="btn primary">Save order</button></form></div></div>
+</div><p id="prod-spec-preview" class="prod-spec-preview" aria-live="polite"></p><p>Saving shares this order with Owner, Manager, Technicians and authorised production roles. The assigned member receives an in-app notice when details change.</p><div id="prod-order-error" class="pw-error" role="alert"></div><button id="prod-save" type="submit" class="btn primary">Save order</button></form></div></div>
 <div class="modal-bg" id="prod-progress-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-progress-title"><div class="prod-heading"><h2 id="prod-progress-title">Update progress</h2><button class="btn bsm" type="button" aria-label="Close progress form" onclick="document.getElementById('prod-progress-modal').classList.remove('open')">Close</button></div><form id="prod-progress-form" onsubmit="saveProductionProgress(event)"><label class="fl">Stage<select id="prod-progress-status"></select></label><label class="fl">Progress / blocker notes<textarea id="prod-progress-note" maxlength="3000" rows="5" placeholder="e.g. Panels cut; waiting for white edging"></textarea></label><p>Use “Ready for review” when workshop work is finished. Owner or Manager can mark the order completed.</p><div id="prod-progress-error" class="pw-error" role="alert"></div><button id="prod-progress-save" class="btn primary" type="submit">Share progress</button></form></div></div>
+<div class="modal-bg" id="prod-review-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-review-title"><div class="prod-heading"><h2 id="prod-review-title">Review production order</h2><button type="button" class="btn bsm" onclick="document.getElementById('prod-review-modal').classList.remove('open')">Close</button></div><p>Approve the finished work, or describe what the technician must correct.</p><label class="fl">Review feedback<textarea id="prod-review-note" maxlength="3000" rows="5" placeholder="e.g. Change the door colour to white and check the top extension"></textarea></label><div id="prod-review-error" class="pw-error" role="alert"></div><div class="prod-review-actions"><button id="prod-review-approve" type="button" class="btn primary" onclick="saveProductionReview('completed')">Approve and complete</button><button id="prod-review-changes" type="button" class="btn" onclick="saveProductionReview('changes_requested')">Request changes</button></div></div></div>
 
 
   <!-- DASHBOARD -->
@@ -2103,7 +2125,7 @@ function legacyBuildNav(){
 function buildNav(){
   if(productionOnly())document.getElementById('main-nav').replaceChildren();else legacyBuildNav();
   const nav=document.getElementById('main-nav');
-  if(productionPermission('view'))nav.insertAdjacentHTML('beforeend','<button type="button" class="nb" id="nb-production" onclick="goPage(\'production\')">Production orders</button>');
+  if(productionPermission('view'))nav.insertAdjacentHTML('beforeend','<button type="button" class="nb" id="nb-production" onclick="goPage(\'production\')">Production orders <span id="prod-nav-badge" class="prod-nav-badge" hidden></span></button>');
   if(currentUser?.role==='owner')nav.insertAdjacentHTML('beforeend','<button type="button" class="nb" id="nb-roles" onclick="goPage(\'roles\')">Manage roles</button>');
 }
 
@@ -5291,6 +5313,8 @@ async function syncNow(showFeedback){
     const values=await Promise.all(tables.map(async table=>[table,await authAllRows(table,co)]));
     if(epoch!==authEpoch)return false;
     const rows=Object.fromEntries(values), fresh=defD(); fresh.productionOrders=rows.production_orders||[];
+    fresh.productionNotifications=productionPermission('view',member.role)?await authRows('production_notifications','company_id=eq.'+encodeURIComponent(co)+'&recipient_auth_user_id=eq.'+encodeURIComponent(authUser.id)+'&order=created_at.desc&limit=100'):[];
+    if(epoch!==authEpoch)return false;
     if(productionPermission('manage',member.role)){
       const response=await authFetch(SUPA_URL+'/rest/v1/rpc/baraka_production_members',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_company:co})});
       if(!response.ok)throw new Error('Could not load production members.');
@@ -5305,7 +5329,7 @@ async function syncNow(showFeedback){
     if(status)status.textContent='✓ Synced';
     if(showFeedback)toast('Data synced','success');
     if(document.getElementById('main-app').style.display!=='none'){
-      buildNav(); document.getElementById('top-role').textContent=productionRoleName(member.role); if(oldRole!==member.role)goPage(productionLanding());
+      buildNav(); document.getElementById('top-role').textContent=productionRoleName(member.role); productionOnSync(); if(oldRole!==member.role)goPage(productionLanding());
       refreshCurrentPage();
     }
     return true;
@@ -5358,6 +5382,7 @@ function refreshCurrentPage(){
   if(document.getElementById('pg-production')?.classList.contains('on'))renderProduction();
   if(document.getElementById('pg-roles')?.classList.contains('on')&&!document.getElementById('role-name')?.matches(':focus'))renderRolesList();
   renderProductionOverview();
+  renderProductionAlerts();
 }
 
 // ── Show/hide login steps ──────────────────────────────────────────
@@ -5393,7 +5418,7 @@ function doLogin(user){
   document.getElementById('top-av').textContent=ini(user.name);
   document.getElementById('top-av').className='av '+avC(user.role);
   const rb=document.getElementById('top-role');rb.textContent=user.category;rb.className='badge '+rcC(user.role);
-  dashMonth=tM();buildNav();setDates();popAll();startAutoSync();
+  dashMonth=tM();buildNav();productionOnSync();setDates();popAll();startAutoSync();
   goPage(productionLanding());
   if(['owner','manager'].includes(user.role))checkRecurringTasks();
   if(['owner','manager','staff'].includes(user.role))checkDue();
@@ -6019,10 +6044,11 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
   <button type="button" class="mtab" data-pg="__more"><i data-ic="menu" data-sz="20"></i><span>More</span></button>
 </nav>
 <script>
-let productionRoles=[], productionMembers=[], productionEditing=null, productionProgressEditing=null;
+let productionRoles=[], productionMembers=[], productionEditing=null, productionProgressEditing=null, productionReviewEditing=null;
 let productionFilter='active', productionSearch='', productionBusy=false;
+let productionNotificationSession='',productionKnownNotifications=null;
 const productionBuiltins={owner:'Owner',manager:'Manager',staff:'Staff',delivery:'Delivery',technician:'Technician'};
-const productionStatus={pending:'To do',in_progress:'In progress',blocked:'Blocked',ready:'Ready for review',completed:'Completed',cancelled:'Cancelled'};
+const productionStatus={pending:'To do',in_progress:'In progress',blocked:'Blocked',ready:'Ready for review',changes_requested:'Changes requested',completed:'Completed',cancelled:'Cancelled'};
 const productionPriority={urgent:'Urgent',high:'High',normal:'Normal',low:'Low'};
 const productionColors={plain:'Plain',dark_walnut:'Dark walnut',white:'White',salzar:'Salzar',dark_grey:'Dark grey',black:'Black',royal_teak:'Royal teak',american_walnut:'American walnut'};
 const productionMaterials={mdf:'MDF',particle_board:'Particle board',waterproof_board:'Waterproof board',solid_wood:'Solid wood'};
@@ -6041,9 +6067,12 @@ function productionRoleOptions(selected,includeOwner=false){
 }
 function productionReset(){
   document.body.classList.remove('production-active');
-  productionRoles=[];productionMembers=[];productionEditing=null;productionProgressEditing=null;productionFilter='active';productionSearch='';productionBusy=false;
-  ['prod-list','prod-summary','production-overview','role-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.replaceChildren();});
+  productionRoles=[];productionMembers=[];productionEditing=null;productionProgressEditing=null;productionReviewEditing=null;productionFilter='active';productionSearch='';productionBusy=false;productionKnownNotifications=null;productionNotificationSession='';
+  ['prod-list','prod-summary','prod-alerts','production-overview','role-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.replaceChildren();});
   document.getElementById('prod-order-form')?.reset();document.getElementById('prod-progress-form')?.reset();
+  for(const id of ['prod-order-modal','prod-progress-modal','prod-review-modal'])document.getElementById(id)?.classList.remove('open');
+  if(document.getElementById('prod-filter'))document.getElementById('prod-filter').value='active';
+  if(document.getElementById('prod-search'))document.getElementById('prod-search').value='';
 }
 function productionLanding(){return currentUser?.role==='delivery'?'tasks':productionOnly()?'production':'dashboard';}
 function productionSorted(rows){
@@ -6057,27 +6086,33 @@ function renderProductionOverview(){
   const rows=productionSorted(productionActive());
   el.innerHTML='<div class="prod-heading"><div><h3>Production queue</h3><p>'+rows.length+' active orders · '+rows.filter(o=>o.priority==='urgent').length+' urgent · '+rows.filter(o=>o.status==='blocked').length+' blocked</p></div><button class="btn bsm" type="button" onclick="goPage(\'production\')">View orders</button></div>'+rows.slice(0,3).map(o=>{
     const finish=[o.frame_color&&'Frame '+productionColors[o.frame_color],o.door_color&&'Doors '+productionColors[o.door_color],o.colours].filter(Boolean).join(' · ');
-    return '<div class="prod-preview"><strong>'+authEscape(o.reference)+' · '+authEscape(o.product)+'</strong><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span><span>'+authEscape(o.dimensions||'Dimensions not set')+' · '+authEscape(finish||'Colours not set')+'</span></div>';
+    return '<div class="prod-preview"><strong>'+authEscape(o.reference)+' · '+authEscape(o.product)+'</strong><span class="prod-status status-'+o.status+'">'+authEscape(productionStatus[o.status]||o.status)+'</span><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span><span>'+authEscape(o.dimensions||'Dimensions not set')+' · '+authEscape(finish||'Colours not set')+'</span></div>';
   }).join('');
 }
 function renderProduction(){
   if(!productionPermission('view'))return;
   document.getElementById('prod-new').hidden=!productionPermission('manage');
   const all=D?.productionOrders||[],active=productionActive();
-  document.getElementById('prod-summary').innerHTML=[['Active',active.length],['Urgent',active.filter(o=>o.priority==='urgent').length],['Blocked',active.filter(o=>o.status==='blocked').length],['Ready for review',active.filter(o=>o.status==='ready').length]].map(([label,count])=>'<div class="prod-stat"><span>'+label+'</span><strong>'+count+'</strong></div>').join('');
-  let rows=all.filter(o=>productionFilter==='all'||productionFilter==='active'&&!['completed','cancelled'].includes(o.status)||o.status===productionFilter);
+  document.getElementById('prod-summary').innerHTML=[['Active',active.length],['Urgent',active.filter(o=>o.priority==='urgent').length],['Needs review',active.filter(o=>o.status==='ready').length],['Changes needed',active.filter(o=>o.status==='changes_requested').length]].map(([label,count])=>'<div class="prod-stat"><span>'+label+'</span><strong>'+count+'</strong></div>').join('');
+  let rows=all.filter(o=>productionFilter==='all'||productionFilter==='active'&&!['completed','cancelled'].includes(o.status)||productionFilter==='mine'&&o.assigned_member_id===currentUser?.id||productionFilter==='overdue'&&o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status)||o.status===productionFilter);
   const search=productionSearch.toLowerCase();
   rows=productionSorted(rows.filter(o=>[o.reference,o.product,o.dimensions,o.colours,o.specifications,o.assigned_to_name,productionColors[o.frame_color],productionColors[o.door_color],productionMaterials[o.material],o.drawers,productionDrawerPositions[o.drawer_position],o.drawer_count].join(' ').toLowerCase().includes(search)));
   document.getElementById('prod-list').innerHTML=rows.length?rows.map(o=>{
     const overdue=o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status);
+    const closed=['completed','cancelled'].includes(o.status),status=productionStatus[o.status]||o.status;
     const details=[['Dimensions',o.dimensions],['Frame color',productionColors[o.frame_color]],['Door color',productionColors[o.door_color]],['Number of drawers',o.drawer_count],['Drawer position',productionDrawerPositions[o.drawer_position]],['Material',productionMaterials[o.material]],['Colours / finish notes',o.colours],['Door design',o.doors],['Extra drawer details',o.drawers],['Extensions',o.extensions],['Specifications',o.specifications]];
-    return '<article class="prod-order '+o.priority+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div><div class="prod-meta"><span>'+productionStatus[o.status]+'</span><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(String(value))+'</dd></div>').join('')+'</dl>'+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+(productionPermission('progress')&&(!['completed','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+(productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'')+'</div></footer></article>';
+    return '<article class="prod-order '+(closed?'closed':o.priority)+' status-'+o.status+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><div class="prod-chips"><span class="prod-status status-'+o.status+'">'+authEscape(status)+'</span><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div></div><div class="prod-meta"><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(String(value))+'</dd></div>').join('')+'</dl>'+(o.review_note&&!closed?'<div class="prod-note prod-review-feedback"><strong>'+(o.status==='changes_requested'?'Changes needed':'Review feedback')+' · '+authEscape(o.reviewed_by_name||'Reviewer')+'</strong><p>'+authEscape(o.review_note)+'</p></div>':'')+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+(productionPermission('manage')&&o.status==='ready'?'<button class="btn primary bsm" type="button" onclick="openProductionReview(\''+o.id+'\')">Review order</button>':'')+(productionPermission('progress')&&(!['ready','completed','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+(productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'')+'</div></footer></article>';
   }).join(''):'<div class="card prod-empty">No orders match this view.'+(productionPermission('manage')?' Create a production order to share it with the workshop.':' New orders will appear here when your team adds them.')+'</div>';
 }
 function productionDrawerPosition(form){
   const count=form.elements.drawer_count.value,position=form.elements.drawer_position;
   position.disabled=count===''||count==='0';position.required=Number(count)>0;
   if(position.disabled)position.value='';
+  position.querySelector('option[value="both"]').disabled=Number(count)<2;
+  if(position.value==='both'&&Number(count)<2)position.value='';
+  const preview=document.getElementById('prod-spec-preview');if(!preview)return;
+  const value=(key,labels)=>labels[form.elements[key].value]||'';
+  preview.textContent=[value('material',productionMaterials),value('frame_color',productionColors)&&'Frame: '+value('frame_color',productionColors),value('door_color',productionColors)&&'Doors: '+value('door_color',productionColors),count!==''&&'Drawers: '+count+(position.value?' ('+value('drawer_position',productionDrawerPositions)+')':'')].filter(Boolean).join(' · ')||'Select materials and finishes to preview the build.';
 }
 function openProductionOrder(id=null){
   if(!productionPermission('manage'))return;
@@ -6089,6 +6124,8 @@ function openProductionOrder(id=null){
   ['reference','product','quantity','dimensions','doors','drawers','extensions','colours','specifications','priority','due_date'].forEach(k=>{form.elements[k].value=order?.[k]??(k==='quantity'?1:k==='priority'?'normal':'');});
   ['frame_color','door_color','drawer_position','material'].forEach(k=>{form.elements[k].value=order?.[k]??'';});
   form.elements.drawer_count.value=order?.drawer_count??'';
+  form.oninput=()=>productionDrawerPosition(form);
+  form.onchange=()=>productionDrawerPosition(form);
   productionDrawerPosition(form);
   const members=productionMembers;
   form.elements.assigned_member_id.innerHTML='<option value="">Unassigned</option>'+members.map(u=>'<option value="'+u.id+'">'+authEscape(u.name)+' · '+authEscape(productionRoleName(u.role))+'</option>').join('');
@@ -6104,7 +6141,7 @@ async function productionWrite(table,body,query='',method='POST'){
 }
 async function saveProductionOrder(event){
   event?.preventDefault();if(productionBusy||!productionPermission('manage'))return;
-  const form=document.getElementById('prod-order-form');if(!form.reportValidity())return;
+  const form=document.getElementById('prod-order-form');productionDrawerPosition(form);if(!form.reportValidity())return;
   const company=currentCo.id,epoch=authEpoch,edit=productionEditing;
   const body={company_id:company};
   ['reference','product','dimensions','doors','drawers','extensions','colours','specifications','priority'].forEach(k=>body[k]=form.elements[k].value.trim());
@@ -6115,7 +6152,7 @@ async function saveProductionOrder(event){
   try{
     const row=await productionWrite('production_orders',body,edit?'?id=eq.'+edit.id+'&company_id=eq.'+encodeURIComponent(company)+'&revision=eq.'+edit.revision:'',edit?'PATCH':'POST');
     if(epoch!==authEpoch)return;
-    productionAccept(row);document.getElementById('prod-order-modal').classList.remove('open');toast('Order saved and shared with the team.');
+    productionAccept(row);document.getElementById('prod-order-modal').classList.remove('open');toast('Order saved. The assigned member will see an in-app notice.');
   }catch(e){if(epoch===authEpoch)document.getElementById('prod-order-error').textContent=e.message;}
   finally{productionBusy=false;document.getElementById('prod-save').disabled=false;}
 }
@@ -6125,20 +6162,76 @@ function productionAccept(row){
 function openProductionProgress(id){
   if(!productionPermission('progress'))return;
   const row=(D.productionOrders||[]).find(o=>o.id===id);if(!row)return;productionProgressEditing={...row};
+  if(['ready','completed','cancelled'].includes(row.status)&&!productionPermission('manage'))return;
   document.getElementById('prod-progress-title').textContent=row.reference+' · '+row.product;
-  document.getElementById('prod-progress-status').innerHTML=Object.entries(productionStatus).filter(([k])=>productionPermission('manage')||!['completed','cancelled'].includes(k)).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('');
-  document.getElementById('prod-progress-status').value=row.status;document.getElementById('prod-progress-note').value=row.progress_note;
+  document.getElementById('prod-progress-status').innerHTML=Object.entries(productionStatus).filter(([k])=>!['completed','changes_requested'].includes(k)&&(productionPermission('manage')||k!=='cancelled')).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('');
+  document.getElementById('prod-progress-status').value=row.status==='changes_requested'?'in_progress':row.status;
+  document.getElementById('prod-progress-note').value=row.progress_note;
   document.getElementById('prod-progress-error').textContent='';document.getElementById('prod-progress-modal').classList.add('open');
 }
 async function saveProductionProgress(event){
   event?.preventDefault();if(productionBusy||!productionPermission('progress')||!productionProgressEditing)return;
   const form=document.getElementById('prod-progress-form');if(!form.reportValidity())return;
+  if(document.getElementById('prod-progress-status').value==='blocked'&&!document.getElementById('prod-progress-note').value.trim()){document.getElementById('prod-progress-error').textContent='Describe what is blocking the order.';return;}
   const edit=productionProgressEditing,epoch=authEpoch;productionBusy=true;document.getElementById('prod-progress-save').disabled=true;
   try{
     const row=await productionWrite('production_orders',{status:document.getElementById('prod-progress-status').value,progress_note:document.getElementById('prod-progress-note').value.trim()},'?id=eq.'+edit.id+'&company_id=eq.'+encodeURIComponent(currentCo.id)+'&revision=eq.'+edit.revision,'PATCH');
     if(epoch!==authEpoch)return;productionAccept(row);document.getElementById('prod-progress-modal').classList.remove('open');toast('Progress shared with the team.');
   }catch(e){if(epoch===authEpoch)document.getElementById('prod-progress-error').textContent=e.message;}
   finally{productionBusy=false;document.getElementById('prod-progress-save').disabled=false;}
+}
+function openProductionReview(id){
+  if(!productionPermission('manage'))return;
+  const row=(D.productionOrders||[]).find(o=>o.id===id&&o.status==='ready');if(!row)return;
+  productionReviewEditing={...row};document.getElementById('prod-review-title').textContent='Review '+row.reference;
+  document.getElementById('prod-review-note').value='';document.getElementById('prod-review-error').textContent='';
+  document.getElementById('prod-review-modal').classList.add('open');document.getElementById('prod-review-note').focus();
+}
+async function saveProductionReview(status){
+  if(productionBusy||!productionPermission('manage')||!productionReviewEditing||!['completed','changes_requested'].includes(status))return;
+  const note=document.getElementById('prod-review-note').value.trim();
+  if(status==='changes_requested'&&!note){document.getElementById('prod-review-error').textContent='Describe what needs to be changed before sending this back.';return;}
+  const edit=productionReviewEditing,epoch=authEpoch;productionBusy=true;
+  for(const id of ['prod-review-approve','prod-review-changes'])document.getElementById(id).disabled=true;
+  try{
+    const row=await productionWrite('production_orders',{status,review_note:note},'?id=eq.'+edit.id+'&company_id=eq.'+encodeURIComponent(currentCo.id)+'&revision=eq.'+edit.revision,'PATCH');
+    if(epoch!==authEpoch)return;productionAccept(row);document.getElementById('prod-review-modal').classList.remove('open');
+    toast(status==='completed'?'Order approved and completed.':'Changes sent to the assigned member.');
+  }catch(e){if(epoch===authEpoch)document.getElementById('prod-review-error').textContent=e.message;}
+  finally{productionBusy=false;for(const id of ['prod-review-approve','prod-review-changes'])document.getElementById(id).disabled=false;}
+}
+function productionOnSync(){
+  const session=(authUser?.id||'')+'|'+(currentCo?.id||'');
+  const notifications=D?.productionNotifications||[];
+  if(productionNotificationSession!==session){productionNotificationSession=session;productionKnownNotifications=new Set(notifications.map(n=>n.id));}
+  else if(productionKnownNotifications){
+    const newlyReceived=notifications.filter(n=>!productionKnownNotifications.has(n.id));
+    if(newlyReceived.length)toast(newlyReceived.length===1?newlyReceived[0].message:newlyReceived.length+' new production updates. Open Production orders.','success');
+    for(const n of notifications)productionKnownNotifications.add(n.id);
+  }
+  renderProductionAlerts();
+}
+function renderProductionAlerts(){
+  const unread=(D?.productionNotifications||[]).filter(n=>!n.read_at),badge=document.getElementById('prod-nav-badge'),el=document.getElementById('prod-alerts');
+  if(badge){badge.hidden=!unread.length;badge.textContent=unread.length>99?'99+':String(unread.length);}
+  if(!el)return;
+  el.innerHTML=unread.length?'<div class="prod-alerts-head"><strong>Updates for you · '+unread.length+'</strong><button class="btn bsm" type="button" onclick="productionMarkAllRead()">Mark all read</button></div>'+unread.slice(0,12).map(n=>'<div class="prod-alert"><div><strong>'+authEscape(n.title)+'</strong><p>'+authEscape(n.message)+'</p><small>'+authEscape(new Date(n.created_at).toLocaleString())+'</small></div><button type="button" class="btn bsm" onclick="productionOpenNotice(\''+n.id+'\')">View order</button></div>').join(''):'<p class="prod-alert-empty">No unread production updates.</p>';
+}
+async function productionMarkRead(ids){
+  const epoch=authEpoch,co=currentCo?.id;if(!co||!ids.length)return;
+  try{
+    const response=await authFetch(SUPA_URL+'/rest/v1/production_notifications?id=in.('+ids.join(',')+')&company_id=eq.'+encodeURIComponent(co),{method:'PATCH',headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({read_at:new Date().toISOString()})});
+    if(!response.ok)throw new Error('Could not mark the notice as read.');
+    const updated=await response.json();if(epoch!==authEpoch)return;
+    const byId=new Map(updated.map(n=>[n.id,n]));D.productionNotifications=(D.productionNotifications||[]).map(n=>byId.get(n.id)||n);renderProductionAlerts();
+  }catch(e){if(epoch===authEpoch)toast(e.message,'error');}
+}
+function productionMarkAllRead(){productionMarkRead((D?.productionNotifications||[]).filter(n=>!n.read_at).map(n=>n.id));}
+function productionOpenNotice(id){
+  const n=(D?.productionNotifications||[]).find(v=>v.id===id);if(!n)return;
+  productionMarkRead([id]);productionFilter='all';productionSearch='';
+  document.getElementById('prod-filter').value='all';document.getElementById('prod-search').value='';renderProduction();
+  document.querySelector('[data-order-id="'+CSS.escape(n.order_id)+'"]')?.scrollIntoView({behavior:'smooth',block:'center'});
 }
 function renderRoles(){if(currentUser?.role!=='owner')return;renderRolesList();}
 function renderRolesList(){
