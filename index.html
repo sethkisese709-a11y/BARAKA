@@ -1392,7 +1392,7 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 </div><p id="prod-spec-preview" class="prod-spec-preview" aria-live="polite"></p><p>Saving shares this order with Owner, Manager, Technicians and authorised production roles. The assigned member receives an in-app notice when details change.</p><div id="prod-order-error" class="pw-error" role="alert"></div><button id="prod-save" type="submit" class="btn primary">Save order</button></form></div></div>
 <div class="modal-bg" id="prod-progress-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-progress-title"><div class="prod-heading"><h2 id="prod-progress-title">Update progress</h2><button class="btn bsm" type="button" aria-label="Close progress form" onclick="document.getElementById('prod-progress-modal').classList.remove('open')">Close</button></div><form id="prod-progress-form" onsubmit="saveProductionProgress(event)"><label class="fl">Stage<select id="prod-progress-status"></select></label><label class="fl">Progress / blocker notes<textarea id="prod-progress-note" maxlength="3000" rows="5" placeholder="e.g. Panels cut; waiting for white edging"></textarea></label><p>Use “Ready for review” when workshop work is finished. Owner or Manager can mark the order completed.</p><div id="prod-progress-error" class="pw-error" role="alert"></div><button id="prod-progress-save" class="btn primary" type="submit">Share progress</button></form></div></div>
 <div class="modal-bg" id="prod-review-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-review-title"><div class="prod-heading"><h2 id="prod-review-title">Review production order</h2><button type="button" class="btn bsm" onclick="document.getElementById('prod-review-modal').classList.remove('open')">Close</button></div><p>Approve the finished work, or describe what the technician must correct.</p><label class="fl">Review feedback<textarea id="prod-review-note" maxlength="3000" rows="5" placeholder="e.g. Change the door colour to white and check the top extension"></textarea></label><div id="prod-review-error" class="pw-error" role="alert"></div><div class="prod-review-actions"><button id="prod-review-approve" type="button" class="btn primary" onclick="saveProductionReview('completed')">Approve and complete</button><button id="prod-review-changes" type="button" class="btn" onclick="saveProductionReview('changes_requested')">Request changes</button></div></div></div>
-<div class="modal-bg" id="prod-delivery-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-delivery-title"><div class="prod-heading"><h2 id="prod-delivery-title">Assign delivery task</h2><button type="button" class="btn bsm" onclick="document.getElementById('prod-delivery-modal').classList.remove('open')">Close</button></div><p>This creates a delivery task in the existing Tasks area using this order’s description. Assigning it locks the production order against further edits.</p><div id="prod-delivery-description" class="prod-delivery-description" aria-label="Order description for delivery task"></div><form id="prod-delivery-form" onsubmit="saveProductionDelivery(event)"><div class="prod-form-grid"><label>Delivery member<select name="member_id" required></select></label><label>Delivery date<input name="date" type="date" required></label><label>Client name<input name="client" maxlength="160" required></label><label>Client phone<input name="phone" maxlength="80" type="tel"></label><label class="prod-wide">Delivery address<input name="location" maxlength="300" required></label><label>Amount to collect (KES)<input name="amount" type="number" min="0" max="100000000" step="0.01" value="0" required></label><label class="prod-wide">Delivery instructions<textarea name="notes" maxlength="2000" rows="3" placeholder="Access instructions, packaging, special handling"></textarea></label></div><div id="prod-delivery-error" class="pw-error" role="alert"></div><button id="prod-delivery-save" type="submit" class="btn primary">Assign delivery task</button></form></div></div>
+<div class="modal-bg" id="prod-delivery-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-delivery-title"><div class="prod-heading"><h2 id="prod-delivery-title">Assign delivery task</h2><button type="button" class="btn bsm" onclick="document.getElementById('prod-delivery-modal').classList.remove('open')">Close</button></div><p>This creates a delivery task in the existing Tasks area using this order’s description. Assigning it locks the production order against further edits.</p><div id="prod-delivery-description" class="prod-delivery-description" aria-label="Order description for delivery task"></div><form id="prod-delivery-form" onsubmit="saveProductionDelivery(event)"><div class="prod-form-grid"><label>Primary delivery member<select name="member_id" required></select></label><label>Additional delivery members<select name="additional_members" multiple size="3"></select><small>Hold Ctrl (Windows) or Command (Mac) to select more than one.</small></label><label class="prod-wide">Task title<input name="title" maxlength="240" required></label><label>Delivery date<input name="date" type="date" required></label><label>Start time<input name="time_start" type="time"></label><label>End time<input name="time_end" type="time"></label><label>Priority<select name="priority"><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="low">Low</option></select></label><label>Client name<input name="client" maxlength="160" required></label><label>Client phone<input name="phone" maxlength="80" type="tel"></label><label class="prod-wide">Delivery address<input name="location" maxlength="300" required></label><label>Amount to collect (KES)<input name="amount" type="number" min="0" max="100000000" step="0.01" value="0" required></label><label class="prod-wide">Items / description<textarea name="items" maxlength="10000" rows="4"></textarea></label><label class="prod-wide">Delivery instructions<textarea name="notes" maxlength="2000" rows="3" placeholder="Access instructions, packaging, special handling"></textarea></label></div><div id="prod-delivery-error" class="pw-error" role="alert"></div><button id="prod-delivery-save" type="submit" class="btn primary">Assign delivery task</button></form></div></div>
 
 
   <!-- DASHBOARD -->
@@ -6063,6 +6063,7 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
 <script>
 let productionRoles=[], productionMembers=[], productionEditing=null, productionProgressEditing=null, productionReviewEditing=null, productionDeliveryEditing=null;
 let productionFilter='active', productionSearch='', productionBusy=false;
+let productionDeliveryMembers=[];
 let productionNotificationSession='',productionKnownNotifications=null;
 const productionBuiltins={owner:'Owner',manager:'Manager',staff:'Staff',delivery:'Delivery',technician:'Technician'};
 const productionStatus={pending:'To do',in_progress:'In progress',blocked:'Blocked',ready:'Ready for review',changes_requested:'Changes requested',completed:'Completed',cancelled:'Cancelled'};
@@ -6242,9 +6243,9 @@ function productionDeliverySummary(o){
     o.door_color&&'Doors: '+(productionColors[o.door_color]||o.door_color),
     o.drawer_count!=null&&o.drawer_count+' drawers'+(o.drawer_position?' ('+(productionDrawerPositions[o.drawer_position]||o.drawer_position)+')':''),
     o.material&&'Material: '+(productionMaterials[o.material]||o.material),
-    o.colours,o.doors,o.drawers,o.extensions,o.specifications].filter(v=>v!==null&&v!==undefined&&v!=='').join(' · ');
+    o.colours,o.doors,o.drawers,o.extensions,o.specifications].filter(v=>v!==false&&v!==null&&v!==undefined&&v!=='').join(' · ');
 }
-function openProductionDelivery(id){
+async function openProductionDelivery(id){
   if(!productionCanAssignDelivery())return;
   const order=(D.productionOrders||[]).find(o=>o.id===id&&o.status==='completed');
   if(!order||(D.productionDeliveryTasks||[]).some(t=>t.production_order_id===id))return;
@@ -6252,21 +6253,37 @@ function openProductionDelivery(id){
   const form=document.getElementById('prod-delivery-form');form.reset();
   document.getElementById('prod-delivery-title').textContent='Assign delivery · '+order.reference;
   document.getElementById('prod-delivery-description').textContent=productionDeliverySummary(order);
-  const riders=(D.users||[]).filter(u=>u.role==='delivery'&&u.auth_user_id);
-  form.elements.member_id.innerHTML='<option value="">Choose a delivery member</option>'+riders.map(u=>'<option value="'+u.id+'">'+authEscape(u.name)+'</option>').join('');
+  form.elements.title.value='Deliver '+order.quantity+' × '+order.product+' · '+order.reference;
+  form.elements.items.value=productionDeliverySummary(order);
+  form.elements.priority.value=['urgent','high'].includes(order.priority)?'urgent':order.priority==='low'?'low':'normal';
   form.elements.date.value=today();form.elements.amount.value='0';
-  document.getElementById('prod-delivery-error').textContent=riders.length?'':'Link a delivery member’s login before assigning this task.';
-  document.getElementById('prod-delivery-save').disabled=!riders.length;
+  form.elements.member_id.innerHTML='<option value="">Loading delivery members…</option>';
+  form.elements.additional_members.replaceChildren();
+  document.getElementById('prod-delivery-save').disabled=true;
+  document.getElementById('prod-delivery-error').textContent='';
   document.getElementById('prod-delivery-modal').classList.add('open');
+  const epoch=authEpoch;
+  try{
+    const rows=await authRows('users','company_id=eq.'+encodeURIComponent(currentCo.id)+'&role=eq.delivery&select='+authUserColumns);
+    if(epoch!==authEpoch||productionDeliveryEditing?.id!==id)return;
+    productionDeliveryMembers=rows.map(mapUser);
+    const options=productionDeliveryMembers.map(u=>'<option value="'+u.id+'">'+authEscape(u.name)+(u.auth_user_id?'':' — login not linked')+'</option>').join('');
+    form.elements.member_id.innerHTML='<option value="">Choose a delivery member</option>'+options;
+    form.elements.additional_members.innerHTML=options;
+    document.getElementById('prod-delivery-save').disabled=!rows.length;
+    document.getElementById('prod-delivery-error').textContent=rows.length?'Members without linked logins can be assigned, but need their login linked to access the task.':'No delivery-role members found. Add or update their role in Team, then reopen this form.';
+  }catch(e){if(epoch===authEpoch){form.elements.member_id.innerHTML='<option value="">Could not load members</option>';document.getElementById('prod-delivery-error').textContent=e.message+' Close and reopen to retry.';}}
+
 }
 async function saveProductionDelivery(event){
   event?.preventDefault();if(productionBusy||!productionCanAssignDelivery()||!productionDeliveryEditing)return;
   const form=document.getElementById('prod-delivery-form');if(!form.reportValidity())return;
-  const order=productionDeliveryEditing,epoch=authEpoch,rider=(D.users||[]).find(u=>u.id===Number(form.elements.member_id.value)&&u.role==='delivery'&&u.auth_user_id);
-  if(!rider){document.getElementById('prod-delivery-error').textContent='Choose a delivery member with a linked login.';return;}
+  const order=productionDeliveryEditing,epoch=authEpoch,rider=productionDeliveryMembers.find(u=>String(u.id)===form.elements.member_id.value&&u.role==='delivery');
+  if(!rider){document.getElementById('prod-delivery-error').textContent='Choose a delivery member.';return;}
+  if(form.elements.time_end.value&&(!form.elements.time_start.value||form.elements.time_end.value<=form.elements.time_start.value)){document.getElementById('prod-delivery-error').textContent='End time must be after start time.';return;}
   productionBusy=true;document.getElementById('prod-delivery-save').disabled=true;
   try{
-    const body={p_order:order.id,p_member_id:rider.id,p_date:form.elements.date.value,p_client:form.elements.client.value.trim(),p_phone:form.elements.phone.value.trim(),p_location:form.elements.location.value.trim(),p_amount:Number(form.elements.amount.value),p_notes:form.elements.notes.value.trim()};
+    const body={p_order:order.id,p_member_id:rider.id,p_date:form.elements.date.value,p_client:form.elements.client.value.trim(),p_phone:form.elements.phone.value.trim(),p_location:form.elements.location.value.trim(),p_amount:Number(form.elements.amount.value),p_notes:form.elements.notes.value.trim(),p_member_ids:[...new Set([rider.id,...Array.from(form.elements.additional_members.selectedOptions,o=>Number(o.value))])],p_title:form.elements.title.value.trim(),p_start:form.elements.time_start.value||null,p_end:form.elements.time_end.value||null,p_priority:form.elements.priority.value,p_items:form.elements.items.value.trim()};
     const response=await authFetch(SUPA_URL+'/rest/v1/rpc/baraka_assign_production_delivery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const result=await response.json().catch(()=>null);
     if(!response.ok||!result?.id)throw new Error(result?.message||'Could not assign delivery. Refresh and try again.');
