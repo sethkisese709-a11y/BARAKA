@@ -2110,7 +2110,7 @@ async function lockOut(){
 function renderPwMgmt(){
   const card=document.getElementById('pw-mgmt-card');card.style.display=currentUser.role==='owner'?'block':'none';
   if(currentUser.role!=='owner')return;
-  document.getElementById('pw-mgmt-list').innerHTML=D.users.map(u=>'<div class="pw-mgmt-row"><div>'+authEscape(u.name)+'<div class="pw-hint">'+(u.auth_user_id?'Login linked':'Login not linked')+'</div></div><div class="br">'+(u.id!==currentUser.id?'<button type="button" class="btn bsm" onclick="authLinkMember('+u.id+')">Link login</button><button type="button" class="btn bsm" onclick="removeMember('+u.id+')">Remove</button>':'')+'<button type="button" class="btn bsm" onclick="authCopyMemberLink('+u.id+')">Copy link</button></div></div>').join('');
+  document.getElementById('pw-mgmt-list').innerHTML=D.users.map(u=>'<div class="pw-mgmt-row"><div>'+authEscape(u.name)+'<div class="pw-hint">'+(u.auth_user_id?'Login linked':'Login not linked')+' · WhatsApp: '+(u.phone?authEscape(u.phone):'not added')+'</div></div><div class="br"><button type="button" class="btn bsm" onclick="editPhone('+u.id+')">'+(u.phone?'Edit number':'Add WhatsApp number')+'</button>'+(u.id!==currentUser.id?'<button type="button" class="btn bsm" onclick="authLinkMember('+u.id+')">Link login</button><button type="button" class="btn bsm" onclick="removeMember('+u.id+')">Remove</button>':'')+'<button type="button" class="btn bsm" onclick="authCopyMemberLink('+u.id+')">Copy link</button></div></div>').join('');
 }
 
 function openSetPw(){
@@ -3069,7 +3069,7 @@ function setTaskType(type, btn){
   if(titleEl) titleEl.placeholder=placeholders[type]||'Describe the task...';
 }
 
-async function createTask(){if(siteTaskSaving||!['owner','manager'].includes(currentUser?.role))return;if(!D.tasks)D.tasks=[];const assignees=getSelectedAssignees(),assignee=assignees[0]||document.getElementById('task-assignee')?.value||'';if(!assignees.length&&!assignee){toast('Please select a team member.','warn');return}const all=assignees.length?assignees:[assignee],title=document.getElementById('task-title').value.trim(),date=document.getElementById('task-date').value;if(!title){toast('Please enter a task title.','warn');return}if(!date){toast('Please select a date.','warn');return}const meta=TASK_TYPE_META[selectedTaskType]||{icon:'📋',label:'Other'},task={id:Date.now(),ticketNo:nextTicketNo('task'),type:selectedTaskType,typeIcon:meta.icon,typeLabel:meta.label,title,assignee:all[0],assignees:all,createdBy:currentUser.name,date,timeStart:document.getElementById('task-time-start').value||'',timeEnd:document.getElementById('task-time-end').value||'',priority:document.getElementById('task-priority').value||'normal',clientName:document.getElementById('task-client-name').value||'',clientPhone:document.getElementById('task-client-phone').value||'',location:document.getElementById('task-location').value||'',amountOnDelivery:parseFloat(document.getElementById('task-amount').value)||0,items:document.getElementById('task-items').value||'',notes:document.getElementById('task-notes').value||'',status:'pending',completionNote:'',amountCollected:0,deliveryCost:0,deliveryMethod:'Cash',createdAt:new Date().toISOString(),completedAt:'',statusHistory:[{status:'pending',by:currentUser.name,at:new Date().toISOString()}]};if(task.timeEnd&&(!task.timeStart||task.timeEnd<=task.timeStart)){toast('End time must be after start time.','warn');return}if(!Number.isFinite(task.amountOnDelivery)||task.amountOnDelivery<0){toast('Amount to collect must be zero or more.','warn');return}const epoch=authEpoch,button=document.querySelector('#task-create-card .btn[onclick="createTask()"]');siteTaskSaving=true;if(button){button.disabled=true;button.setAttribute('aria-busy','true')}try{const saved=await pushTask(task);if(epoch!==authEpoch||!D||!saved)return;D.tasks.unshift(task);if(authBaseline?.tasks)authBaseline.tasks[task.id]=JSON.stringify(task);logA('task','Assigned to '+all.join(', ')+': '+title);auditLog('task',task.id,'created','['+task.ticketNo+'] Assigned to '+all.join(', ')+': '+title);saveD();['task-title','task-time-start','task-time-end','task-client-name','task-client-phone','task-location','task-amount','task-items','task-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.querySelectorAll('#task-assignees-wrap input[type=checkbox]').forEach(cb=>{cb.checked=false;try{updateChip(parseInt(cb.dataset.uid))}catch(e){}});if(document.getElementById('task-assignee'))document.getElementById('task-assignee').value='';document.getElementById('task-priority').value='normal';document.getElementById('task-date').value=today();renderTasksMetrics();renderTasks();const btn=document.querySelector('#task-create-card .btn[onclick="createTask()"]');if(btn){const old=btn.innerHTML;btn.innerHTML='✅ Task assigned!';setTimeout(()=>btn.innerHTML=old,1500)}toast('Task saved and assigned.');if(epoch===authEpoch)openWAModal(task)}finally{siteTaskSaving=false;if(button){button.disabled=false;button.removeAttribute('aria-busy')}}}
+async function createTask(){if(siteTaskSaving||!['owner','manager'].includes(currentUser?.role))return;if(!D.tasks)D.tasks=[];const assignees=getSelectedAssignees(),pickedMemberIds=getSelectedAssigneeIds(),assignee=assignees[0]||document.getElementById('task-assignee')?.value||'';if(!assignees.length&&!assignee){toast('Please select a team member.','warn');return}const all=assignees.length?assignees:[assignee],assigneeUserIds=pickedMemberIds.length?pickedMemberIds:(D.users||[]).filter(u=>all.includes(u.name)).map(u=>u.id),title=document.getElementById('task-title').value.trim(),date=document.getElementById('task-date').value;if(!title){toast('Please enter a task title.','warn');return}if(!date){toast('Please select a date.','warn');return}const meta=TASK_TYPE_META[selectedTaskType]||{icon:'📋',label:'Other'},task={id:Date.now(),ticketNo:nextTicketNo('task'),type:selectedTaskType,typeIcon:meta.icon,typeLabel:meta.label,title,assignee:all[0],assignees:all,assigneeUserIds,createdBy:currentUser.name,date,timeStart:document.getElementById('task-time-start').value||'',timeEnd:document.getElementById('task-time-end').value||'',priority:document.getElementById('task-priority').value||'normal',clientName:document.getElementById('task-client-name').value||'',clientPhone:document.getElementById('task-client-phone').value||'',location:document.getElementById('task-location').value||'',amountOnDelivery:parseFloat(document.getElementById('task-amount').value)||0,items:document.getElementById('task-items').value||'',notes:document.getElementById('task-notes').value||'',status:'pending',completionNote:'',amountCollected:0,deliveryCost:0,deliveryMethod:'Cash',createdAt:new Date().toISOString(),completedAt:'',statusHistory:[{status:'pending',by:currentUser.name,at:new Date().toISOString()}]};if(task.timeEnd&&(!task.timeStart||task.timeEnd<=task.timeStart)){toast('End time must be after start time.','warn');return}if(!Number.isFinite(task.amountOnDelivery)||task.amountOnDelivery<0){toast('Amount to collect must be zero or more.','warn');return}const epoch=authEpoch,button=document.querySelector('#task-create-card .btn[onclick="createTask()"]');siteTaskSaving=true;if(button){button.disabled=true;button.setAttribute('aria-busy','true')}try{const saved=await pushTask(task);if(epoch!==authEpoch||!D||!saved)return;D.tasks.unshift(task);if(authBaseline?.tasks)authBaseline.tasks[task.id]=JSON.stringify(task);logA('task','Assigned to '+all.join(', ')+': '+title);auditLog('task',task.id,'created','['+task.ticketNo+'] Assigned to '+all.join(', ')+': '+title);saveD();['task-title','task-time-start','task-time-end','task-client-name','task-client-phone','task-location','task-amount','task-items','task-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.querySelectorAll('#task-assignees-wrap input[type=checkbox]').forEach(cb=>{cb.checked=false;try{updateChip(parseInt(cb.dataset.uid))}catch(e){}});if(document.getElementById('task-assignee'))document.getElementById('task-assignee').value='';document.getElementById('task-priority').value='normal';document.getElementById('task-date').value=today();renderTasksMetrics();renderTasks();const btn=document.querySelector('#task-create-card .btn[onclick="createTask()"]');if(btn){const old=btn.innerHTML;btn.innerHTML='✅ Task assigned!';setTimeout(()=>btn.innerHTML=old,1500)}toast('Task saved and assigned.');if(epoch===authEpoch)openWAModal(task)}finally{siteTaskSaving=false;if(button){button.disabled=false;button.removeAttribute('aria-busy')}}}
 
 function renderTasksMetrics(){const rows=taskMetricsScope(),active=t=>!['done','cancelled'].includes(t.status),count=value=>value==='urgent'?rows.filter(t=>t.priority==='urgent'&&active(t)).length:rows.filter(t=>t.status===value).length,items=[['pending','Pending','a'],['in-progress','In progress','b'],['done','Completed','g'],['urgent','Urgent','r']];document.getElementById('tasks-metrics').innerHTML=items.map(([key,label,color])=>'<button type="button" class="mc task-metric '+(taskMetricFilter===key?'selected':'')+'" aria-pressed="'+(taskMetricFilter===key)+'" onclick="taskMetricChoose(\''+key+'\')"><span class="mc-l">'+(key==='pending'&&!['owner','manager','staff'].includes(currentUser?.role)?'Your pending':label)+'</span><span class="mc-v '+color+'">'+count(key)+'</span></button>').join('')+(taskMetricFilter!=='all'?'<button type="button" class="btn bsm task-metric-clear" onclick="clearTaskMetricFilter()">Show all tasks</button>':'')}
 
@@ -4218,6 +4218,10 @@ function getSelectedAssignees(){
   return Array.from(document.querySelectorAll('#task-assignees-wrap input[type=checkbox]:checked')).map(cb=>cb.value);
 }
 
+function getSelectedAssigneeIds(){
+  return Array.from(document.querySelectorAll('#task-assignees-wrap input[type=checkbox]:checked')).map(cb=>Number(cb.dataset.uid)).filter(Number.isSafeInteger);
+}
+
 
 function openMP(saleId){
   mpId=saleId;
@@ -4869,6 +4873,7 @@ function toggleNotifPanel(){
   const isOpen=panel.style.display!=='none';
   panel.style.display=isOpen?'none':'block';
   if(!isOpen){
+    if(typeof devicePushRefresh==='function') devicePushRefresh();
     if(badge) badge.style.display='none';
     renderNotifList();
     // Close when clicking outside
@@ -5237,7 +5242,7 @@ async function sbDel(table,id){
 // ── Row mappers ────────────────────────────────────────────────────
 function mapSale(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,items:r.items||[],amount:r.amount||0,cost:r.cost||0,pnl:r.pnl||0,paidAmount:r.paid_amount||0,paymentStatus:r.payment_status||'paid',custName:r.cust_name||'Walk-in',custId:r.cust_id||'',channel:r.channel||'',payment:r.payment||'M-Pesa',ref:r.ref||'',notes:r.notes||'',by:r.by_user||'',evidence:null};}
 function mapExp(r){return{id:r.id,ticketNo:r.ticket_no||'',date:r.date,amount:r.amount||0,cat:r.cat||'Other',supId:r.sup_id||'',supName:'',vendor:r.vendor||'',ref:r.ref||'',paymethod:r.paymethod||'M-Pesa',notes:r.notes||'',by:r.by_user||'',evidence:null};}
-function mapTask(r){return{id:r.id,ticketNo:r.ticket_no||'',title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false,convertedToSale:r.converted_to_sale||false,saleId:r.sale_id||null};}
+function mapTask(r){return{id:r.id,ticketNo:r.ticket_no||'',title:r.title,assignee:r.assignee,assignees:r.assignees||[r.assignee],assigneeUserIds:r.assignee_user_ids||[],createdBy:r.created_by,date:r.date,timeStart:r.time_start||'',timeEnd:r.time_end||'',priority:r.priority||'normal',type:r.type||'other',typeIcon:r.type_icon||'📋',clientName:r.client_name||'',clientPhone:r.client_phone||'',location:r.location||'',amountOnDelivery:r.amount_on_delivery||0,items:r.items||'',notes:r.notes||'',status:r.status||'pending',completionNote:r.completion_note||'',amountCollected:r.amount_collected||0,completedAt:r.completed_at||'',createdAt:r.created_at||'',statusHistory:[],deliveryCost:r.delivery_cost||0,deliveryMethod:r.delivery_method||'Cash',deliveryCostExpensed:r.delivery_cost_expensed||false,convertedToSale:r.converted_to_sale||false,saleId:r.sale_id||null};}
 function mapUser(r){return {id:r.id,name:r.name,role:r.role,category:roleToCat(r.role),phone:r.phone||'',auth_user_id:r.auth_user_id||null,company_id:r.company_id};}
 
 // ── Push functions ─────────────────────────────────────────────────
@@ -5247,14 +5252,14 @@ function mapItem(r){return{id:r.id,ticketNo:r.ticket_no||'',name:r.name,cat:r.ca
 function pushItem(i){return sbUpsert('inventory',{id:i.id,company_id:currentCo.id,ticket_no:i.ticketNo||'',name:i.name,cat:i.cat||'Other',qty:i.qty||0,cost:i.cost||0,sell:i.sell||0,low:i.low||2,created_at:i.created_at||new Date().toISOString()});}
 function pushCust(cu){return sbUpsert('customers',{id:cu.id,company_id:currentCo.id,name:cu.name,phone:cu.phone||'',channel:cu.channel||'',loc:cu.loc||'',type:cu.type||'Individual',notes:cu.notes||'',created_at:new Date().toISOString()});}
 function pushSup(s){return sbUpsert('suppliers',{id:s.id,company_id:currentCo.id,name:s.name,contact:s.contact||'',phone:s.phone||'',cat:s.cat||'',terms:s.terms||'',notes:s.notes||'',created_at:new Date().toISOString()});}
-function pushTask(t){return sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString(),converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
+function pushTask(t){return sbUpsert('tasks',{id:t.id,company_id:currentCo.id,ticket_no:t.ticketNo||'',title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],assignee_user_ids:t.assigneeUserIds?.length?t.assigneeUserIds:(D.users||[]).filter(u=>(t.assignees||[t.assignee]).includes(u.name)).map(u=>u.id),created_by:t.createdBy,date:t.date,time_start:t.timeStart||null,time_end:t.timeEnd||null,priority:t.priority||'normal',type:t.type||'other',type_icon:t.typeIcon||'📋',client_name:t.clientName||null,client_phone:t.clientPhone||null,location:t.location||null,amount_on_delivery:t.amountOnDelivery||0,items:t.items||null,notes:t.notes||null,status:t.status||'pending',completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,created_at:t.createdAt||new Date().toISOString(),converted_to_sale:t.convertedToSale||false,sale_id:t.saleId||null});}
 async function updateTask(t){
   const epoch=authEpoch,snapshot=JSON.stringify(t);
   const role=currentUser?.role;
   let fields;
   if(role==='delivery')fields={status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash'};
   else if(role==='staff')fields={delivery_cost:t.deliveryCost||0,delivery_cost_expensed:!!t.deliveryCostExpensed,converted_to_sale:!!t.convertedToSale,sale_id:t.saleId||null};
-  else fields={title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:!!t.deliveryCostExpensed,converted_to_sale:!!t.convertedToSale,sale_id:t.saleId||null};
+  else fields={title:t.title,assignee:t.assignee,assignees:t.assignees||[t.assignee],assignee_user_ids:t.assigneeUserIds?.length?t.assigneeUserIds:(D.users||[]).filter(u=>(t.assignees||[t.assignee]).includes(u.name)).map(u=>u.id),date:t.date,time_start:t.timeStart||null,priority:t.priority,type:t.type,type_icon:t.typeIcon,status:t.status,completion_note:t.completionNote||null,amount_collected:t.amountCollected||0,completed_at:t.completedAt||null,delivery_cost:t.deliveryCost||0,delivery_method:t.deliveryMethod||'Cash',delivery_cost_expensed:!!t.deliveryCostExpensed,converted_to_sale:!!t.convertedToSale,sale_id:t.saleId||null};
   try{
     const r=await authFetch(SUPA_URL+'/rest/v1/tasks?id=eq.'+t.id+'&company_id=eq.'+encodeURIComponent(currentCo.id),{method:'PATCH',headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(fields)});
     if(!r.ok)throw new Error('Task could not be saved ('+r.status+').');
@@ -5939,6 +5944,11 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
     <button type="button" class="linkbtn" onclick="document.getElementById('notif-panel').style.display='none'"><i data-ic="x"></i></button>
   </div>
   <div id="notif-list" style="padding:8px 0"></div>
+  <div id="device-push-settings" style="padding:10px 14px;border-top:1px solid var(--border)">
+    <div id="device-push-status" style="font-size:11px;color:var(--text2);margin-bottom:8px">Assignment alerts are off on this device.</div>
+    <button id="device-push-button" type="button" class="btn bsm primary" onclick="devicePushToggle()" style="width:100%">Enable device alerts</button>
+    <div style="font-size:10px;color:var(--text3);margin-top:7px">On iPhone or iPad, add this site to your Home Screen first.</div>
+  </div>
 </div>
 
 
@@ -6279,13 +6289,83 @@ async function saveProductionDelivery(event){
 function productionOnSync(){
   const session=(authUser?.id||'')+'|'+(currentCo?.id||'');
   const notifications=D?.productionNotifications||[];
-  if(productionNotificationSession!==session){productionNotificationSession=session;productionKnownNotifications=new Set(notifications.map(n=>n.id));}
+  const newSession=productionNotificationSession!==session;
+  if(newSession){productionNotificationSession=session;productionKnownNotifications=new Set(notifications.map(n=>n.id));}
   else if(productionKnownNotifications){
     const newlyReceived=notifications.filter(n=>!productionKnownNotifications.has(n.id));
     if(newlyReceived.length)toast(newlyReceived.length===1?newlyReceived[0].message:newlyReceived.length+' new production updates. Open Production orders.','success');
     for(const n of notifications)productionKnownNotifications.add(n.id);
   }
   renderProductionAlerts();
+  if(newSession)devicePushRefresh();
+}
+function devicePushBase64UrlToBytes(value){
+  const padded=value.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-value.length%4)%4);
+  return Uint8Array.from(atob(padded),c=>c.charCodeAt(0));
+}
+function devicePushIsIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function devicePushIsStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+async function devicePushRefresh(){
+  const box=document.getElementById('device-push-settings'),status=document.getElementById('device-push-status'),button=document.getElementById('device-push-button');
+  if(!box||!status||!button)return;
+  if(!authUser||!currentCo){box.hidden=true;return;}box.hidden=false;
+  if(!('Notification'in window)||!('serviceWorker'in navigator)||!('PushManager'in window)){
+    status.textContent='This browser does not support device push notifications.';button.hidden=true;return;
+  }
+  button.hidden=false;
+  if(devicePushIsIOS()&&!devicePushIsStandalone()){
+    status.textContent='On iPhone or iPad, first use Share → Add to Home Screen, then open the installed app.';
+    button.textContent='Open the installed app to enable';button.disabled=true;return;
+  }
+  if(Notification.permission==='denied'){
+    status.textContent='Notifications are blocked for this site. Allow them in your browser or device settings, then return here.';
+    button.textContent='Notifications are blocked';button.disabled=true;return;
+  }
+  try{
+    const reg=await navigator.serviceWorker.getRegistration('/'),subscription=reg&&await reg.pushManager.getSubscription();
+    if(subscription){
+      const rows=await authRows('device_push_subscriptions','user_id=eq.'+encodeURIComponent(authUser.id)+'&endpoint=eq.'+encodeURIComponent(subscription.endpoint)+'&select=id');
+      if(rows.length){status.textContent='Assignment alerts are on for this device.';button.textContent='Turn off alerts on this device';}
+      else{status.textContent='Browser alerts are available. Enable them for this signed-in member on this device.';button.textContent='Enable alerts for this account';}
+      button.disabled=false;
+    }else{status.textContent='Get a device alert when a task or production order is assigned to you.';button.textContent='Enable device alerts';button.disabled=false;}
+  }catch(_){status.textContent='Device alerts are not available here. Refresh the site and try again.';button.textContent='Try device alerts';button.disabled=false;}
+}
+async function devicePushToggle(){
+  const button=document.getElementById('device-push-button'),status=document.getElementById('device-push-status');
+  if(!authUser||!currentCo||!button||!status)return;
+  if(devicePushIsIOS()&&!devicePushIsStandalone()){status.textContent='On iPhone or iPad, add this site to your Home Screen and open it there first.';return;}
+  if(!('Notification'in window)||!('serviceWorker'in navigator)||!('PushManager'in window)){status.textContent='This browser does not support device push notifications.';return;}
+  const epoch=authEpoch,oldText=button.textContent;button.disabled=true;button.textContent='Setting up…';
+  try{
+    let permission=Notification.permission;
+    if(permission==='default')permission=await Notification.requestPermission();
+    if(permission!=='granted')throw new Error(permission==='denied'?'Notifications are blocked for this site. Change the browser permission and try again.':'Allow notifications to continue.');
+    const registration=await navigator.serviceWorker.register('/service-worker.js',{scope:'/'});
+    const current=await registration.pushManager.getSubscription();
+    const currentRows=current?await authRows('device_push_subscriptions','user_id=eq.'+encodeURIComponent(authUser.id)+'&endpoint=eq.'+encodeURIComponent(current.endpoint)+'&select=id'):[];
+    if(current&&currentRows.length){
+      const response=await authFetch(SUPA_URL+'/rest/v1/device_push_subscriptions?id=eq.'+encodeURIComponent(currentRows[0].id),{method:'DELETE',headers:{Prefer:'return=minimal'}});
+      if(!response.ok)throw new Error('Could not turn off device alerts. Try again.');
+      await current.unsubscribe();
+      if(epoch===authEpoch)toast('Device alerts turned off on this device.');
+    }else{
+      let subscription=current;
+      if(!subscription){
+        const configResponse=await authNativeFetch(SUPA_URL+'/functions/v1/device-push?config=1',{headers:{apikey:SUPA_KEY}});
+        const config=await configResponse.json().catch(()=>null);
+        if(!configResponse.ok||!config?.vapidPublicKey)throw new Error(config?.error||'Push alerts are not set up yet. Ask the owner to finish the setup steps.');
+        subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:devicePushBase64UrlToBytes(config.vapidPublicKey)});
+      }
+      const keys=subscription.toJSON().keys||{};
+      if(!keys.p256dh||!keys.auth)throw new Error('This browser did not provide secure push keys. Try another supported browser.');
+      const url=new URL(SUPA_URL+'/rest/v1/device_push_subscriptions');url.searchParams.set('on_conflict','user_id,endpoint');
+      const response=await authFetch(url.toString(),{method:'POST',headers:{'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:authUser.id,company_id:currentCo.id,endpoint:subscription.endpoint,p256dh:keys.p256dh,auth:keys.auth,user_agent:navigator.userAgent.slice(0,500),updated_at:new Date().toISOString()})});
+      if(!response.ok)throw new Error('The browser allowed alerts, but the device could not be registered with Baraka. Run migration 07, refresh, and retry.');
+      if(epoch===authEpoch)toast('Device alerts are on. Assign a task or production order to test it.');
+    }
+  }catch(error){if(epoch===authEpoch)toast(error.message||'Could not configure device alerts.','error',8000);}
+  finally{if(epoch===authEpoch){button.textContent=oldText;button.disabled=false;await devicePushRefresh();}}
 }
 function renderProductionAlerts(){
   const unread=(D?.productionNotifications||[]).filter(n=>!n.read_at),badge=document.getElementById('prod-nav-badge'),el=document.getElementById('prod-alerts');
