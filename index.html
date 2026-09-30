@@ -1306,6 +1306,8 @@ body.dark .btn.primary{background:var(--text)!important;color:#141821!important}
 .task-metric{display:flex;min-width:0;width:100%;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;cursor:pointer}.task-metric.selected{outline:2px solid var(--blue);outline-offset:-2px}.task-metric:hover,.task-metric:focus-visible{filter:brightness(.97)}.task-metric .mc-l{margin:0}.task-metric-clear{grid-column:1/-1;justify-self:start}
 body.dark .prod-wa-rider{background:var(--bg2)}
 @media(max-width:650px){.prod-wa-rider{align-items:flex-start;flex-direction:column}.prod-wa-rider .btn{width:100%}}
+.prod-file-picker{display:grid;gap:9px;padding:13px;border:1px dashed var(--border2);border-radius:10px;background:var(--bg2)}.prod-file-picker>label{display:grid;gap:4px}.prod-file-picker>label small{font-weight:400;color:var(--text2)}.prod-file-picker input[type=file]{background:var(--bg)}.prod-file-picker>p{margin:0}.prod-attachment-list{display:grid;gap:6px;font-size:12px;color:var(--text2)}.prod-attachment-row{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}.prod-attachment-row span{min-width:0;overflow-wrap:anywhere}.prod-attachment-row .btn{flex-shrink:0}.prod-order-files{display:grid;gap:6px;margin:3px 0 14px;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--bg2)}.prod-order-files>strong{font-size:11px;color:var(--text2)}.prod-attachment-link{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:7px 0;border:0;border-top:1px solid var(--border);background:none;color:var(--blue);text-align:left;font:inherit;cursor:pointer}.prod-attachment-link small{color:var(--text2);white-space:nowrap}.prod-attachment-link:hover{text-decoration:underline}
+@media(max-width:650px){.prod-attachment-row{align-items:flex-start}.prod-attachment-row .btn{width:100%}}
 
 /* Baraka interface refinement for large screens, tablets and phones. */
 :root{--text2:#526174;--text3:#64748b;--red:#b42332;--red-bg:#fff0f1;--green:#08765d;--green-bg:#e7f6ef;--focus:#176bc1;--scroll:#8b9bad;--radius:10px;--radius-lg:14px}
@@ -1410,6 +1412,7 @@ body button{min-height:42px!important}body input:not([type=checkbox]):not([type=
  <label>Extra drawer details<input name="drawers" maxlength="240" placeholder="e.g. Soft-close runners and handles"></label>
  <label class="prod-wide">Extensions / additions<textarea name="extensions" maxlength="1000" rows="2" placeholder="Top extension: describe its size and position"></textarea></label>
  <label class="prod-wide">Other specifications<textarea name="specifications" maxlength="5000" rows="3" placeholder="Shelves, materials, handles and other build instructions"></textarea></label>
+ <div class="prod-wide prod-file-picker"><label for="prod-order-files">Reference images or files <small>Up to 10 files per order · 8 MB each · JPG, PNG, WebP, GIF, HEIC or PDF</small></label><input id="prod-order-files" type="file" accept="image/*,.pdf" multiple onchange="productionChooseFiles(this)"><div id="prod-order-new-files" class="prod-attachment-list" aria-live="polite"></div><div id="prod-order-existing-files" class="prod-attachment-list"></div><p>Attach a photo or file showing a handle, finish, fitting, or other client request. Only people with access to this company’s production orders can open it.</p></div>
 </div><p id="prod-spec-preview" class="prod-spec-preview" aria-live="polite"></p><p>Saving shares this order with Owner, Manager, Technicians and authorised production roles. The assigned member receives an in-app notice when details change.</p><div id="prod-order-error" class="pw-error" role="alert"></div><button id="prod-save" type="submit" class="btn primary">Save order</button></form></div></div>
 <div class="modal-bg" id="prod-progress-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-progress-title"><div class="prod-heading"><h2 id="prod-progress-title">Update progress</h2><button class="btn bsm" type="button" aria-label="Close progress form" onclick="document.getElementById('prod-progress-modal').classList.remove('open')">Close</button></div><form id="prod-progress-form" onsubmit="saveProductionProgress(event)"><label class="fl">Stage<select id="prod-progress-status"></select></label><label class="fl">Progress / blocker notes<textarea id="prod-progress-note" maxlength="3000" rows="5" placeholder="e.g. Panels cut; waiting for white edging"></textarea></label><p>Use “Ready for review” when workshop work is finished. Owner or Manager can mark the order completed.</p><div id="prod-progress-error" class="pw-error" role="alert"></div><button id="prod-progress-save" class="btn primary" type="submit">Share progress</button></form></div></div>
 <div class="modal-bg" id="prod-review-modal"><div class="modal prod-modal" role="dialog" aria-modal="true" aria-labelledby="prod-review-title"><div class="prod-heading"><h2 id="prod-review-title">Review production order</h2><button type="button" class="btn bsm" onclick="document.getElementById('prod-review-modal').classList.remove('open')">Close</button></div><p>Approve the finished work, or describe what the technician must correct.</p><label class="fl">Review feedback<textarea id="prod-review-note" maxlength="3000" rows="5" placeholder="e.g. Change the door colour to white and check the top extension"></textarea></label><div id="prod-review-error" class="pw-error" role="alert"></div><div class="prod-review-actions"><button id="prod-review-approve" type="button" class="btn primary" onclick="saveProductionReview('completed')">Approve and complete</button><button id="prod-review-changes" type="button" class="btn" onclick="saveProductionReview('changes_requested')">Request changes</button></div></div></div>
@@ -4259,7 +4262,7 @@ function authCompany(id){
 }
 async function authFetch(input, options={}){
   const url = new URL(input, location.href);
-  if(url.origin !== new URL(SUPA_URL).origin || !url.pathname.startsWith('/rest/v1/')) throw new Error('Unexpected data endpoint');
+  if(url.origin !== new URL(SUPA_URL).origin || !(url.pathname.startsWith('/rest/v1/')||url.pathname.startsWith('/storage/v1/'))) throw new Error('Unexpected data endpoint');
   if(!_supabaseClient || !authUser) throw new Error('Please sign in again.');
   const epoch = authEpoch;
   const {data,error} = await _supabaseClient.auth.getSession();
@@ -6003,7 +6006,7 @@ setTimeout(function(){ try{ buildMobileTabs(); syncMobileTabs('dashboard'); }cat
 <script>
 let productionRoles=[], productionMembers=[], productionEditing=null, productionProgressEditing=null, productionReviewEditing=null, productionDeliveryEditing=null;
 let productionFilter='active', productionSearch='', productionBusy=false;
-let productionDeliveryMembers=[];
+let productionDeliveryMembers=[], productionStagedFiles=[];
 let productionNotificationSession='',productionKnownNotifications=null;
 const productionBuiltins={owner:'Owner',manager:'Manager',staff:'Staff',delivery:'Delivery',technician:'Technician'};
 const productionStatus={pending:'To do',in_progress:'In progress',blocked:'Blocked',ready:'Ready for review',changes_requested:'Changes requested',completed:'Completed',cancelled:'Cancelled'};
@@ -6028,7 +6031,7 @@ function productionReset(){
   productionRoles=[];productionMembers=[];productionEditing=null;productionProgressEditing=null;productionReviewEditing=null;productionDeliveryEditing=null;productionFilter='active';productionSearch='';productionBusy=false;productionKnownNotifications=null;productionNotificationSession='';
   ['prod-list','prod-summary','prod-alerts','prod-delivery-queue','production-overview','role-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.replaceChildren();});
   if(document.getElementById('prod-delivery-queue'))document.getElementById('prod-delivery-queue').hidden=true;
-  document.getElementById('prod-order-form')?.reset();document.getElementById('prod-progress-form')?.reset();
+  document.getElementById('prod-order-form')?.reset();document.getElementById('prod-progress-form')?.reset();productionStagedFiles=[];document.getElementById('prod-order-new-files')?.replaceChildren();document.getElementById('prod-order-existing-files')?.replaceChildren();
   for(const id of ['prod-order-modal','prod-progress-modal','prod-review-modal','prod-delivery-modal','prod-delivery-wa-modal'])document.getElementById(id)?.classList.remove('open');
   if(typeof taskMetricFilter!=='undefined')taskMetricFilter='all';
   if(document.getElementById('prod-filter'))document.getElementById('prod-filter').value='active';
@@ -6067,7 +6070,7 @@ function renderProduction(){
   document.getElementById('prod-list').innerHTML=rows.length?rows.map(o=>{
     const overdue=o.due_date&&o.due_date<today()&&!['completed','cancelled'].includes(o.status);
     const closed=['completed','cancelled'].includes(o.status),status=productionStatus[o.status]||o.status;
-    const delivery=productionDeliveryTask(o.id);
+    const delivery=productionDeliveryTask(o.id),attachments=productionAttachmentCards(o);
     const details=[['Dimensions',o.dimensions],['Frame color',productionColors[o.frame_color]],['Door color',productionColors[o.door_color]],['Number of drawers',o.drawer_count],['Drawer position',productionDrawerPositions[o.drawer_position]],['Material',productionMaterials[o.material]],['Colours / finish notes',o.colours],['Door design',o.doors],['Extra drawer details',o.drawers],['Extensions',o.extensions],['Specifications',o.specifications]];
     const completed=o.status==='completed'?'<div class="prod-completed-info">✓ Completed · '+authEscape(o.reviewed_at?new Date(o.reviewed_at).toLocaleString():'Reviewed')+' · '+(delivery?'Delivery assigned · Read only':'Ready for delivery')+'</div>':'';
     const handoff=delivery?'<div class="prod-delivery-info"><strong>Delivery assigned</strong> · '+authEscape(delivery.assignee||'Rider')+' · '+authEscape(delivery.date||'Date pending')+' · '+authEscape(delivery.status||'pending')+'</div>':'';
@@ -6075,7 +6078,7 @@ function renderProduction(){
       (productionPermission('manage')&&o.status==='ready'?'<button class="btn primary bsm" type="button" onclick="openProductionReview(\''+o.id+'\')">Review order</button>':'')+
       (productionPermission('progress')&&(!['ready','cancelled'].includes(o.status)||productionPermission('manage'))?'<button class="btn bsm" type="button" onclick="openProductionProgress(\''+o.id+'\')">Update progress</button>':'')+
       (productionPermission('manage')?'<button class="btn bsm" type="button" onclick="openProductionOrder(\''+o.id+'\')">Edit order</button>':'');
-    return '<article class="prod-order '+(closed?'closed':o.priority)+' status-'+o.status+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><div class="prod-chips"><span class="prod-status status-'+o.status+'">'+authEscape(status)+'</span><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div></div><div class="prod-meta"><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(String(value))+'</dd></div>').join('')+'</dl>'+(o.review_note&&!closed?'<div class="prod-note prod-review-feedback"><strong>'+(o.status==='changes_requested'?'Changes needed':'Review feedback')+' · '+authEscape(o.reviewed_by_name||'Reviewer')+'</strong><p>'+authEscape(o.review_note)+'</p></div>':'')+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+completed+handoff+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+actions+'</div></footer></article>';
+    return '<article class="prod-order '+(closed?'closed':o.priority)+' status-'+o.status+'" data-order-id="'+o.id+'"><div class="prod-heading"><div><span class="prod-reference">'+authEscape(o.reference)+'</span><h3>'+authEscape(o.product)+' <small>× '+o.quantity+'</small></h3></div><div class="prod-chips"><span class="prod-status status-'+o.status+'">'+authEscape(status)+'</span><span class="prod-priority '+o.priority+'">'+productionPriority[o.priority]+'</span></div></div><div class="prod-meta"><span class="'+(overdue?'prod-overdue':'')+'">'+(overdue?'Overdue · ':'Due · ')+authEscape(o.due_date||'Not set')+'</span><span>Assigned · '+authEscape(o.assigned_to_name||'Unassigned')+'</span></div><dl class="prod-specs">'+details.filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+authEscape(String(value))+'</dd></div>').join('')+'</dl>'+attachments+(o.review_note&&!closed?'<div class="prod-note prod-review-feedback"><strong>'+(o.status==='changes_requested'?'Changes needed':'Review feedback')+' · '+authEscape(o.reviewed_by_name||'Reviewer')+'</strong><p>'+authEscape(o.review_note)+'</p></div>':'')+(o.progress_note?'<div class="prod-note"><strong>Latest progress</strong><p>'+authEscape(o.progress_note)+'</p></div>':'')+completed+handoff+'<footer><span>Updated by '+authEscape(o.updated_by_name||'—')+' · '+authEscape(new Date(o.updated_at).toLocaleString())+'</span><div class="br">'+actions+'</div></footer></article>';
   }).join(''):'<div class="card prod-empty">No orders match this view.'+(productionPermission('manage')?' Create a production order to share it with the workshop.':' New orders will appear here when your team adds them.')+'</div>';
 }
 function productionDrawerPosition(form){
@@ -6093,6 +6096,7 @@ function openProductionOrder(id=null){
   const order=id?(D.productionOrders||[]).find(o=>o.id===id):null;if(id&&!order)return;
   if(order?.status==='completed'&&productionDeliveryTask(order.id))return;
   productionEditing=order?{...order}:null;
+  productionStagedFiles=[];
   const form=document.getElementById('prod-order-form');form.reset();
   document.getElementById('prod-order-title').textContent=order?'Edit production order':'New production order';
   document.getElementById('prod-order-error').textContent='';
@@ -6103,10 +6107,41 @@ function openProductionOrder(id=null){
   form.oninput=()=>productionDrawerPosition(form);
   form.onchange=()=>productionDrawerPosition(form);
   productionDrawerPosition(form);
+  productionRenderStagedFiles();productionRenderOrderAttachments(order);
   const members=productionMembers;
   form.elements.assigned_member_id.innerHTML='<option value="">Unassigned</option>'+members.map(u=>'<option value="'+u.id+'">'+authEscape(u.name)+' · '+authEscape(productionRoleName(u.role))+'</option>').join('');
   form.elements.assigned_member_id.value=order?.assigned_member_id||'';
   document.getElementById('prod-order-modal').classList.add('open');form.elements.reference.focus();
+}
+const productionAllowedFileTypes=new Set(['image/jpeg','image/png','image/webp','image/gif','image/heic','image/heif','application/pdf']);
+function productionContentType(file){const detected=String(file.type||'').toLowerCase(),byExtension={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',heic:'image/heic',heif:'image/heif',pdf:'application/pdf'};return productionAllowedFileTypes.has(detected)?detected:byExtension[String(file.name||'').split('.').pop().toLowerCase()]||''}
+function productionFormatBytes(size){return size<1048576?Math.max(1,Math.round(size/1024))+' KB':(size/1048576).toFixed(1)+' MB'}
+function productionChooseFiles(input){
+  const error=document.getElementById('prod-order-error'),max=8*1024*1024,all=[...(productionStagedFiles||[]),...Array.from(input.files||[])];
+  for(const file of Array.from(input.files||[])){if(!productionContentType(file)){error.textContent='Choose an image (JPG, PNG, WebP, GIF or HEIC) or a PDF.';input.value='';return;}if(file.size>max){error.textContent=file.name+' is larger than 8 MB. Choose a smaller image or PDF.';input.value='';return;}}
+  if(all.length+(productionEditing?.attachments||[]).length>10){error.textContent='An order can have up to 10 attached files.';input.value='';return;}
+  productionStagedFiles=all;error.textContent='';input.value='';productionRenderStagedFiles();
+}
+function productionRenderStagedFiles(){const host=document.getElementById('prod-order-new-files');if(!host)return;host.innerHTML=productionStagedFiles.length?'<strong>Ready to upload</strong>'+productionStagedFiles.map((f,i)=>'<div class="prod-attachment-row"><span>'+authEscape(f.name)+' · '+productionFormatBytes(f.size)+'</span><button type="button" class="btn bsm" onclick="productionRemoveStagedFile('+i+')">Remove</button></div>').join(''):'<span>No new files selected.</span>';}
+function productionRemoveStagedFile(i){productionStagedFiles.splice(i,1);productionRenderStagedFiles();}
+function productionRenderOrderAttachments(order){const host=document.getElementById('prod-order-existing-files');if(!host)return;const files=order?.attachments||[];host.innerHTML=files.length?'<strong>Already attached</strong>'+files.map(a=>'<div class="prod-attachment-row"><span>'+authEscape(a.name||'Order file')+' · '+productionFormatBytes(Number(a.size)||0)+'</span><button type="button" class="btn bsm" onclick="openProductionAttachment(\''+encodeURIComponent(order.id)+'\',\''+encodeURIComponent(a.id)+'\')">Open file</button></div>').join(''):'<span>No files attached to this order yet.</span>';}
+function productionAttachmentCards(order){const files=order.attachments||[];return files.length?'<section class="prod-order-files" aria-label="Order reference files"><strong>Reference files · '+files.length+'</strong>'+files.map(a=>'<button type="button" class="prod-attachment-link" onclick="openProductionAttachment(\''+encodeURIComponent(order.id)+'\',\''+encodeURIComponent(a.id)+'\')">'+authEscape(a.name||'Open attachment')+' <small>'+productionFormatBytes(Number(a.size)||0)+'</small></button>').join('')+'</section>':''}
+async function productionUploadStagedFiles(order,epoch){
+  let current=order;const files=[...productionStagedFiles],uploaded=[];
+  try{
+    for(let i=0;i<files.length;i++){const file=files[i],id=crypto.randomUUID(),path=current.company_id+'/'+current.id+'/'+id,url=SUPA_URL+'/storage/v1/object/production-order-files/'+path.split('/').map(encodeURIComponent).join('/'),type=productionContentType(file),button=document.getElementById('prod-save');if(button)button.textContent='Uploading file '+(i+1)+' of '+files.length+'…';
+      const response=await authFetch(url,{method:'POST',headers:{'Content-Type':type,'x-upsert':'false'},body:file});if(!response.ok){const info=await response.json().catch(()=>null);throw new Error(info?.message||info?.error||'Storage rejected '+file.name+' ('+response.status+'). Run migration 06 and retry.');}
+      uploaded.push({file,url,entry:{id,path,name:file.name,type,size:file.size,uploaded_at:new Date().toISOString(),uploaded_by:currentUser.name}});
+    }
+    const entries=uploaded.map(x=>x.entry);current=await productionWrite('production_orders',{attachments:[...(current.attachments||[]),...entries]},'?id=eq.'+encodeURIComponent(current.id)+'&company_id=eq.'+encodeURIComponent(current.company_id)+'&revision=eq.'+current.revision,'PATCH');
+    if(epoch!==authEpoch)return current;productionStagedFiles.splice(0,files.length);productionEditing=current;productionAccept(current);productionRenderStagedFiles();productionRenderOrderAttachments(current);return current;
+  }catch(e){for(const item of uploaded)try{await authFetch(item.url,{method:'DELETE'});}catch(_){}throw e;}
+}
+async function openProductionAttachment(orderId,attachmentId){
+  const oid=decodeURIComponent(orderId),aid=decodeURIComponent(attachmentId),order=(D?.productionOrders||[]).find(o=>String(o.id)===oid),file=(order?.attachments||[]).find(a=>String(a.id)===aid);if(!order||!file)return;
+  const popup=window.open('about:blank','_blank');if(!popup){toast('Allow pop-ups to open this attachment.','warn');return;}
+  try{const url=SUPA_URL+'/storage/v1/object/authenticated/production-order-files/'+String(file.path).split('/').map(encodeURIComponent).join('/'),response=await authFetch(url);if(!response.ok)throw new Error('Could not open '+(file.name||'file')+'. Check file access or refresh the order.');const blob=await response.blob(),objectUrl=URL.createObjectURL(blob);popup.location.href=objectUrl;setTimeout(()=>URL.revokeObjectURL(objectUrl),120000);}
+  catch(e){popup.close();toast(e.message,'error');}
 }
 async function productionWrite(table,body,query='',method='POST'){
   const response=await authFetch(SUPA_URL+'/rest/v1/'+table+query,{method,headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(body)});
@@ -6126,13 +6161,17 @@ async function saveProductionOrder(event){
   for(const key of ['frame_color','door_color','drawer_position','material'])body[key]=form.elements[key].value||null;
   body.drawer_count=form.elements.drawer_count.value===''?null:Number(form.elements.drawer_count.value);
   body.quantity=Number(form.elements.quantity.value);body.due_date=form.elements.due_date.value||null;body.assigned_member_id=form.elements.assigned_member_id.value?Number(form.elements.assigned_member_id.value):null;
-  productionBusy=true;document.getElementById('prod-save').disabled=true;
+  productionBusy=true;document.getElementById('prod-save').disabled=true;let baseSaved=false;
   try{
-    const row=await productionWrite('production_orders',body,edit?'?id=eq.'+edit.id+'&company_id=eq.'+encodeURIComponent(company)+'&revision=eq.'+edit.revision:'',edit?'PATCH':'POST');
+    let row=await productionWrite('production_orders',body,edit?'?id=eq.'+edit.id+'&company_id=eq.'+encodeURIComponent(company)+'&revision=eq.'+edit.revision:'',edit?'PATCH':'POST');
+    baseSaved=true;
     if(epoch!==authEpoch)return;
-    productionAccept(row);document.getElementById('prod-order-modal').classList.remove('open');toast('Order saved. The assigned member will see an in-app notice.');
-  }catch(e){if(epoch===authEpoch)document.getElementById('prod-order-error').textContent=e.message;}
-  finally{productionBusy=false;document.getElementById('prod-save').disabled=false;}
+    productionAccept(row);productionEditing=row;
+    if(productionStagedFiles.length)row=await productionUploadStagedFiles(row,epoch);
+    if(epoch!==authEpoch)return;
+    productionAccept(row);document.getElementById('prod-order-modal').classList.remove('open');toast('Order saved. The assigned member can open its attached files.');
+  }catch(e){if(epoch===authEpoch)document.getElementById('prod-order-error').textContent=(baseSaved?'Order saved, but a file could not be attached. ':'')+e.message;}
+  finally{productionBusy=false;document.getElementById('prod-save').disabled=false;document.getElementById('prod-save').textContent='Save order';}
 }
 function productionAccept(row){
   D.productionOrders=(D.productionOrders||[]).filter(o=>o.id!==row.id).concat(row);renderProduction();renderProductionOverview();
