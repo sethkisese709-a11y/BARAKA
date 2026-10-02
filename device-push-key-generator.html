@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Baraka device alert keys</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6f4;color:#17231f;font:16px/1.5 system-ui,sans-serif}.wrap{max-width:760px;margin:36px auto;padding:24px}.card{background:#fff;border:1px solid #d6dfda;border-radius:16px;padding:24px;box-shadow:0 8px 30px #15261a0c}h1{font-size:24px;margin:0 0 8px}p{color:#4c5c54}.warn{background:#fff5dc;padding:12px;border-radius:8px}.field{margin:18px 0}label{display:block;font-weight:700;margin-bottom:6px}textarea{width:100%;min-height:78px;padding:10px;border:1px solid #b9c7bf;border-radius:8px;font:13px ui-monospace,monospace;overflow-wrap:anywhere}button{border:0;border-radius:9px;padding:12px 16px;background:#16803c;color:white;font-weight:700;cursor:pointer}button.copy{padding:8px 12px;margin-top:6px}.hidden{display:none}#status{margin-top:12px;color:#a32232}
+</style>
+<main class="wrap"><section class="card"><h1>Baraka device alert keys</h1><p>This page creates the keys needed for the private push sender. Key generation happens in this browser; nothing is uploaded.</p><p class="warn"><strong>Keep the private key and webhook secret private.</strong> Copy them directly into Supabase Edge Function Secrets. Do not paste either one into the website or WhatsApp.</p><button id="generate" type="button">Generate secure keys</button><p id="status" role="status"></p><div id="results" class="hidden">
+<div class="field"><label for="public">VAPID_PUBLIC_KEY</label><textarea id="public" readonly></textarea><button class="copy" data-copy="public">Copy</button></div>
+<div class="field"><label for="private">VAPID_PRIVATE_KEY</label><textarea id="private" readonly></textarea><button class="copy" data-copy="private">Copy</button></div>
+<div class="field"><label for="secret">PUSH_WEBHOOK_SECRET</label><textarea id="secret" readonly></textarea><button class="copy" data-copy="secret">Copy</button></div>
+<p>For <code>VAPID_SUBJECT</code>, use a team contact such as <code>mailto:you@example.com</code>.</p>
+</div></section></main>
+<script>
+function b64url(bytes){let binary='';for(const value of bytes)binary+=String.fromCharCode(value);return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function decodePart(value){const padded=value.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-value.length%4)%4);return Uint8Array.from(atob(padded),c=>c.charCodeAt(0))}
+document.getElementById('generate').addEventListener('click',async()=>{
+ const status=document.getElementById('status');status.textContent='';
+ try{
+  if(!window.isSecureContext||!crypto?.subtle)throw new Error('Open this saved file in a current Chrome, Edge, or Firefox browser on a secure context.');
+  const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+  const jwk=await crypto.subtle.exportKey('jwk',pair.privateKey),x=decodePart(jwk.x),y=decodePart(jwk.y);
+  const raw=new Uint8Array(65);raw[0]=4;raw.set(x,1);raw.set(y,33);
+  const secret=new Uint8Array(32);crypto.getRandomValues(secret);
+  document.getElementById('public').value=b64url(raw);
+  document.getElementById('private').value=jwk.d;
+  document.getElementById('secret').value=b64url(secret);
+  document.getElementById('results').classList.remove('hidden');
+ }catch(error){status.textContent=error.message||'Could not generate keys. Try a current browser.'}
+});
+document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{
+ const field=document.getElementById(button.dataset.copy);
+ try{await navigator.clipboard.writeText(field.value);button.textContent='Copied';setTimeout(()=>button.textContent='Copy',1200)}
+ catch(_){field.focus();field.select();document.execCommand('copy');button.textContent='Copied'}
+}));
+</script></html>
